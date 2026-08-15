@@ -1,0 +1,7 @@
+# Harness UI Enhancer bundle patch: inserts the client-only plugin row.
+# Applied when a profile lists this bundle in dsh.profile.bundles.
+# The row name resolves to this package (dsh.bundle patch); the browser half
+# is picked up by client-modules scanning the `dsh.client` declaration.
+- insert:
+    - id: ui-enhancer
+      name: harness-ui-enhancer

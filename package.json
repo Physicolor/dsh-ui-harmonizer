@@ -1,0 +1,68 @@
+{
+  "name": "harness-ui-enhancer",
+  "version": "0.1.0",
+  "description": "Web UI polish layer for DeepSeek Harness: normalizes unfinished or self-contradictory official UI, reconciles style conflicts between installed plugins, and unifies the visual language — with live-customizable chat width, markdown font size, workspace scale and UI font stack from Settings → General, all following official design tokens. Client-only dsh bundle, zero model cost, removable without residue.",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.js.map",
+    "cordis.patch.yml",
+    "lib/types/**/*.d.ts"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "prepare": "tsdown"
+  },
+  "license": "MIT",
+  "author": "Physicolor",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Physicolor/harness-ui-enhancer.git"
+  },
+  "homepage": "https://github.com/Physicolor/harness-ui-enhancer#readme",
+  "bugs": {
+    "url": "https://github.com/Physicolor/harness-ui-enhancer/issues"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6",
+    "tsdown": "^0.22.2",
+    "lightningcss": "^1.25.0",
+    "typescript": "^5.6.0",
+    "react": "^18.2.0",
+    "@types/react": "~18.3.1"
+  }
+}
