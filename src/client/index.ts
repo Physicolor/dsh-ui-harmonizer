@@ -37,6 +37,56 @@ export function apply(ctx: ClientContext): void {
     return disposeDynamicStyle
   }, `${PLUGIN_ID}: css lifecycle`)
 
+  // Keep dsh-better-sidebar's toggle buttons visually in sync with their
+  // panels: mirror the widgets capsule pattern (aria-pressed=true → brand
+  // fill) onto the button whose panel is open. Pure runtime attribute sync —
+  // the third-party bundle's source is never touched, so a future update of
+  // that plugin cannot be broken by this code (worst case the rule no longer
+  // matches). Render order of the two toggles is [bottom, panel], matched by
+  // index so locale-dependent aria-labels never matter.
+  ctx.effect(() => {
+    const syncToggleStates = (): void => {
+      const panel = document.querySelector('.W-zNGW_panel')
+      const bottom = document.querySelector('.W-zNGW_bottomPanel')
+      const buttons = document.querySelectorAll('.W-zNGW_toggleButton')
+      if (!panel || !bottom || buttons.length < 2) return
+      const panelOpen = !panel.classList.contains('W-zNGW_panelHidden')
+      const bottomOpen = !bottom.classList.contains('W-zNGW_bottomPanelHidden')
+      buttons[0].setAttribute('aria-pressed', String(bottomOpen))
+      buttons[1].setAttribute('aria-pressed', String(panelOpen))
+    }
+    syncToggleStates()
+    const observer = new MutationObserver(syncToggleStates)
+    observer.observe(document.body, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+      attributeFilter: ['class'],
+    })
+    return () => observer.disconnect()
+  }, `${PLUGIN_ID}: better-sidebar toggle state sync`)
+
+  // Relocate the session tabs (对话/轨迹) into the title row, right after the
+  // header actions, so the header is a single line and the tabs read as
+  // capsule segments next to the 创造模式 badge. Pure DOM move — the product
+  // still owns the tab logic (aria-selected/class updates land on the same
+  // node, and if a re-render ever rebuilds it, the observer moves it back).
+  ctx.effect(() => {
+    const relocateTabs = (): void => {
+      const titleCluster = document.querySelector('[class$="_titleCluster"]')
+      const actions = titleCluster?.querySelector('[class$="_headerActions"]')
+      const tabs = document.querySelector('[class$="_tabs"]')
+      if (!titleCluster || !tabs) return
+      if (tabs.parentElement === titleCluster) return
+      const ref = actions !== undefined && actions !== null ? actions.nextSibling : null
+      titleCluster.insertBefore(tabs, ref)
+    }
+    relocateTabs()
+    const observer = new MutationObserver(relocateTabs)
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, `${PLUGIN_ID}: session tabs relocation`)
+
   const patch = (next: Partial<EnhancerState>): void => {
     Object.assign(state, next)
     applyState(state)

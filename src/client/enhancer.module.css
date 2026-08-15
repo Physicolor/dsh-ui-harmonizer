@@ -47,6 +47,37 @@ div[data-phase] {
   height: calc(16px * var(--enhancer-chat-scale, 1));
 }
 
+/* Dropdown menus (ui-primitives Menu: model picker, permission picker, …) —
+ * scale with the composer chrome so the popup matches its trigger. The
+ * numeric-hash classes come from the web-frontend bundle and change per
+ * build, so match by [class^='_<name>_'] prefix inside [role='menu'] only
+ * (version-proof and collision-free). Baselines are the product Menu spec:
+ * list 4/12/218/360, item 14/22/40/8×10/10, icon+check 16, label 12/16. */
+[role='menu'] [class^='_list_'] {
+  padding: calc(4px * var(--enhancer-chat-scale, 1));
+  border-radius: calc(12px * var(--enhancer-chat-scale, 1));
+  min-width: calc(218px * var(--enhancer-chat-scale, 1));
+  max-width: calc(360px * var(--enhancer-chat-scale, 1));
+}
+[role='menu'] [class^='_item_'] {
+  font-size: calc(14px * var(--enhancer-chat-scale, 1));
+  line-height: calc(22px * var(--enhancer-chat-scale, 1));
+  min-height: calc(40px * var(--enhancer-chat-scale, 1));
+  padding: calc(8px * var(--enhancer-chat-scale, 1)) calc(10px * var(--enhancer-chat-scale, 1));
+  border-radius: calc(10px * var(--enhancer-chat-scale, 1));
+  gap: calc(8px * var(--enhancer-chat-scale, 1));
+}
+[role='menu'] [class^='_itemIcon_'],
+[role='menu'] [class^='_check_'] {
+  width: calc(16px * var(--enhancer-chat-scale, 1));
+  height: calc(16px * var(--enhancer-chat-scale, 1));
+}
+[role='menu'] [class^='_label_'] {
+  font-size: calc(12px * var(--enhancer-chat-scale, 1));
+  line-height: calc(16px * var(--enhancer-chat-scale, 1));
+  padding: calc(8px * var(--enhancer-chat-scale, 1)) calc(10px * var(--enhancer-chat-scale, 1));
+}
+
 /* Sidebar chrome — New Session button, brand wordmark, collapse toggle. */
 [data-slot='sidebar'] [class$='_newSession'] {
   font-size: calc(14px * var(--enhancer-sidebar-scale));
@@ -198,3 +229,207 @@ input[type='range'].uitw-slider::-moz-range-track {
   border-radius: 2px;
   background: var(--dsw-alias-border-l2);
 }
+
+/* ── cross-plugin visual coordination ────────────────────────────────
+ * dsh-better-sidebar (third-party bundle) ships bare 28px circular icon
+ * toggles and a sidebar-fill right/bottom panel. Without touching its source
+ * we: restyle the toggles as session-header capsules (32px, 1px border-l2,
+ * transparent, hover fill); restyle the panels on the widget-rail surface
+ * (bg-base + hairline); and lay the whole thing out so the session header
+ * stays fully visible: the right panel starts on the widgets rail's own
+ * measured line (--dsx-rail-top) instead of covering the header, and the
+ * toggle cluster is vertically centered on the header utilities row with the
+ * header padded right to give it a permanent seat next to the capsules.
+ * Selectors match the installed better-sidebar 0.12.1 hashed classes
+ * (W-zNGW_*); the panel/bottomPanel are fixed full-height/width frames, so a
+ * bare [class$='_panel'] would risk hitting unrelated panels — the explicit
+ * prefix keeps this scoped to the one plugin. Two hardening details: bare
+ * .W-zNGW_* classes must be :global() wrapped or CSS Modules rewrites them
+ * into <hash>_W-zNGW_* (never matching), and every rule carries a `body`
+ * prefix so its specificity beats better-sidebar's own same-class rules —
+ * that bundle loads after this one, so equal specificity would let it win. */
+
+body [class$='_toggleButton'] {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+}
+body [class$='_toggleButton']:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+/* Active state mirrors the widgets capsule (dsx-stats-capsule[aria-pressed=true]):
+ * brand fill + contrast glyph. The harness-ui-enhancer client half keeps
+ * aria-pressed in sync with the open state of each better-sidebar panel, so a
+ * pressed toggle reads exactly like the activated "组件" capsule. Glyph color
+ * is --dsw-alias-label-primary-inverted — the product primary-button text
+ * token (light: white, dark: bluish-800) — because brand-primary flips to a
+ * near-white fill in dark mode and a hardcoded #fff would vanish. The :hover
+ * variant out-specifies the hover rule above so an active toggle stays lit. */
+:global(.W-zNGW_toggleButton[aria-pressed=true]),
+:global(.W-zNGW_toggleButton[aria-pressed=true]:hover) {
+  background: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+  border-color: transparent;
+}
+/* harness-widgets capsule: same dark-mode fix — its own rule hardcodes
+ * color:#fff on the brand fill; body prefix out-specifies (0,2,1)>(0,2,0). */
+:global(body .dsx-stats-capsule[aria-pressed=true]) {
+  color: var(--dsw-alias-label-primary-inverted);
+}
+body [class$='_toggleCluster'] {
+  gap: 6px;
+  top: 12px; /* vertically centered on the header utilities row (12px pad-top + 32px row) */
+  right: 12px;
+}
+:global(body .W-zNGW_panel) {
+  /* Start below the session header so the header is never covered: the widgets
+   * rail already measures the conversation scroll top into --dsx-rail-top, so
+   * reusing it keeps this panel on the exact same line as the rail (fallback
+   * 75px = header height when widgets is absent). Edge rectangle instead of a
+   * divider line: flush against right/bottom, 1px border-l2 on top+left, a
+   * 14px top-left corner and a lv3 drop shadow. overflow:hidden makes the
+   * outer rounded rectangle clip ALL inner right-angled content (active-tab
+   * fill, pane sheet, …) so no inner element needs its own radius — one
+   * source of truth for the corner. box-shadow is a decoration, not content,
+   * so it is unaffected by the clip. The resize handle is moved to left:0 so
+   * the clip cannot slice it off. */
+  top: var(--dsx-rail-top, 75px);
+  background: var(--dsw-alias-bg-layer-1);
+  border: none;
+  border-left: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 14px 0 0 14px;
+  box-shadow: var(--dsw-shadow-lv3);
+  overflow: hidden;
+}
+:global(body .W-zNGW_panelResize) {
+  left: 0;
+}
+:global(body .W-zNGW_bottomPanel) {
+  background: var(--dsw-alias-bg-base);
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+/* Give the floating toggle cluster a permanent seat on the header utilities
+ * line: pad the header right by 90px (12px cluster offset + 70px cluster +
+ * 8px gap). !important beats better-sidebar's own collapsed-state push
+ * (body[data-dsh-sidebar-collapsed] … > header { padding-right: 78px }) so
+ * the utilities row never jumps when a panel opens. Bottom padding keeps a
+ * breathing gap below the single-row header; the border is dropped entirely
+ * (no divider line under the header). */
+:global([data-slot='conversation.session.header'] > header) {
+  padding: 12px 90px 12px 20px !important;
+  border-bottom: none !important;
+}
+/* The visible divider under the header is NOT the border (product caps it
+ * transparent #0000) but a 1px :after pseudo-element (background border-l2,
+ * bottom:1px). Kill it too — bottom spacing alone separates header/content. */
+:global([data-slot='conversation.session.header'] > header::after) {
+  content: none;
+}
+/* Session tabs (对话/轨迹) — relocated into the title row by the client half
+ * (inserted right after the header actions) and restyled as two standalone
+ * capsules that reuse the harness-widgets component-button recipe
+ * (dsx-stats-capsule), mutually exclusive: the active tab fills brand-primary
+ * + label-primary-inverted, the idle one is a transparent bordered capsule.
+ * NOTE on selectors: the tab classes carry a build hash prefix (wSkVaW_) and
+ * the active one adds a second "_tabActive" class, so ends-with "…_tab" fails
+ * on the two-class active node and starts-with fails on the hash prefix —
+ * must match with contains "[class*='_tab']" inside the tabs shell. */
+:global([class$='_tabs']) {
+  gap: 8px;
+  margin: 0 0 0 8px;
+  align-items: center;
+  display: flex;
+}
+:global([class$='_tabs'] [class*='_tab']) {
+  flex: none;
+  height: 28px;
+  padding: 0 14px;
+  border: 1px solid var(--dsw-alias-border-l2, transparent);
+  border-radius: 14px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  justify-content: center;
+  align-items: center;
+  display: inline-flex;
+  cursor: pointer;
+}
+:global([class$='_tabs'] [class*='_tab']:hover:not(:disabled):not([class*='_tabActive'])) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+:global([class$='_tabs'] [class*='_tabActive']),
+:global([class$='_tabs'] [class*='_tab'][aria-selected='true']) {
+  /* DeepSeek brand blue (state-business-primary: deepseek-500 light /
+   * deepseek-400 dark) — deliberately distinct from the neutral-black
+   * brand-primary used by the widgets capsule and better-sidebar toggles. */
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+  border-color: transparent;
+}
+:global([class$='_tabs'] [class*='_tab']:after) {
+  content: none;
+}
+/* better-sidebar panel chrome: inner rectangles can stay right-angled — the
+ * panel's overflow:hidden clip applies the corner for them. Drop the per-tab
+ * divider line (fewer dividers); pane carries the inner surface color and is
+ * itself clipped to the rounded corner by the panel. */
+:global(body .W-zNGW_panel .W-zNGW_tab) {
+  border-right: none;
+}
+:global(body .W-zNGW_panel .W-zNGW_pane) {
+  background: var(--dsw-alias-bg-layer-1);
+}
+/* No horizontal scroll inside the right panel — professional pattern for a
+ * fixed-width sidebar: break the flex "min-width:auto" stretch chain so no
+ * child can widen the column (long names would otherwise overflow and scroll),
+ * then clip X on the explorer and ellipsize long names (already ellipsized by
+ * the plugin) instead of letting content push a scrollbar. Code/terminal
+ * panes keep their own native vertical + horizontal scrolling. */
+:global(body .W-zNGW_panel .W-zNGW_paneContent),
+:global(body .W-zNGW_panel .W-zNGW_paneTab),
+:global(body .W-zNGW_panel .W-zNGW_explorer),
+:global(body .W-zNGW_panel .W-zNGW_explorerBody) {
+  min-width: 0;
+  max-width: 100%;
+}
+:global(body .W-zNGW_panel .W-zNGW_explorerBody) {
+  overflow-x: hidden;
+}
+:global(body .W-zNGW_panel .W-zNGW_explorerRow) {
+  max-width: 100%;
+}
+/* better-sidebar OCCUPIES the layout when a panel opens (VSCode-style): it
+ * sets --dsh-sidebar-width/--dsh-sidebar-height and pushes #root right / the
+ * center column up, dragging the session header along with the whole app.
+ * We keep the panel's squeeze semantics for the conversation itself — only
+ * the session content below the header (viewArea) and the composer seat
+ * yield var(--dsh-sidebar-width): #root is neutralized so the header keeps
+ * its full width while messages and the input bar shift left and the fixed
+ * panel covers the vacated strip, exactly like the widgets rail. An html
+ * prefix out-specifies better-sidebar's bare #root rules ((1,0,1)>(1,0,0),
+ * (1,2,4)>(1,2,3)). */
+:global(html #root) {
+  margin-right: 0;
+}
+:global(html #root > div[data-slot='root'] > div > div:nth-child(2)) {
+  margin-bottom: 0;
+}
+:global([data-slot='conversation.session'] > [class$='_viewArea']) {
+  margin-right: var(--dsh-sidebar-width, 0px);
+  transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+:global(div[class$='_composerSeat']) {
+  margin-right: var(--dsh-sidebar-width, 0px);
+  right: calc(var(--dsh-scrollbar-width, 0px) + var(--dsh-sidebar-width, 0px));
+  transition:
+    margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out),
+    right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+
+
