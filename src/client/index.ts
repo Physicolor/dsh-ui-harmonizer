@@ -71,11 +71,14 @@ export function apply(ctx: ClientContext): void {
   // capsule segments next to the 创造模式 badge. Pure DOM move — the product
   // still owns the tab logic (aria-selected/class updates land on the same
   // node, and if a re-render ever rebuilds it, the observer moves it back).
+  // The lookup is scoped to the session header container so unrelated "_tabs"
+  // elements (e.g. the plugin-market tabs in the settings panel) are never
+  // mistaken for the conversation tabs.
   ctx.effect(() => {
     const relocateTabs = (): void => {
       const titleCluster = document.querySelector('[class$="_titleCluster"]')
       const actions = titleCluster?.querySelector('[class$="_headerActions"]')
-      const tabs = document.querySelector('[class$="_tabs"]')
+      const tabs = document.querySelector('[data-slot="conversation.session.header"] [class$="_tabs"]')
       if (!titleCluster || !tabs) return
       if (tabs.parentElement === titleCluster) return
       const ref = actions !== undefined && actions !== null ? actions.nextSibling : null
