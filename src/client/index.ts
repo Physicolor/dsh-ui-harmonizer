@@ -107,6 +107,11 @@ export function apply(ctx: ClientContext): void {
   // nav label is resolvable we skip rather than invent a wrong onto the intro.
   ctx.effect(() => {
     const FILL_CLASS = 'enhc-settings-title'
+    /** Deterministic fallback: known intro → page title, so a missing heading is
+     *  filled even if the active-nav label cannot be resolved in time. */
+    const KNOWN_TITLES: ReadonlyArray<readonly [prefix: string, title: string]> = [
+      ['管理侧边卡片', '侧边卡片'], // dsh-better-sidebar SideCardSection (no h2 in its markup)
+    ]
     const fillSectionTitle = (): void => {
       const section = document.querySelector('[data-slot="settings.section"]')
       if (section === null || section === undefined) return
@@ -117,19 +122,27 @@ export function apply(ctx: ClientContext): void {
       if (section.querySelector('h1, h2, h3') !== null) return
       // Already injected for this section.
       if (section.querySelector(`h2.${FILL_CLASS}`) !== null) return
-      // The active nav cell: product contract is aria-current="true"; fall back
-      // to the `_active` class token (CSS-module hash prefixes drift, so never
-      // match on the full class string).
-      let nav: Element | null = null
+      // Preferred source: the active settings-nav label (product contract:
+      // aria-current="true" + an `_active` class). Fall back to KNOWN_TITLES keyed
+      // by the intro's stable text so a late-rendered nav never blocks the fill.
+      let text = ''
       for (const el of document.querySelectorAll('[class$="_navCell"]')) {
-        if (el.getAttribute('aria-current') === 'true' || /(^|\s)\S*_active(\s|$)/.test(el.className)) { nav = el; break }
+        if (el.getAttribute('aria-current') === 'true' || /(^|\s)\S*_active(\s|$)/.test(el.className)) {
+          text = el.textContent?.trim() ?? ''
+          break
+        }
       }
-      const text = nav?.textContent?.trim()
-      if (text === undefined || text === '') return
+      if (text === '') {
+        const it = intro.textContent?.trim() ?? ''
+        const hit = KNOWN_TITLES.find(([prefix]) => it.startsWith(prefix))
+        text = hit?.[1] ?? ''
+      }
+      if (text === '') return
       const title = document.createElement('h2')
       title.className = FILL_CLASS
       title.textContent = text
       intro.parentElement?.insertBefore(title, intro)
+      console.info(`[harness-ui-enhancer] injected settings section title: ${JSON.stringify(text)}`)
     }
     fillSectionTitle()
     const observer = new MutationObserver(fillSectionTitle)
@@ -139,7 +152,13 @@ export function apply(ctx: ClientContext): void {
       attributes: true,
       attributeFilter: ['class', 'aria-current', 'aria-expanded'],
     })
-    return () => observer.disconnect()
+    // Keep trying for a short window in case the nav/section render late.
+    const tick = window.setInterval(fillSectionTitle, 700)
+    window.setTimeout(() => window.clearInterval(tick), 12000)
+    return () => {
+      observer.disconnect()
+      window.clearInterval(tick)
+    }
   }, `${PLUGIN_ID}: settings section title fill`)
 
   const patch = (next: Partial<EnhancerState>): void => {
