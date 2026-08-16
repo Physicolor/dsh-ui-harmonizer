@@ -1,6 +1,6 @@
 {
   "name": "harness-ui-enhancer",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Web UI polish layer for DeepSeek Harness: normalizes unfinished or self-contradictory official UI, reconciles style conflicts between installed plugins, and unifies the visual language — with live-customizable chat width, markdown font size, workspace scale and UI font stack from Settings → General, all following official design tokens. Client-only dsh bundle, zero model cost, removable without residue.",
   "type": "module",
   "main": "lib/index.js",
@@ -22,6 +22,7 @@
     "lib/client.js",
     "lib/client.js.map",
     "cordis.patch.yml",
+    "docs/settings-section-style.md",
     "lib/types/**/*.d.ts"
   ],
   "scripts": {

@@ -1,78 +1,78 @@
-# Harness UI Enhancer
+<p align="center">
+  <h1 align="center">Harness UI Enhancer</h1>
+  <p align="center"><strong>美化你装了一堆插件的 DeepSeek Harness。</strong></p>
+  <p align="center"><em>规范化官方界面 · 协调每个插件 · 全部可逆 · 零模型开销</em></p>
+</p>
 
-> DeepSeek Harness Web UI 强化层：一方面规范化官方界面中**未完善、设计语言自相矛盾**的部分；另一方面**协调所有插件在 DSH 中的兼容性与显示效果**，构建更统一的视觉风格。未来还将探索更多 Agent 工具（如 Codex）的视觉风格。
+<p align="center">
+  <a href="#-安装"><strong>快速开始</strong></a> ·
+  <a href="#-核心能力"><strong>能力</strong></a> ·
+  <a href="#-原理"><strong>原理</strong></a> ·
+  <a href="#-路线图"><strong>路线图</strong></a> ·
+  <a href="LICENSE">License</a>
+</p>
 
-Harness UI Enhancer 是一个**纯浏览器端（client-only）**的 DSH bundle 插件。它不新增任何模型工具、不修改会话日志，只通过官方 Slot 与 CSS 变量体系调整界面，卸载后不留下任何残留。
-
-当前版本：**v0.2.0**（持续迭代中）
-
----
-
-## 🎨 v0.2.0 · 顶部栏 / 右侧栏深度视觉统一
-
-**设计理念**：这一版对顶部栏、右侧栏做了深度视觉优化，核心目标是让 DeepSeek Harness 给你更好的观感——**尽量避免用分隔线隔开元素**，靠「背景层级、圆角、阴影、间距」自然分区，避免界面显得杂乱。未来会持续沿这条线改进：把更多功能按钮放进右上角区域、统一按钮样式、优化对话/轨迹等选择器排版，让视觉重心更稳定。
-
-**贯穿原则**：不破坏任何第三方插件源码。所有改动通过 **CSS 覆盖 + 运行时 DOM 协调（MutationObserver）** 实现——对方插件升级时，最坏情况是我们的规则静默失效，绝不破坏它。
-
-### 设计哲学
-
-- **少分隔线，多层级**：分隔线是最"重"的分割手段；改用在同一底色上靠圆角卡片 / 阴影 / 留白制造自然边界，画面更轻盈；
-- **按钮胶囊家族**：Session log、组件胶囊、better-sidebar 的两个 toggle、对话/轨迹 tabs——全部统一为同一族胶囊按钮（32px、1px 边框、圆角、激活品牌色填充），右上角操作区像一个整体；
-- **顶部栏单行化**：原来"对话/轨迹"选择器独占一整行、视觉重心下沉；重定位进标题行、做成互斥胶囊后，header 收成单行，重心稳定、信息密度更合理；
-- **正确的深浅色适配**：激活态文字用 `label-primary-inverted`（浅色白字 / 深色深灰字），品牌填充按钮深浅主题都清晰；
-- **视觉可逆**：一切还是覆盖式，卸载即还原。
-
-### 具体改动
-
-#### 官方 DSH UI
-- **header 单行化**：`padding: 12px 90px 12px 20px`，底部留 12px 呼吸间距；
-- **彻底去掉 header 下方分隔线**：同时清除产品的透明 border-bottom **和** 用 `:after` 伪元素画的那条 1px 横线；
-- **对话/轨迹 tabs**：运行时移入标题行（右侧操作区），做成**互斥胶囊**，激活态用 **DeepSeek 品牌蓝**（`state-business-primary`，light 深蓝 / dark 亮蓝自动适配），移除原底部下划线；
-- **下拉菜单缩放**：模型/权限选择器的弹出菜单（`role=menu`）尺寸跟随工具栏缩放；- **既有 v0.1.0**：对话宽度、字号、工作区字号、UI 字体、设置页头、面包屑加宽、版本 select 产品化、滑动条外观。
-
-#### 对 dsh-better-sidebar 的协调
-- **toggle 按钮**：28px 圆形 → **32px 胶囊**（同 Session log 族），hover 淡色底，**激活态**（对应面板打开）品牌填充 + 对比文字——由运行时 MutationObserver 把 `aria-pressed` 同步到按钮驱动；
-- **右侧栏 → 贴边圆角矩形**：替代左边和上方的分隔线；`radius 14px` 左上圆角 + `lv3` 阴影 + 背景 `bg-layer-1`；`overflow:hidden` 让外部圆角统一裁剪内部所有直角内容（圆角单一来源）；去掉顶部横线；
-- **布局协调**：中和 better-sidebar 打开时的 `#root` 整页推挤，让 **header 永不动**；对话内容区 + 输入框改为让出 `--dsh-sidebar-width` 空间由面板覆盖（覆盖式，与 widgets rail 同级）；
-- **面板内部**：tab 之间去掉分隔线、pane 背景与面板同色；**面板内永不横向滚动**（`min-width:0` 断撑宽链 + `overflow-x:hidden` + 超长名省略号）；
-- **面板标签页**：左边不再留 padding，靠外部裁剪保证圆角自然。
-
-#### 对 harness-widgets 的协调
-- **组件胶囊激活态**深色修复：文字色 `#fff` → `label-primary-inverted`（深色主题不再白底白字）；
-- **面板与 rail 同级**：better-sidebar 面板 top 复用 widgets 动态测量的 `--dsx-rail-top`（= 对话滚动区顶部 / header 底部），两侧栏自动对齐。
-
-### 修复记录
-- **v0.2.1（本次）**：修 tabs 重定位误把插件市场（dshmarket）的 tabs 搬进标题行——查找限定在 `[data-slot="conversation.session.header"]` 作用域内。
+<p align="center">
+  <img src="https://img.shields.io/npm/v/harness-ui-enhancer" alt="npm version" />
+  <img src="https://img.shields.io/badge/platform-web-success" alt="platform" />
+  <img src="https://img.shields.io/badge/license-MIT-brightgreen" alt="license" />
+  <img src="https://img.shields.io/badge/client--only-✓-purple" alt="client only" />
+  <img src="docs/preview.png" alt="preview" width="680" />
+</p>
 
 ---
 
-## ✨ 当前功能（Settings → 通用设置）
+> **一句话：** 你装了一堆 DSH 插件，界面却风格割裂、按钮东一个西一个？Harness UI Enhancer 用「**CSS 覆盖 + 运行时 DOM 协调**」把它们拉回官方设计语言，**不破坏任何插件源码、卸载即还原、零模型开销**。
 
-插件在 **设置 → 通用设置** 中注册了两个界面块：
+Harness UI Enhancer 是一个**纯浏览器端（client-only）** 的 DSH bundle 插件。它不新增模型工具、不改写会话日志，只通过官方 `settings.section` / `settings.general.item` 槽位与 `--dsw-*` 语义令牌体系调整界面。装上它，任何插件在你的界面里都会"更懂规矩"。
 
-### 1. 统一的"通用设置"页头
+---
 
-官方设置页缺少页面标题与说明文字，插件补齐了 `GeneralHeader`（标题 + 描述），让设置页顶部与其他页面观感一致。
+## ✨ 核心能力
 
-### 2. "界面定制"块（4 个实时调节项）
+| 能力 | 说明 |
+| --- | --- |
+| 🎨 **官方 UI 规范化** | 修复官方界面中未完善、自相矛盾的设计（顶部栏单行化、设置页头、对话/轨迹选择器…） |
+| ♻️ **插件视觉协调器** | 让 better-sidebar、widgets、以及任何第三方设置插件**统一到官方视觉语言** |
+| 🧹 **设置页自动规范器** ⭐ | 自动扫描任意插件的 `settings.section` 表头：**缺标题补标题、多余图标删除、标题/描述间距与格式统一** |
+| 🌙 **深浅主题自适应** | 全部走 `--dsw-*` 语义令牌，明暗主题自动跟随，不脱节 |
+| 🧩 **可逆 / 无侵入** | 覆盖式实现，卸载后浏览器完全恢复默认，绝不破坏对方插件源码 |
 
-| 调节项 | 范围 | 说明 |
-| --- | --- | --- |
-| 对话内容宽度 | 748–1000px | 对话列的最大宽度，滑动即时预览 |
-| 对话字号 | 12–20px | markdown 正文与输入框文字大小（标题/代码/表格按比例联动） |
-| 工作区字号 | 12–20px | 左侧工作区列表、按钮与图标的整体缩放 |
-| UI 字体 | 6 套预设 | 系统默认 / HarmonyOS Sans SC / 微软雅黑优先 / Noto Sans SC / 衬线（宋体风）/ 等宽 |
+### 它具体帮你做什么
 
-所有调节**即时生效**（滑动即预览），无需刷新；状态持久化在浏览器 localStorage，刷新后保留。
+- **顶部栏单行化**：对话/轨迹选择器移入标题行、做成互斥胶囊，header 收成单行，视觉重心更稳。
+- **少分隔线、多层级**：用背景层级/圆角/阴影/留白自然分区，替代生硬的 1px 分隔线。
+- **按钮胶囊家族**：Session log、组件胶囊、better-sidebar toggle、对话/轨迹 tabs——统一为同一族 32px 胶囊，激活态品牌色填充。
+- **右侧栏贴边圆角矩形**：better-sidebar 面板从"整页推挤"改为"覆盖式 + header 不动"，面板随 widgets rail 对齐。
+- **设置页自动规范器**：见下一节。
+
+## 🧹 设置页自动规范器（v0.3 方向，当前已上线）
+
+这是本插件的核心差异化卖点：**任何第三方插件往 `settings.section` 里加页面时，只要没有严格按官方规范设计，Harness UI Enhancer 会自动把它拉回规范。**
+
+| 它自动检查并修正 | 做法 |
+| --- | --- |
+| **缺页面标题** | 若页面只有描述没有 `<h2>`，自动注入一个 18/600 的标题（取当前设置导航项名，取不到则由已知映射兜底） |
+| **标题旁多余图标** | 移除标题行里那个 logo/图标，让标题是干净的纯文字 |
+| **标题/描述贴太紧** | 统一为官方 4px 间距 + 描述下方 hairline 收尾 |
+| **字号/格式不统一** | 标题统一 18/600、描述统一 13/20 + `border-bottom` hairline |
+
+> 详情与给插件作者的规范见 **[`docs/settings-section-style.md`](docs/settings-section-style.md)**（官方设置页表头设计规范，欢迎插件作者对标）。
+
+**不越界**：只统一"表头"这一层的视觉；不重排你的内容区、不删功能性图标（只删标题行 logo）、不伪造描述文案。
+
+---
 
 ## 🔧 工作原理
 
-- **零模型开销**：host 半为空实现（no-op），全部改动发生在浏览器半；
-- **官方设计令牌**：所有样式走 `--dsw-*` 语义令牌（背景、边框、阴影、品牌色），因此**自动跟随 DSH 明暗主题**，不会出现"插件样式与主题脱节"；
+- **零模型开销**：host（node）半是 no-op，全部改动发生在浏览器半；
+- **官方设计令牌**：所有样式走 `--dsw-*` 语义令牌（背景、边框、阴影、品牌色），因此自动跟随 DSH 明暗主题，不会出现"插件样式与主题脱节"；
 - **两条注入通道**：
   1. 静态规则（`enhancer.module.css`）读取 `<html>` 上的 `--enhancer-*` 自定义属性；
   2. 动态 `<style data-plugin="harness-ui-enhancer">` 标签重写 `--dsw-font-markdown-*` 字体令牌（字体简写无法用自定义属性表达）；
 - **可逆清理**：插件停止/更新/卸载时，动态样式标签与根属性通过 fiber 的 effect disposer 一并移除，页面恢复原状。
+
+---
 
 ## 🚀 安装
 
@@ -84,33 +84,56 @@ dsh plugin --profile web add harness-ui-enhancer
 dsh plugin --profile web add link:D:/dsh-home/plugins/harness-ui-enhancer
 ```
 
-装完**硬刷新浏览器**（Ctrl+Shift+R）即可在 设置 → 通用设置 看到"界面定制"块。
+装完**硬刷新浏览器**（Ctrl+Shift+R）即可在 设置 → 通用设置 看到"界面定制"块，并让所有第三方设置页自动收敛到规范。
+
+---
 
 ## 🗺️ 路线图
 
-按"先官方、再插件、后风格"的顺序推进，每一阶段都保持可逆、只读协调、不破坏其它插件 DOM 的原则：
+按"先官方、再插件、后风格"的顺序推进，每一阶段都保持可逆、只读协调、不破坏其它插件 DOM：
 
-- **阶段一 · 官方 UI 规范化**（进行中）：继续修复官方界面中未完善、设计语言自相矛盾的部分——设置页头只是第一步，后续覆盖设置页其他区块、会话页细节、空态/加载态等；
-- **阶段二 · 插件兼容协调器**（核心方向）：检测并修复与其他插件叠加时的布局/样式冲突（右栏、侧边栏、浮层 z-index、重复页头、字体/间距令牌冲突等），以"已知冲突清单 + CSS 变量归一化 + 布局锚点协调"的方式，让装了一堆插件的界面依然协调统一；
-- **阶段三 · 统一视觉风格**：在兼容协调之上提供可选的视觉风格层（间距密度、圆角、动效、配色微调），并探索其它 Agent 工具（如 Codex）的视觉风格移植；
-- **阶段四 · 生态共建**：把"官方 UI 修复 + 冲突协调"沉淀为可扩展的规则注册机制，让其它插件可以声明自己的 UI 兼容诉求。
+- **阶段一 · 官方 UI 规范化**（进行中）：继续修复官方界面中未完善、自相矛盾的部分——设置页头只是第一步；
+- **阶段二 · 插件兼容协调器**（进行中）：检测并修复与其他插件叠加时的布局/样式冲突（右栏、侧边栏、浮层 z-index、重复页头、字体/间距令牌冲突等），以"已知冲突清单 + CSS 变量归一化 + 布局锚点协调"实现；
+- **阶段三 · 统一视觉风格**：在此之上提供可选的视觉风格层（间距密度、圆角、动效、配色微调），并探索其它 Agent 工具（如 Codex）的视觉风格移植；
+- **阶段四 · 生态共建**：把"官方 UI 修复 + 冲突协调"沉淀为**可扩展的规则注册机制**，让其它插件可以声明自己的 UI 兼容诉求。
+
+---
 
 ## 🛠️ 开发
 
 ```sh
 pnpm install
 pnpm run build      # tsdown 构建 lib/
-pnpm run check      # 类型检查 + 测试 + 构建
+pnpm run check      # 类型检查 + 测试 + 构建（如有）
 ```
 
 - 依赖的官方包（`@deepseek-ai/dsh-client-ui-slots`、`dsh-client-runtime`）以 `peerDependencies` 声明，由 DSH web profile 提供；
-- 纯 client 插件：`cordis.patch.yml` 插入一行 `ui-enhancer` 行，浏览器半由 `dsh.client` 声明被 client-modules 扫描加载。
+- 纯 client 插件：`cordis.patch.yml` 插入一行 `ui-enhancer` 行，浏览器半由 `dsh.client` 声明被 client-modules 扫描加载；
+- **修改后需同步**：改 bundle 后 `npx tsdown` 重建 `lib/client.js` 并**同步到 profile 拷贝**（`profiles/web/node_modules/harness-ui-enhancer/lib/`）；浏览器读 profile 拷贝而非源目录，服务端 `no-cache`，**无需重启 DSH，硬刷新即可**。
+
+---
 
 ## ✅ 兼容性
 
 - DSH `0.1.0-rc.6` 及兼容的后续 `0.1.x`；
-- 通过官方 `settings.general.item` slot 接入，与 better-sidebar、widgets 等插件按 slot 顺序共处；
+- 通过官方 `settings.general.item` / `settings.section` slot 接入，与 better-sidebar、harness-widgets、dshmarket 等插件按 slot 顺序共处；
+- 已知协调对象：`dsh-better-sidebar`、`harness-widgets`、`dsh-notification`、`dshmarket`；
 - 卸载/禁用后页面完全恢复默认，无残留。
+
+---
+
+## FAQ
+
+**会破坏其它插件吗？**
+不会。所有协调通过 CSS 覆盖 + 运行时 DOM 协调实现，对方插件升级时最坏情况是我们的规则静默失效，绝不破坏它。
+
+**会不会拖慢 DSH？**
+不会（零模型开销，浏览器侧纯样式/轻量 DOM 观察）。
+
+**有些插件我不想要它协调？**
+可以自行从 `enhancer.module.css` 里注释对应规则（覆盖式，逐条可选）。
+
+---
 
 ## 📄 License
 
