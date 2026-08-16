@@ -90,6 +90,58 @@ export function apply(ctx: ClientContext): void {
     return () => observer.disconnect()
   }, `${PLUGIN_ID}: session tabs relocation`)
 
+  // Some third-party settings sections render a description (`p[class$='_intro']`)
+  // but forget the page heading entirely (e.g. better-sidebar's "侧边卡片"), so
+  // they open as a bare intro with no 18/600 title and look out of place next to
+  // the official pages. Fill the missing heading in place: whenever the active
+  // settings.section has an intro but no real heading (h1/h2/h3), inject a
+  // styled page title before the intro, labelled with the active settings-nav
+  // item's label. The product's settings shell marks exactly one nav cell active
+  // with `aria-current="true"` (+ an `_active` class), and that cell's label is
+  // the current page's title — a stable, locale-free contract. Pure additive
+  // DOM: nothing of the plugin's is removed or moved, a future build that adds
+  // its own heading makes this a no-op, and the observer re-scans on every DOM
+  // and class/aria change so a late-arriving aria-current is still caught.
+  // `enhc-settings-title` keeps the injected node out of `_title`-suffixed
+  // selectors so the existing header rules cannot double-treat it. If no active
+  // nav label is resolvable we skip rather than invent a wrong onto the intro.
+  ctx.effect(() => {
+    const FILL_CLASS = 'enhc-settings-title'
+    const fillSectionTitle = (): void => {
+      const section = document.querySelector('[data-slot="settings.section"]')
+      if (section === null || section === undefined) return
+      const intro = section.querySelector('p[class$="_intro"]')
+      if (intro === null || intro === undefined) return
+      // A real page heading already exists (official pages, notification's real
+      // <h2>, market, …) → nothing to fill.
+      if (section.querySelector('h1, h2, h3') !== null) return
+      // Already injected for this section.
+      if (section.querySelector(`h2.${FILL_CLASS}`) !== null) return
+      // The active nav cell: product contract is aria-current="true"; fall back
+      // to the `_active` class token (CSS-module hash prefixes drift, so never
+      // match on the full class string).
+      let nav: Element | null = null
+      for (const el of document.querySelectorAll('[class$="_navCell"]')) {
+        if (el.getAttribute('aria-current') === 'true' || /(^|\s)\S*_active(\s|$)/.test(el.className)) { nav = el; break }
+      }
+      const text = nav?.textContent?.trim()
+      if (text === undefined || text === '') return
+      const title = document.createElement('h2')
+      title.className = FILL_CLASS
+      title.textContent = text
+      intro.parentElement?.insertBefore(title, intro)
+    }
+    fillSectionTitle()
+    const observer = new MutationObserver(fillSectionTitle)
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'aria-current', 'aria-expanded'],
+    })
+    return () => observer.disconnect()
+  }, `${PLUGIN_ID}: settings section title fill`)
+
   const patch = (next: Partial<EnhancerState>): void => {
     Object.assign(state, next)
     applyState(state)

@@ -162,6 +162,61 @@ div[data-phase] {
   border-bottom: 1px solid var(--dsw-alias-border-l2);
 }
 
+/* Third-party / non-conforming settings-section headers. The rules above only
+ * reach the official structure (h2[class$='_title'] + p[class$='_intro']).
+ * Plugins that ship their own header mark-up keep the title FONT either way
+ * when their title class ends in `_title`, but their description goes
+ * un-normalized because it is not called `_intro` — e.g. dsh-notification's
+ * `.dsh_notification_subtitle` and dshmarket's `[class$='_head'] > [class$='_sub']`.
+ * Real symptom: the title/description block reads cramped next to the official
+ * pages, which close their header with a 12px padding + hairline under the
+ * description. Apply that same hairline to the two known non-standard
+ * descriptions. No `margin-bottom` is set so whatever gap the plugin's own
+ * container uses (flex-gap or margin) still governs the space below. */
+[data-slot='settings.section'] :global(.dsh_notification_subtitle),
+[data-slot='settings.section'] [class$='_head'] > [class$='_sub'] {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+/* Auto-normalizer: any plugin's settings-section title row may decorate the
+ * page title with a logo/icon glyph, but every official page (models / plugins
+ * / agent presets / general) is a bare 18px/600 text title. Drop a direct
+ * `<svg>` that sits beside the title in a `_titleRow` so every section title
+ * reads the same way (dshmarket's 22px market logo is the known case; the
+ * selector is generic so any future plugin with an icon-in-title-row is
+ * covered — the title text itself is untouched). */
+[data-slot='settings.section'] [class$='_titleRow'] > svg {
+  display: none;
+}
+/* dsh-notification wraps its title + subtitle in a flex column with a 2px gap
+ * and its own title has no bottom margin, so once the enhancer's h2 rule
+ * applies its -8px bottom margin on top of that gap the subtitle gets pulled
+ * ~6px INTO the title — visibly too cramped vs. the official 4px title→desc
+ * gap. Neutralize the enhancer's negative margin for this wrapper and use the
+ * official 4px gap instead, then keep the hairline under the subtitle. */
+[data-slot='settings.section'] :global(.dsh_notification_heading) {
+  gap: 4px;
+}
+/* Neutralize the enhancer's own h2 bottom margin for the notification title so
+ * the heading gap (4px above) — not a negative margin — owns the title→desc
+ * spacing. `h2.` bumps specificity from (0,2,0) to (0,2,1) so it ties the
+ * `h2[class$='_title']` rule and, being declared later in the same sheet, wins. */
+[data-slot='settings.section'] :global(h2.dsh_notification_title) {
+  margin-bottom: 0;
+}
+/* Setting pages that ship a `p[class$='_intro']` description but no page
+ * heading (e.g. better-sidebar's "侧边卡片") get a page title injected by the
+ * client half (`enhc-settings-title`). Style it exactly like the official
+ * h2[class$='_title'] heading so every settings page opens with the same
+ * 18/600 title + 13px tertiary description + hairline block. */
+[data-slot='settings.section'] :global(h2.enhc-settings-title) {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+  margin: 0 0 -8px;
+}
+
 /* Session title crumb — widen so long titles avoid the ellipsis. */
 button[class$='_crumb'],
 button[class$='_crumbCurrent'] {
@@ -424,12 +479,43 @@ body [class$='_toggleCluster'] {
   margin-right: var(--dsh-sidebar-width, 0px);
   transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
 }
+/* The composer seat yields the sidebar width via margin-right ONLY — never
+   via `right`. The seat has TWO geometries owned by the product: the chat
+   (sticky, no composer overlay) seat, whose scrollBody reserves the 8px
+   scrollbar gutter via `scrollbar-gutter: stable`, and the trajectory overlay
+   seat, whose scrollBody drops the gutter (`scrollbar-gutter: auto`) and which
+   the product's own higher-specificity rule pins at `right: var(--dsh-
+   scrollbar-width)`. Both geometries already land the input's right edge on
+   the same line (box right - 8px). Adding a `right` here therefore breaks that
+   alignment two ways: it only pushes the chat seat (the trajectory seat's
+   `right` is out-specified, so it never squeezes), and on the chat seat it
+   stacks on top of the already-reserved gutter AND the margin-right,
+   over-squeezing chat. The result is the input visibly jumping right when
+   switching 对话 <-> 轨迹. `margin-right` is the one property that narrows both
+   seats symmetrically, so it alone keeps them aligned at every sidebar width. */
 :global(div[class$='_composerSeat']) {
   margin-right: var(--dsh-sidebar-width, 0px);
-  right: calc(var(--dsh-scrollbar-width, 0px) + var(--dsh-sidebar-width, 0px));
-  transition:
-    margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out),
-    right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+  transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+
+/* -- cross-plugin rail squeeze for the overlay seat -------------------
+ *
+ * harness-widgets reclaims the right rail by padding the conversation
+ * scrollBody: `body.dsx-stats-active [data-conversation-scroll] {
+ * padding-right: var(--dsx-rail-w, 220px) !important }`. That works for the
+ * CHAT seat because sticky/flex-items stretch to the scrollBody's CONTENT box,
+ * which already excludes that padding-right. But the product switches the
+ * TRAJECTORY seat to `position: absolute; left: 0; right: var(--dsh-
+ * scrollbar-width)` under `:has([data-conversation-composer-overlay])`, and an
+ * absolutely positioned box sizes against the PADDING box — it never sees the
+ * scrollBody's own padding-right. So with the rail active the trajectory seat
+ * is ~198px wider and shifted right, exactly the input jump seen on switching
+ * 对话 <-> 轨迹. Re-apply the rail width to that seat's `right` so it ends on
+ * the same line as chat (box right - scrollbar - rail). Wide only in the rail +
+ * overlay state (specificity (0,4,1) beats the product's (0,3,0)), so a
+ * rail-less setup is untouched. */
+:global(body.dsx-stats-active [data-conversation-scroll]:has([data-conversation-composer-overlay]) > [class$='_composerSeat']) {
+  right: calc(var(--dsh-scrollbar-width, 0px) + var(--dsx-rail-w, 220px));
 }
 
 
