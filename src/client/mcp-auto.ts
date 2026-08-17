@@ -410,18 +410,27 @@ function CreateTaskForm({ onCreated }: { onCreated: () => void }) {
   const [intervalValue, setIntervalValue] = React.useState('60')
   const [periodicDay, setPeriodicDay] = React.useState('0')
   const [periodicTime, setPeriodicTime] = React.useState('09:00')
+  const [onceDateTime, setOnceDateTime] = React.useState('')
 
   const create = async () => {
     if (!name.trim() || !prompt.trim()) return
     setCreating(true)
     try {
       let frequencyMinutes = 60
+      let onceAt: string | undefined
       if (scheduleMode === 'interval') {
         frequencyMinutes = Math.max(1, Number(intervalValue) || 60)
       } else if (scheduleMode === 'periodic') {
-        // For periodic, we store the day code in a special way
-        // The backend will interpret this and calculate the actual next run time
-        frequencyMinutes = 24 * 60 // default to daily, backend handles the scheduling
+        frequencyMinutes = 24 * 60 // backend handles periodic scheduling
+      } else if (scheduleMode === 'once') {
+        // One-time: schedule at a specific future time, not immediately
+        if (!onceDateTime) {
+          setErr('请选择执行时间')
+          setCreating(false)
+          return
+        }
+        onceAt = onceDateTime
+        frequencyMinutes = 0 // 0 indicates one-time scheduled
       }
       await api({
         kind: 'tasks/create',
@@ -433,6 +442,7 @@ function CreateTaskForm({ onCreated }: { onCreated: () => void }) {
           scheduleMode,
           periodicDay: scheduleMode === 'periodic' ? Number(periodicDay) : undefined,
           periodicTime: scheduleMode === 'periodic' ? periodicTime : undefined,
+          onceAt,
         }
       })
       onCreated()
@@ -443,15 +453,7 @@ function CreateTaskForm({ onCreated }: { onCreated: () => void }) {
     }
   }
 
-  return React.createElement('div', { className: 'enhancer-section', style: { padding: '16px 0' } }, [
-    // Header with save/cancel
-    React.createElement('div', { key: 'header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 } }, [
-      React.createElement('h3', { key: 'title', style: { margin: 0, font: 'var(--dsw-font-s-14)', fontWeight: 600, color: 'var(--dsw-alias-label-primary)' } }, '添加自动化任务'),
-      React.createElement('div', { key: 'actions', style: { display: 'flex', gap: 8 } }, [
-        React.createElement('button', { key: 'cancel', type: 'button', className: ghostBtnClass, onClick: onCreated }, '取消'),
-        React.createElement('button', { key: 'save', type: 'button', className: pillBtnClass, disabled: creating || !name.trim() || !prompt.trim(), onClick: () => void create() }, creating ? '保存中…' : '保存'),
-      ]),
-    ]),
+  return React.createElement('div', { className: 'enhancer-section' }, [
     // Name field
     React.createElement('label', { key: 'l1', className: 'enhancer-fieldLabel' }, '名称'),
     React.createElement('input', { key: 'f1', className: inputClass, placeholder: '任务名称', value: name, onChange: (e) => setName(e.target.value) }),
@@ -514,7 +516,18 @@ function CreateTaskForm({ onCreated }: { onCreated: () => void }) {
         style: { width: 80 },
       }),
       React.createElement('span', { key: 'unit', className: 'enhancer-scheduleLabel' }, '分钟'),
-    ]) : React.createElement('div', { key: 'once', style: { marginTop: 8, font: 'var(--dsw-font-xs-13)', color: 'var(--dsw-alias-label-tertiary)' } }, '任务将立即执行一次'),
+    ]) : React.createElement('div', { key: 'once', className: 'enhancer-scheduleRow', style: { marginTop: 8 } }, [
+      React.createElement('span', { key: 'label', className: 'enhancer-scheduleLabel' }, '在'),
+      React.createElement('input', {
+        key: 'datetime',
+        type: 'datetime-local',
+        className: 'enhancer-scheduleInput',
+        value: onceDateTime,
+        onChange: (e) => setOnceDateTime(e.target.value),
+        min: new Date().toISOString().slice(0, 16),
+      }),
+      React.createElement('span', { key: 'unit', className: 'enhancer-scheduleLabel' }, '执行一次'),
+    ]),
     // Effective date range (optional)
     React.createElement('div', { key: 'dateHint', style: { marginTop: 12, font: 'var(--dsw-font-xxs-12)', color: 'var(--dsw-alias-label-tertiary)' } }, '生效日期区间 (可选，留空表示始终生效)'),
     err !== '' ? React.createElement('div', { key: 'err', className: 'enhancer-error' }, err) : null,
@@ -542,14 +555,16 @@ function AutoPanel() {
     void refresh()
   }
 
+  const toggleForm = () => setShowForm((v) => !v)
+
   return React.createElement('div', { className: 'enhancer-section' }, [
-    // Tab bar + add button
+    // Tab bar + add/cancel button
     React.createElement('div', { key: 'tabs', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 } }, [
       React.createElement('div', { key: 'tabGroup', style: { display: 'flex', gap: 8 } }, [
         React.createElement('button', { key: 'tasks', type: 'button', style: { padding: '6px 12px', borderRadius: 8, border: '1px solid var(--dsw-alias-border-l2)', background: 'var(--dsw-alias-bg-base)', font: 'var(--dsw-font-xs-13)', cursor: 'pointer' } }, `定时任务 (${tasks.length})`),
         React.createElement('button', { key: 'history', type: 'button', style: { padding: '6px 12px', borderRadius: 8, border: '1px solid var(--dsw-alias-border-l2)', background: 'transparent', font: 'var(--dsw-font-xs-13)', color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer' } }, '运行记录'),
       ]),
-      React.createElement('button', { key: 'add', type: 'button', className: pillBtnClass, onClick: () => setShowForm(true) }, '+ 添加自动化'),
+      React.createElement('button', { key: 'add', type: 'button', className: showForm ? ghostBtnClass : pillBtnClass, onClick: toggleForm }, showForm ? '取消' : '+ 添加自动化'),
     ]),
     // Create form or task list
     showForm
