@@ -23,6 +23,9 @@
     "lib/client.js.map",
     "cordis.patch.yml",
     "docs/settings-section-style.md",
+    "docs/screenshot-overview.png",
+    "docs/screenshot-better-sidebar.png",
+    "docs/screenshot-widgets.png",
     "lib/types/**/*.d.ts"
   ],
   "scripts": {

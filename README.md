@@ -17,7 +17,6 @@
   <img src="https://img.shields.io/badge/platform-web-success" alt="platform" />
   <img src="https://img.shields.io/badge/license-MIT-brightgreen" alt="license" />
   <img src="https://img.shields.io/badge/client--only-✓-purple" alt="client only" />
-  <img src="docs/preview.png" alt="preview" width="680" />
 </p>
 
 ---
@@ -35,8 +34,24 @@ Harness UI Enhancer 是一个**纯浏览器端（client-only）** 的 DSH bundle
 | 🎨 **官方 UI 规范化** | 修复官方界面中未完善、自相矛盾的设计（顶部栏单行化、设置页头、对话/轨迹选择器…） |
 | ♻️ **插件视觉协调器** | 让 better-sidebar、widgets、以及任何第三方设置插件**统一到官方视觉语言** |
 | 🧹 **设置页自动规范器** ⭐ | 自动扫描任意插件的 `settings.section` 表头：**缺标题补标题、多余图标删除、标题/描述间距与格式统一** |
+| 🔌 **MCP 服务器管理** | 在侧边栏添加 MCP 配置入口，支持添加/编辑/删除/测试连接 |
+| ⏰ **自动化任务调度** | 定时任务管理，支持创建、编辑、删除自动化任务 |
 | 🌙 **深浅主题自适应** | 全部走 `--dsw-*` 语义令牌，明暗主题自动跟随，不脱节 |
 | 🧩 **可逆 / 无侵入** | 覆盖式实现，卸载后浏览器完全恢复默认，绝不破坏对方插件源码 |
+
+### 效果预览
+
+**整体效果：** 顶部栏单行化 + 左下角 MCP 与自动化按钮
+
+![整体效果](docs/screenshot-overview.png)
+
+**better-sidebar 适配：** 右侧面板样式统一、toggle 按钮胶囊化
+
+![better-sidebar 适配](docs/screenshot-better-sidebar.png)
+
+**harness-widgets 适配：** 右侧统计栏与对话区域协调
+
+![harness-widgets 适配](docs/screenshot-widgets.png)
 
 ### 它具体帮你做什么
 
