@@ -158,16 +158,12 @@ function useEscClose(open: boolean, onClose: () => void): void {
 }
 
 function SettingsDialog({
-  navTitle,
-  navCells,
   title,
   subtitle,
   action,
   onClose,
   children,
 }: {
-  navTitle: string
-  navCells: NavCell[]
   title: string
   subtitle: string
   action?: React.ReactNode
@@ -177,25 +173,12 @@ function SettingsDialog({
   return React.createElement('div', { className: 'enhancer-overlay', onClick: onClose }, [
     React.createElement('div', {
       key: 'panel',
-      className: 'enhancer-panel',
+      className: 'enhancer-panel enhancer-panel--no-nav',
       role: 'dialog',
       'aria-modal': true,
       'aria-label': title,
       onClick: (e) => e.stopPropagation(),
     }, [
-      React.createElement('nav', { key: 'nav', className: 'enhancer-nav' }, [
-        React.createElement('div', { key: 'nt', className: 'enhancer-navTitle' }, navTitle),
-        React.createElement('div', { key: 'nl', className: 'enhancer-navList' },
-          navCells.map((cell) => React.createElement('button', {
-            key: cell.id,
-            type: 'button',
-            className: cell.active ? 'enhancer-navCell enhancer-navCell-active' : 'enhancer-navCell',
-            'aria-current': cell.active ? 'true' : undefined,
-          }, [
-            React.createElement(Icon, { key: 'i', d: cell.icon, size: 16, className: 'enhancer-navIcon' }),
-            React.createElement('span', { key: 'l', className: 'enhancer-navLabel' }, cell.label),
-          ]))),
-      ]),
       React.createElement('div', { key: 'right', className: 'enhancer-right' }, [
         React.createElement('div', { key: 'header', className: 'enhancer-header' }, [
           React.createElement('div', { key: 'hb', className: 'enhancer-headingBox' }, [
@@ -292,8 +275,6 @@ export function McpDialog(): React.ReactElement | null {
   useEscClose(s.mcpOpen, close)
   if (!s.mcpOpen) return null
   return React.createElement(SettingsDialog, {
-    navTitle: 'MCP',
-    navCells: [{ id: 'mcp', label: 'MCP 服务器', icon: PLUG_PATH, active: true }],
     title: 'MCP 服务器',
     subtitle: '管理 dsh-mcp-client 服务器条目，写入 profiles/web/cordis.patch.yml，实时生效。',
     onClose: close,
@@ -564,7 +545,7 @@ function AutoPanel() {
         React.createElement('button', { key: 'tasks', type: 'button', style: { padding: '6px 12px', borderRadius: 8, border: '1px solid var(--dsw-alias-border-l2)', background: 'var(--dsw-alias-bg-base)', font: 'var(--dsw-font-xs-13)', cursor: 'pointer' } }, `定时任务 (${tasks.length})`),
         React.createElement('button', { key: 'history', type: 'button', style: { padding: '6px 12px', borderRadius: 8, border: '1px solid var(--dsw-alias-border-l2)', background: 'transparent', font: 'var(--dsw-font-xs-13)', color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer' } }, '运行记录'),
       ]),
-      React.createElement('button', { key: 'add', type: 'button', className: showForm ? ghostBtnClass : pillBtnClass, onClick: toggleForm }, showForm ? '取消' : '+ 添加自动化'),
+      React.createElement('button', { key: 'add', type: 'button', className: pillBtnClass, onClick: toggleForm }, showForm ? '取消' : '+ 添加自动化'),
     ]),
     // Create form or task list
     showForm
@@ -583,8 +564,6 @@ export function AutoDialog(): React.ReactElement | null {
   useEscClose(s.autoOpen, close)
   if (!s.autoOpen) return null
   return React.createElement(SettingsDialog, {
-    navTitle: '自动化',
-    navCells: [{ id: 'auto', label: '定时任务', icon: CLOCK_PATH, active: true }],
     title: '定时任务',
     subtitle: '定期在工作区新建会话并发送预设提示词，查看运行历史。',
     onClose: close,
