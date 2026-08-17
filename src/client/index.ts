@@ -15,6 +15,7 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import './enhancer.module.css'
 import { GeneralHeader, SettingsGeneralRow } from './components.tsx'
 import { applyState, disposeDynamicStyle, FONT_PRESETS, loadState, type EnhancerState } from './state.ts'
+import { AutoDialog, AutoLauncher, McpDialog } from './mcp-auto.ts'
 
 /** Plugin id stamped on the dynamic style tag (loader unload sweep key). */
 const PLUGIN_ID = 'harness-ui-enhancer'
@@ -68,7 +69,7 @@ export function apply(ctx: ClientContext): void {
 
   // Relocate the session tabs (对话/轨迹) into the title row, right after the
   // header actions, so the header is a single line and the tabs read as
-  // capsule segments next to the 创造模式 badge. Pure DOM move — the product
+  // capsule segments next to the 创作模式 badge. Pure DOM move — the product
   // still owns the tab logic (aria-selected/class updates land on the same
   // node, and if a re-render ever rebuilds it, the observer moves it back).
   // The lookup is scoped to the session header container so unrelated "_tabs"
@@ -104,7 +105,7 @@ export function apply(ctx: ClientContext): void {
   // and class/aria change so a late-arriving aria-current is still caught.
   // `enhc-settings-title` keeps the injected node out of `_title`-suffixed
   // selectors so the existing header rules cannot double-treat it. If no active
-  // nav label is resolvable we skip rather than invent a wrong onto the intro.
+  // nav label is resolvable we skip rather than invent a wrong one.
   ctx.effect(() => {
     const FILL_CLASS = 'enhc-settings-title'
     /** Deterministic fallback: known intro → page title, so a missing heading is
@@ -178,5 +179,22 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('settings.general.item', () => ctx.slots.register(
     { name: 'settings.general.item', id: 'ui-enhancer', order: 30 },
     () => React.createElement(SettingsGeneralRow, surfaceProps),
+  ))
+
+  // MCP + Automation: two buttons in ONE sidebar.footer.action entry.
+  // The wrapper is transparent (zero padding) so buttons match the settings
+  // trigger's width exactly. Two separate Settings-style modal dialogs
+  // in shell.overlay.
+  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register(
+    { name: 'sidebar.footer.action', id: 'enhancer-triggers', order: 20 },
+    () => React.createElement(AutoLauncher),
+  ))
+  ctx.slots.inject('shell.overlay', () => ctx.slots.register(
+    { name: 'shell.overlay', id: 'enhancer-mcp-dlg', order: 0 },
+    () => React.createElement(McpDialog),
+  ))
+  ctx.slots.inject('shell.overlay', () => ctx.slots.register(
+    { name: 'shell.overlay', id: 'enhancer-auto-dlg', order: 1 },
+    () => React.createElement(AutoDialog),
   ))
 }
