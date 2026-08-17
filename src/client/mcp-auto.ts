@@ -301,7 +301,7 @@ export function McpDialog(): React.ReactElement | null {
 }
 
 /* ------------------------------------------------------------------ */
-/* Automation (scheduled tasks) panel                                  */
+/* Automation (scheduled tasks) panel — WorkBuddy style                */
 /* ------------------------------------------------------------------ */
 
 interface Task {
@@ -316,8 +316,29 @@ interface Task {
   history?: Array<{ at: number; ok: boolean; note: string; sessionId?: string }>
 }
 
+type ScheduleMode = 'periodic' | 'interval' | 'once'
+
 function formatTime(ts?: number): string {
   return ts === undefined ? '—' : new Date(ts).toLocaleString()
+}
+
+function formatFrequency(mode: ScheduleMode, value: number, time?: string): string {
+  if (mode === 'once') return '单次'
+  if (mode === 'interval') {
+    if (value < 60) return `每 ${value} 分钟`
+    const hours = Math.floor(value / 60)
+    const mins = value % 60
+    return mins > 0 ? `每 ${hours} 小时 ${mins} 分钟` : `每 ${hours} 小时`
+  }
+  // periodic — value encodes day-of-week (0=every day, 1-7=Mon-Sun, 8=1st, etc.)
+  const t = time || '00:00'
+  if (value === 0) return `每天 ${t}`
+  if (value >= 1 && value <= 7) {
+    const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    return `每周${days[value - 1]} ${t}`
+  }
+  if (value >= 8 && value <= 31) return `每月${value - 7}日 ${t}`
+  return `每天 ${t}`
 }
 
 function TaskItem({ task, onChanged }: { task: Task; onChanged: () => void }) {
@@ -337,40 +358,166 @@ function TaskItem({ task, onChanged }: { task: Task; onChanged: () => void }) {
   }
 
   const history = Array.isArray(task.history) ? task.history : []
+  const lastRun = history.length > 0 ? history[history.length - 1] : null
+  const statusClass = !task.enabled ? 'enhancer-taskStatusPaused'
+    : lastRun?.ok === true ? 'enhancer-taskStatusSuccess'
+    : lastRun?.ok === false ? 'enhancer-taskStatusError'
+    : 'enhancer-taskStatusRunning'
+  const statusText = !task.enabled ? '已暂停'
+    : lastRun?.ok === true ? '上次成功'
+    : lastRun?.ok === false ? '上次失败'
+    : '运行中'
 
-  return React.createElement('div', { className: 'enhancer-task' }, [
-    React.createElement('div', { key: 'row', className: 'enhancer-row' }, [
-      React.createElement(Icon, { key: 'i', d: CLOCK_PATH, size: 16, className: 'enhancer-rowIcon' }),
-      React.createElement('div', { key: 'text', className: 'enhancer-rowText' }, [
-        React.createElement('div', { key: 't', className: 'enhancer-rowTitle' }, task.name),
-        React.createElement('div', { key: 'd', className: 'enhancer-rowDesc' },
-          `每 ${task.frequencyMinutes} 分钟 · 下次 ${formatTime(task.nextAt)} · 上次 ${task.lastRunAt !== undefined ? formatTime(task.lastRunAt) : '从未运行'}`),
-      ]),
+  return React.createElement('div', { className: 'enhancer-taskItem' }, [
+    React.createElement('div', { key: 'icon', className: 'enhancer-taskIcon' },
+      React.createElement(Icon, { d: CLOCK_PATH, size: 16 })),
+    React.createElement('div', { key: 'info', className: 'enhancer-taskInfo', style: { cursor: 'pointer' }, onClick: () => setExpanded((v) => !v) }, [
+      React.createElement('div', { key: 'name', className: 'enhancer-taskName' }, task.name),
+      React.createElement('div', { key: 'meta', className: 'enhancer-taskMeta' },
+        `${task.workspace || '默认工作区'} · ${formatFrequency('interval', task.frequencyMinutes)}${task.nextAt ? ` · 下次 ${formatTime(task.nextAt)}` : ''}`),
+    ]),
+    React.createElement('div', { key: 'actions', className: 'enhancer-taskActions' }, [
+      React.createElement('span', { key: 'status', className: `enhancer-taskStatus ${statusClass}` }, statusText),
       React.createElement('button', {
         key: 'toggle',
         type: 'button',
         className: task.enabled ? toggleOnClass : toggleOffClass,
         onClick: () => void toggle(),
-      }, task.enabled ? '已启用' : '已暂停'),
-      React.createElement('button', { key: 'run', type: 'button', className: ghostBtnClass, disabled: running, onClick: () => void runNow() }, running ? '运行中…' : '立即运行'),
-      React.createElement('button', { key: 'expand', type: 'button', className: ghostBtnClass, onClick: () => setExpanded((v) => !v) }, expanded ? '收起' : '详情'),
-      React.createElement('button', { key: 'del', type: 'button', className: dangerBtnClass, onClick: () => void remove() }, '删除'),
+      }, task.enabled ? '启用' : '暂停'),
+      React.createElement('button', { key: 'run', type: 'button', className: ghostBtnClass, disabled: running, onClick: () => void runNow() }, running ? '…' : '▶'),
+      React.createElement('button', { key: 'del', type: 'button', className: dangerBtnClass, onClick: () => void remove() }, '…'),
     ]),
-    expanded
-      ? React.createElement('div', { key: 'detail', className: 'enhancer-taskDetail' }, [
-          React.createElement('div', { key: 'ws', className: 'enhancer-rowDesc' }, `工作区: ${task.workspace || '（默认）'}`),
-          React.createElement('div', { key: 'pr', className: 'enhancer-taskPrompt' }, task.prompt),
-          history.length > 0
-            ? React.createElement('div', { key: 'hist', className: 'enhancer-history' },
-                history.slice(-5).reverse().map((h, idx) => React.createElement('div', { key: `${h.at}-${idx}`, className: 'enhancer-historyItem' }, [
-                  React.createElement('span', { key: 't', className: 'enhancer-historyTime' }, formatTime(h.at)),
-                  React.createElement('span', { key: 'o', className: h.ok ? 'enhancer-historyOk' : 'enhancer-historyFail' }, h.ok ? '✓' : '✗'),
-                  React.createElement('span', { key: 'n', className: 'enhancer-historyNote' }, String(h.note ?? '')),
-                ])))
-            : null,
-          err !== '' ? React.createElement('div', { key: 'err', className: 'enhancer-error' }, err) : null,
-        ])
-      : (err !== '' ? React.createElement('div', { key: 'err', className: 'enhancer-error' }, err) : null),
+    expanded ? React.createElement('div', { key: 'detail', style: { gridColumn: '1 / -1', padding: '8px 0 0 44px' } }, [
+      React.createElement('div', { key: 'prompt', className: 'enhancer-taskPrompt' }, task.prompt),
+      history.length > 0 ? React.createElement('div', { key: 'hist', className: 'enhancer-history' },
+        history.slice(-3).reverse().map((h, idx) => React.createElement('div', { key: `${h.at}-${idx}`, className: 'enhancer-historyItem' }, [
+          React.createElement('span', { key: 't', className: 'enhancer-historyTime' }, formatTime(h.at)),
+          React.createElement('span', { key: 'o', className: h.ok ? 'enhancer-historyOk' : 'enhancer-historyFail' }, h.ok ? '✓' : '✗'),
+          React.createElement('span', { key: 'n', className: 'enhancer-historyNote' }, String(h.note ?? '')),
+        ]))) : null,
+      err !== '' ? React.createElement('div', { key: 'err', className: 'enhancer-error' }, err) : null,
+    ]) : null,
+  ])
+}
+
+function CreateTaskForm({ onCreated }: { onCreated: () => void }) {
+  const [creating, setCreating] = React.useState(false)
+  const [err, setErr] = React.useState('')
+  const [name, setName] = React.useState('')
+  const [workspace, setWorkspace] = React.useState('')
+  const [prompt, setPrompt] = React.useState('')
+  const [scheduleMode, setScheduleMode] = React.useState<ScheduleMode>('periodic')
+  const [intervalValue, setIntervalValue] = React.useState('60')
+  const [periodicDay, setPeriodicDay] = React.useState('0')
+  const [periodicTime, setPeriodicTime] = React.useState('09:00')
+
+  const create = async () => {
+    if (!name.trim() || !prompt.trim()) return
+    setCreating(true)
+    try {
+      let frequencyMinutes = 60
+      if (scheduleMode === 'interval') {
+        frequencyMinutes = Math.max(1, Number(intervalValue) || 60)
+      } else if (scheduleMode === 'periodic') {
+        // For periodic, we store the day code in a special way
+        // The backend will interpret this and calculate the actual next run time
+        frequencyMinutes = 24 * 60 // default to daily, backend handles the scheduling
+      }
+      await api({
+        kind: 'tasks/create',
+        task: {
+          name: name.trim(),
+          workspace: workspace.trim(),
+          prompt: prompt.trim(),
+          frequencyMinutes,
+          scheduleMode,
+          periodicDay: scheduleMode === 'periodic' ? Number(periodicDay) : undefined,
+          periodicTime: scheduleMode === 'periodic' ? periodicTime : undefined,
+        }
+      })
+      onCreated()
+    } catch (e) {
+      setErr(String(e instanceof Error ? e.message : e))
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return React.createElement('div', { className: 'enhancer-section', style: { padding: '16px 0' } }, [
+    // Header with save/cancel
+    React.createElement('div', { key: 'header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 } }, [
+      React.createElement('h3', { key: 'title', style: { margin: 0, font: 'var(--dsw-font-s-14)', fontWeight: 600, color: 'var(--dsw-alias-label-primary)' } }, '添加自动化任务'),
+      React.createElement('div', { key: 'actions', style: { display: 'flex', gap: 8 } }, [
+        React.createElement('button', { key: 'cancel', type: 'button', className: ghostBtnClass, onClick: onCreated }, '取消'),
+        React.createElement('button', { key: 'save', type: 'button', className: pillBtnClass, disabled: creating || !name.trim() || !prompt.trim(), onClick: () => void create() }, creating ? '保存中…' : '保存'),
+      ]),
+    ]),
+    // Name field
+    React.createElement('label', { key: 'l1', className: 'enhancer-fieldLabel' }, '名称'),
+    React.createElement('input', { key: 'f1', className: inputClass, placeholder: '任务名称', value: name, onChange: (e) => setName(e.target.value) }),
+    // Workspace field
+    React.createElement('label', { key: 'l2', className: 'enhancer-fieldLabel' }, '工作空间 (可选)'),
+    React.createElement('input', { key: 'f2', className: inputClass, placeholder: '留空使用当前工作区', value: workspace, onChange: (e) => setWorkspace(e.target.value) }),
+    // Prompt textarea — chat input style
+    React.createElement('label', { key: 'l3', className: 'enhancer-fieldLabel' }, '提示词'),
+    React.createElement('textarea', {
+      key: 'f3',
+      className: 'enhancer-chatInput',
+      placeholder: '给智能体发消息',
+      rows: 5,
+      value: prompt,
+      onChange: (e) => setPrompt(e.target.value),
+    }),
+    // Schedule mode selector
+    React.createElement('label', { key: 'l4', className: 'enhancer-fieldLabel' }, '执行频率'),
+    React.createElement('div', { key: 'schedule', className: 'enhancer-scheduleModes' }, [
+      React.createElement('button', { key: 'periodic', type: 'button', className: 'enhancer-scheduleMode', 'data-active': scheduleMode === 'periodic' ? '' : undefined, onClick: () => setScheduleMode('periodic') }, '周期'),
+      React.createElement('button', { key: 'interval', type: 'button', className: 'enhancer-scheduleMode', 'data-active': scheduleMode === 'interval' ? '' : undefined, onClick: () => setScheduleMode('interval') }, '按间隔'),
+      React.createElement('button', { key: 'once', type: 'button', className: 'enhancer-scheduleMode', 'data-active': scheduleMode === 'once' ? '' : undefined, onClick: () => setScheduleMode('once') }, '单次'),
+    ]),
+    // Schedule details based on mode
+    scheduleMode === 'periodic' ? React.createElement('div', { key: 'periodic', className: 'enhancer-scheduleRow', style: { marginTop: 8 } }, [
+      React.createElement('select', {
+        key: 'day',
+        className: 'enhancer-scheduleInput',
+        value: periodicDay,
+        onChange: (e) => setPeriodicDay(e.target.value),
+        style: { width: 120 },
+      }, [
+        React.createElement('option', { key: '0', value: '0' }, '每天'),
+        React.createElement('option', { key: '1', value: '1' }, '每周一'),
+        React.createElement('option', { key: '2', value: '2' }, '每周二'),
+        React.createElement('option', { key: '3', value: '3' }, '每周三'),
+        React.createElement('option', { key: '4', value: '4' }, '每周四'),
+        React.createElement('option', { key: '5', value: '5' }, '每周五'),
+        React.createElement('option', { key: '6', value: '6' }, '每周六'),
+        React.createElement('option', { key: '7', value: '7' }, '每周日'),
+        React.createElement('option', { key: '8', value: '8' }, '每月1日'),
+        React.createElement('option', { key: '15', value: '15' }, '每月15日'),
+      ]),
+      React.createElement('input', {
+        key: 'time',
+        type: 'time',
+        className: 'enhancer-scheduleInput',
+        value: periodicTime,
+        onChange: (e) => setPeriodicTime(e.target.value),
+      }),
+    ]) : scheduleMode === 'interval' ? React.createElement('div', { key: 'interval', className: 'enhancer-scheduleRow', style: { marginTop: 8 } }, [
+      React.createElement('span', { key: 'label', className: 'enhancer-scheduleLabel' }, '每'),
+      React.createElement('input', {
+        key: 'val',
+        type: 'number',
+        className: 'enhancer-scheduleInput',
+        min: 1,
+        value: intervalValue,
+        onChange: (e) => setIntervalValue(e.target.value),
+        style: { width: 80 },
+      }),
+      React.createElement('span', { key: 'unit', className: 'enhancer-scheduleLabel' }, '分钟'),
+    ]) : React.createElement('div', { key: 'once', style: { marginTop: 8, font: 'var(--dsw-font-xs-13)', color: 'var(--dsw-alias-label-tertiary)' } }, '任务将立即执行一次'),
+    // Effective date range (optional)
+    React.createElement('div', { key: 'dateHint', style: { marginTop: 12, font: 'var(--dsw-font-xxs-12)', color: 'var(--dsw-alias-label-tertiary)' } }, '生效日期区间 (可选，留空表示始终生效)'),
+    err !== '' ? React.createElement('div', { key: 'err', className: 'enhancer-error' }, err) : null,
   ])
 }
 
@@ -378,11 +525,6 @@ function AutoPanel() {
   const [tasks, setTasks] = React.useState<Task[]>([])
   const [err, setErr] = React.useState('')
   const [showForm, setShowForm] = React.useState(false)
-  const [creating, setCreating] = React.useState(false)
-  const [name, setName] = React.useState('')
-  const [workspace, setWorkspace] = React.useState('')
-  const [prompt, setPrompt] = React.useState('')
-  const [freq, setFreq] = React.useState('60')
 
   const refresh = async () => {
     try {
@@ -395,40 +537,27 @@ function AutoPanel() {
   }
   React.useEffect(() => { void refresh() }, [])
 
-  const create = async () => {
-    if (!name.trim() || !prompt.trim()) return
-    setCreating(true)
-    try {
-      await api({ kind: 'tasks/create', task: { name: name.trim(), workspace: workspace.trim(), prompt: prompt.trim(), frequencyMinutes: Number(freq) || 60 } })
-      setName(''); setWorkspace(''); setPrompt(''); setFreq('60'); setShowForm(false)
-      await refresh()
-    } catch (e) {
-      setErr(String(e instanceof Error ? e.message : e))
-    } finally {
-      setCreating(false)
-    }
+  const handleCreated = () => {
+    setShowForm(false)
+    void refresh()
   }
 
   return React.createElement('div', { className: 'enhancer-section' }, [
-    React.createElement('button', { key: 'add', type: 'button', className: pillBtnClass, onClick: () => setShowForm((v) => !v) }, showForm ? '收起新建表单' : '+ 新建定时任务'),
+    // Tab bar + add button
+    React.createElement('div', { key: 'tabs', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 } }, [
+      React.createElement('div', { key: 'tabGroup', style: { display: 'flex', gap: 8 } }, [
+        React.createElement('button', { key: 'tasks', type: 'button', style: { padding: '6px 12px', borderRadius: 8, border: '1px solid var(--dsw-alias-border-l2)', background: 'var(--dsw-alias-bg-base)', font: 'var(--dsw-font-xs-13)', cursor: 'pointer' } }, `定时任务 (${tasks.length})`),
+        React.createElement('button', { key: 'history', type: 'button', style: { padding: '6px 12px', borderRadius: 8, border: '1px solid var(--dsw-alias-border-l2)', background: 'transparent', font: 'var(--dsw-font-xs-13)', color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer' } }, '运行记录'),
+      ]),
+      React.createElement('button', { key: 'add', type: 'button', className: pillBtnClass, onClick: () => setShowForm(true) }, '+ 添加自动化'),
+    ]),
+    // Create form or task list
     showForm
-      ? React.createElement('div', { key: 'form', className: 'enhancer-form enhancer-form-bordered' }, [
-          React.createElement('label', { key: 'l1', className: 'enhancer-fieldLabel' }, '任务名称'),
-          React.createElement('input', { key: 'f1', className: inputClass, placeholder: '如：每日晨间摘要', value: name, onChange: (e) => setName(e.target.value) }),
-          React.createElement('label', { key: 'l2', className: 'enhancer-fieldLabel' }, '工作区'),
-          React.createElement('input', { key: 'f2', className: inputClass, placeholder: '工作区目录路径（留空使用当前工作区）', value: workspace, onChange: (e) => setWorkspace(e.target.value) }),
-          React.createElement('label', { key: 'l3', className: 'enhancer-fieldLabel' }, '提示词'),
-          React.createElement('textarea', { key: 'f3', className: textareaClass, placeholder: '要发送给新会话的提示词…', rows: 4, value: prompt, onChange: (e) => setPrompt(e.target.value) }),
-          React.createElement('label', { key: 'l4', className: 'enhancer-fieldLabel' }, '执行频率（分钟）'),
-          React.createElement('input', { key: 'f4', className: inputClass, inputMode: 'numeric', placeholder: '60', value: freq, onChange: (e) => setFreq(e.target.value) }),
-          React.createElement('button', { key: 'go', type: 'button', className: pillBtnClass, disabled: creating || !name.trim() || !prompt.trim(), onClick: () => void create() }, creating ? '创建中…' : '创建定时任务'),
-        ])
-      : null,
-    tasks.length === 0 && !showForm
-      ? React.createElement('div', { key: 'empty', className: 'enhancer-empty' }, '还没有定时任务。点击「新建定时任务」创建一个。')
-      : tasks.map((t) => React.createElement(TaskItem, { key: t.id, task: t, onChanged: () => void refresh() })),
-    React.createElement('div', { key: 'hint', className: 'enhancer-hint' },
-      '定时任务到达执行时间时，会在工作区中新建一个会话并发送预设提示词（等价于 WorkBuddy 的定时任务 / ChatGPT Scheduled Tasks）。运行记录保留在下方历史中。'),
+      ? React.createElement(CreateTaskForm, { key: 'form', onCreated: handleCreated })
+      : tasks.length === 0
+        ? React.createElement('div', { key: 'empty', style: { padding: '40px 0', textAlign: 'center', color: 'var(--dsw-alias-label-tertiary)', font: 'var(--dsw-font-xs-13)' } }, '还没有定时任务。点击「+ 添加自动化」创建一个。')
+        : React.createElement('div', { key: 'list', className: 'enhancer-taskList' },
+            tasks.map((t) => React.createElement(TaskItem, { key: t.id, task: t, onChanged: () => void refresh() }))),
     err !== '' ? React.createElement('div', { key: 'err', className: 'enhancer-error' }, err) : null,
   ])
 }
