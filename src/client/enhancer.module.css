@@ -601,7 +601,8 @@ body [class$='_toggleCluster'] {
   border: 0;
 }
 
-/* Modal overlay */
+/* Modal overlay — matches the official Settings backdrop: semi-transparent dark
+ * tint + backdrop-filter blur for the frosted-glass effect. */
 :global(.enhancer-overlay) {
   position: fixed;
   inset: 0;
@@ -610,6 +611,8 @@ body [class$='_toggleCluster'] {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   pointer-events: auto;
 }
 
