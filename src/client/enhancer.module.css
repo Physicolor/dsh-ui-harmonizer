@@ -534,9 +534,19 @@ body [class$='_toggleCluster'] {
  * its full width while messages and the input bar shift left and the fixed
  * panel covers the vacated strip, exactly like the widgets rail. An html
  * prefix out-specifies better-sidebar's bare #root rules ((1,0,1)>(1,0,0),
- * (1,2,4)>(1,2,3)). */
+ * (1,2,4)>(1,2,3)).
+ *
+ * #root must be FULLY neutralized — not just margin-right but ALSO the
+ * `width: calc(100% - var(--dsh-sidebar-width))` from the same better-sidebar
+ * rule. If only the margin is zeroed, the width squeeze still shrinks the app
+ * column (right edge already lands at the panel's left edge) and then the
+ * viewArea/composerSeat margin-right squeezes a SECOND time — the conversation
+ * ends up one full panel-width short of the panel: the empty gap between the
+ * chat/input and the sidebar. Restoring width:100% makes the inner margin the
+ * single, correct squeeze. */
 :global(html #root) {
   margin-right: 0;
+  width: 100%;
 }
 :global(html #root > div[data-slot='root'] > div > div:nth-child(2)) {
   margin-bottom: 0;
