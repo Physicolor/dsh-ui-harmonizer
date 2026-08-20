@@ -90,13 +90,23 @@ div[data-phase] {
   width: calc(182px * var(--enhancer-sidebar-scale));
   height: calc(24px * var(--enhancer-sidebar-scale));
 }
-[data-slot='sidebar'] [class$='_logoRow'] [class$='_iconButton'] {
+/* Logo row icon buttons — same collapsed-state fix as workspace icon buttons.
+ * Expanded: scale-knob sizing. Collapsed: yield to product's 36×36. */
+:not([data-sidebar-collapsed]) [data-slot='sidebar'] [class$='_logoRow'] [class$='_iconButton'] {
   width: calc(28px * var(--enhancer-sidebar-scale));
   height: calc(28px * var(--enhancer-sidebar-scale));
 }
-[data-slot='sidebar'] [class$='_logoRow'] [class$='_iconButton'] svg {
+:not([data-sidebar-collapsed]) [data-slot='sidebar'] [class$='_logoRow'] [class$='_iconButton'] svg {
   width: calc(16px * var(--enhancer-sidebar-scale));
   height: calc(16px * var(--enhancer-sidebar-scale));
+}
+[data-sidebar-collapsed] [data-slot='sidebar'] [class$='_logoRow'] [class$='_iconButton'] {
+  width: 36px;
+  height: 36px;
+}
+[data-sidebar-collapsed] [data-slot='sidebar'] [class$='_logoRow'] [class$='_iconButton'] svg {
+  width: 16px;
+  height: 16px;
 }
 [data-slot='sidebar.settings'] [class$='_trigger'] {
   font-size: calc(14px * var(--enhancer-sidebar-scale));
@@ -132,13 +142,33 @@ div[data-phase] {
 [data-slot='sidebar.workspaces'] [class$='_sectionHeader'] {
   font-size: calc(13px * var(--enhancer-sidebar-scale));
 }
-[data-slot='sidebar.workspaces'] [class$='_iconButton'] {
+/* Workspace browsing region (sidebar.workspaces) — rows, section header, icons.
+ * In the expanded state the sidebar scale knob controls icon-button size
+ * (28×28 scaled). In the collapsed (rail) state the product's own
+ * .rail .iconButton rules set 36×36 — our override must not win there or the
+ * add-workspace icon stays 28px while the new-session button renders at 36px.
+ *
+ * [data-sidebar-collapsed] lives on the AppFrame (.frame), an ancestor of
+ * every slot. Specificity fix: the collapsed reset must OUT-SPECIFY the
+ * expanded rule so it always wins in collapsed state, regardless of
+ * declaration order. (0,3,1) > (0,2,1) by adding the frame selector. */
+:not([data-sidebar-collapsed]) [data-slot='sidebar.workspaces'] [class$='_iconButton'] {
   width: calc(28px * var(--enhancer-sidebar-scale));
   height: calc(28px * var(--enhancer-sidebar-scale));
 }
-[data-slot='sidebar.workspaces'] [class$='_iconButton'] svg {
+:not([data-sidebar-collapsed]) [data-slot='sidebar.workspaces'] [class$='_iconButton'] svg {
   width: calc(16px * var(--enhancer-sidebar-scale));
   height: calc(16px * var(--enhancer-sidebar-scale));
+}
+/* Collapsed state: reset to product default 36×36 so all icon buttons align.
+ * (0,3,1) beats the expanded rule's (0,2,1), guaranteeing the reset wins. */
+[data-sidebar-collapsed] [data-slot='sidebar.workspaces'] [class$='_iconButton'] {
+  width: 36px;
+  height: 36px;
+}
+[data-sidebar-collapsed] [data-slot='sidebar.workspaces'] [class$='_iconButton'] svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Settings page headers — unify Model / Plugins / Agent-presets with the
