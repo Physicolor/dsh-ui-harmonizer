@@ -16,6 +16,7 @@ import './enhancer.module.css'
 import { GeneralHeader, SettingsGeneralRow } from './components.tsx'
 import { applyState, disposeDynamicStyle, FONT_PRESETS, loadState, type EnhancerState } from './state.ts'
 import { AutoDialog, AutoLauncher, McpDialog } from './mcp-auto.ts'
+import { CenterColCard } from './card-overlay.tsx'
 
 /** Plugin id stamped on the dynamic style tag (loader unload sweep key). */
 const PLUGIN_ID = 'harness-ui-enhancer'
@@ -196,5 +197,12 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('shell.overlay', () => ctx.slots.register(
     { name: 'shell.overlay', id: 'enhancer-auto-dlg', order: 1 },
     () => React.createElement(AutoDialog),
+  ))
+  // Passive rounded-card chrome over the center column. Always mounted (cheap
+  // geometry tracking); its paint is toggled by the enhc-center-card-on root
+  // class, which applyState flips from the Settings switch — no re-render.
+  ctx.slots.inject('shell.overlay', () => ctx.slots.register(
+    { name: 'shell.overlay', id: 'enhancer-center-card', order: 30 },
+    () => React.createElement(CenterColCard),
   ))
 }

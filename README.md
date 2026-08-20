@@ -66,7 +66,7 @@ Harness UI Enhancer is a **client-only DSH bundle plugin**. It adds no model too
 
 ### 🎛️ 界面定制 · UI Customization
 
-设置 → 通用设置中的"界面定制"块：对话宽度、markdown 字号、工作区字号、UI 字体均可实时调节。
+设置 → 通用设置中的"界面定制"块：对话宽度、markdown 字号、工作区字号、UI 字体、圆角卡片均可实时调节。「圆角卡片」把对话区域显示为左上圆角的卡片并附投影，高度跟随侧栏宽度/详情列自动伸缩。
 
 ---
 
@@ -121,7 +121,7 @@ pnpm run check      # 类型检查 + 构建
 
 - **阶段一 · 官方 UI 规范化**（进行中）：继续修复官方界面中未完善的部分；
 - **阶段二 · 插件兼容协调器**（进行中）：检测并修复插件间的布局/样式冲突；
-- **阶段三 · 统一视觉风格**：可选的视觉风格层（间距密度、圆角、动效）；
+- **阶段三 · 统一视觉风格**（进行中）：可选的视觉风格层——已落地「圆角卡片」（对话区左上圆角 + 投影），待续：间距密度、更多圆角/动效统一；
 - **阶段四 · 生态共建**：沉淀为可扩展的规则注册机制。
 
 ---
@@ -129,7 +129,21 @@ pnpm run check      # 类型检查 + 构建
 ## 变更日志 · Changelog
 
 <details>
-<summary>v0.4.1（当前）</summary>
+<summary>v0.5.0（当前）</summary>
+
+**新功能：**
+- 🃏 圆角卡片：对话区域显示为左上圆角的卡片并附投影（设置 → 通用设置 → 界面定制 → 圆角卡片）
+  - 不改任何源码：`shell.overlay` 挂透明覆盖层（顶边框 + 左上圆角 + `--dsw-shadow-lv3` 投影）
+  - 阴影向左溢出到侧栏（形成卡片厚度），顶部下移 1px 给投影留缝；右/下为窗口自然边界、不画边框
+  - 左侧不分界线：借用侧栏自身的 `border-right` 作卡片左边界
+  - 覆盖层用 `ResizeObserver` 跟踪中间列，侧栏拖拽/折叠/详情列开合自动跟随
+  - 内容左上角由中间列自身 `border-radius`（+ 既有 overflow:hidden）蒙成圆角，与覆盖层同半径
+  - 纯 CSS 门控（`html.enhc-center-card-on` 类），可随时关闭、卸载零残留
+
+</details>
+
+<details>
+<summary>v0.4.1</summary>
 
 **改进：**
 - 🎯 better-sidebar toggle 按钮 relocate 到 header utilities 区域（CSS 悬浮对齐）

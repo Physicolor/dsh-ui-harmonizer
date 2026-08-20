@@ -22,8 +22,9 @@ export interface EnhancerSurfaceProps {
     fontSize: number
     sidebarSize: number
     fontId: string
+    card: boolean
   }
-  onApply: (patch: { width?: number; fontSize?: number; sidebarSize?: number; fontId?: string }) => void
+  onApply: (patch: { width?: number; fontSize?: number; sidebarSize?: number; fontId?: string; card?: boolean }) => void
   presets: Readonly<typeof FONT_PRESETS>
 }
 
@@ -168,8 +169,47 @@ export function SliderControl({ min, max, step, value, onChange, unit }: {
   ])
 }
 
-/** The "界面定制" block registered in Settings → General. */
-export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceProps): React.ReactElement {
+/** Product-style switch toggle (track + thumb). A controlled button that
+ * flips on click; the active state uses the DeepSeek business blue. */
+export function SwitchControl({ checked, onChange }: {
+  checked: boolean
+  onChange: (value: boolean) => void
+}): React.ReactElement {
+  const track: React.CSSProperties = {
+    position: 'relative',
+    display: 'inline-flex',
+    alignItems: 'center',
+    width: 36,
+    height: 22,
+    padding: 0,
+    border: 'none',
+    borderRadius: 11,
+    cursor: 'pointer',
+    background: checked ? 'var(--dsw-alias-state-business-primary)' : 'var(--dsw-alias-border-l3)',
+    transition: 'background var(--ds-transition-duration-fast) var(--ds-ease-in-out)',
+    flex: 'none',
+  }
+  const thumb: React.CSSProperties = {
+    position: 'absolute',
+    top: 3,
+    left: checked ? 17 : 3,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    background: '#fff',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+    transition: 'left var(--ds-transition-duration-fast) var(--ds-ease-in-out)',
+  }
+  return React.createElement('button', {
+    type: 'button',
+    role: 'switch',
+    'aria-checked': checked,
+    style: track,
+    onClick: () => { onChange(!checked) },
+  }, React.createElement('span', { style: thumb }))
+}
+
+/** The "界面定制" block registered in Settings → General. */export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceProps): React.ReactElement {
   return React.createElement('div', { style: { display: 'flex', flexDirection: 'column' } }, [
     React.createElement(SettingsRow, {
       key: 'width',
@@ -206,6 +246,15 @@ export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceP
         value: state.fontId,
         presets,
         onChange: (v) => { onApply({ fontId: v }) },
+      }),
+    }),
+    React.createElement(SettingsRow, {
+      key: 'center-card',
+      title: '圆角卡片',
+      desc: '将对话区域显示为左上圆角的卡片，附投影',
+      control: React.createElement(SwitchControl, {
+        checked: state.card,
+        onChange: (v) => { onApply({ card: v }) },
       }),
     }),
   ])

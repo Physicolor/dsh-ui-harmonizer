@@ -1236,4 +1236,46 @@ body [class$='_toggleCluster'] {
   }
 }
 
+/* ── rounded center-column card ───────────────────────────────────────────
+ * Non-invasive "card" chrome around the flat conversation surface. Two pieces
+ * share one 14px top-left radius:
+ *
+ *  1) Content corner mask — the center column's own overflow:hidden clips its
+ *     content, so giving it a top-left border-radius rounds the conversation's
+ *     square corner. `:has(> [data-slot='conversation'])` targets the center
+ *     column (parent of the conversation slot outlet) — hash-independent and
+ *     the only such element. Only one corner is rounded; right/bottom stay
+ *     square flush to the window, and the left edge is the sidebar's own line.
+ *  2) The overlay chrome (CenterColCard, shell.overlay) — a transparent box
+ *     over the column carrying the top border, the same rounded top-left
+ *     corner and a lv3 drop shadow. It lives OUTSIDE the clipped column so the
+ *     shadow can bleed left over the sidebar; its paint is gated by the root
+ *     class flipped from the Settings toggle. The 1px top inset on the box
+ *     gives the top shadow a sliver of viewport to render into.
+ * Both rules are inert (display:none / no radius) unless the toggle is on. */
+
+/* 1) Round the content's top-left corner (masked by the column's overflow). */
+:global(html.enhc-center-card-on div:has(> [data-slot='conversation'])) {
+  border-radius: 14px 0 0 0;
+}
+
+/* 2) The overlay chrome box — transparent, only border + radius + shadow.
+ * Selectors are fully :global() because the component sets the literal class
+ * string `enhc-center-card` at runtime (CSS Modules would otherwise hash it). */
+:global(html.enhc-center-card-on .enhc-center-card) {
+  display: block;
+}
+:global(.enhc-center-card) {
+  display: none;
+  box-sizing: border-box;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 14px 0 0 0;
+  background: transparent;
+  box-shadow: var(--dsw-shadow-lv3);
+  pointer-events: none;
+}
+
 

@@ -31,10 +31,12 @@ export interface EnhancerState {
   sidebarSize: number
   /** Selected font preset id. */
   fontId: string
+  /** Center-column rounded-card overlay (top-left corner + top edge + shadow). */
+  card: boolean
 }
 
 /** Product defaults; the plugin applies these on boot and treats them as the neutral baseline. */
-export const DEFAULT_STATE: EnhancerState = { width: 748, fontSize: 14, sidebarSize: 14, fontId: 'default' }
+export const DEFAULT_STATE: EnhancerState = { width: 748, fontSize: 14, sidebarSize: 14, fontId: 'default', card: false }
 
 /** localStorage key holding the persisted enhancer state. */
 const STORAGE_KEY = 'harness-ui-enhancer.state'
@@ -55,6 +57,7 @@ export function loadState(): EnhancerState {
     if (!Number.isFinite(state.fontSize) || state.fontSize < 12 || state.fontSize > 24) state.fontSize = DEFAULT_STATE.fontSize
     if (!Number.isFinite(state.sidebarSize) || state.sidebarSize < 12 || state.sidebarSize > 20) state.sidebarSize = DEFAULT_STATE.sidebarSize
     if (typeof state.fontId !== 'string' || !FONT_PRESETS.some(p => p.id === state.fontId)) state.fontId = DEFAULT_STATE.fontId
+    if (typeof state.card !== 'boolean') state.card = DEFAULT_STATE.card
     return state
   } catch {
     return { ...DEFAULT_STATE }
@@ -127,6 +130,11 @@ export function applyState(state: EnhancerState): void {
   root.style.setProperty('--enhancer-sidebar-scale', String(state.sidebarSize / 14))
   root.style.setProperty('--enhancer-chat-scale', String(state.fontSize / 14))
 
+  // The rounded center-column card is gated by a root class so the overlay
+  // component can stay mounted (cheap geometry tracking) while a simple
+  // class flip turns its paint on/off — no React re-render needed.
+  root.classList.toggle('enhc-center-card-on', state.card)
+
   if (dynamicStyle === null) {
     dynamicStyle = document.createElement('style')
     dynamicStyle.dataset.plugin = 'harness-ui-enhancer'
@@ -147,4 +155,5 @@ export function disposeDynamicStyle(): void {
   }
   const root = document.documentElement
   for (const property of ROOT_PROPERTIES) root.style.removeProperty(property)
+  root.classList.remove('enhc-center-card-on')
 }
