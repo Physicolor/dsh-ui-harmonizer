@@ -170,11 +170,18 @@ export function SliderControl({ min, max, step, value, onChange, unit }: {
 }
 
 /** Product-style switch toggle (track + thumb). A controlled button that
- * flips on click; the active state uses the DeepSeek business blue. */
+ * flips on click; the active state uses the DeepSeek business blue.
+ * Holds a local mirror of the value so the thumb slides and the fill changes
+ * immediately on click; external value changes (another surface editing the
+ * same switch) are adopted via the effect. Without the mirror the parent's
+ * in-place state mutation never re-renders this component and the click gives
+ * no visual feedback. */
 export function SwitchControl({ checked, onChange }: {
   checked: boolean
   onChange: (value: boolean) => void
 }): React.ReactElement {
+  const [local, setLocal] = React.useState(checked)
+  React.useEffect(() => { setLocal(checked) }, [checked])
   const track: React.CSSProperties = {
     position: 'relative',
     display: 'inline-flex',
@@ -185,14 +192,14 @@ export function SwitchControl({ checked, onChange }: {
     border: 'none',
     borderRadius: 11,
     cursor: 'pointer',
-    background: checked ? 'var(--dsw-alias-state-business-primary)' : 'var(--dsw-alias-border-l3)',
+    background: local ? 'var(--dsw-alias-state-business-primary)' : 'var(--dsw-alias-border-l3)',
     transition: 'background var(--ds-transition-duration-fast) var(--ds-ease-in-out)',
     flex: 'none',
   }
   const thumb: React.CSSProperties = {
     position: 'absolute',
     top: 3,
-    left: checked ? 17 : 3,
+    left: local ? 17 : 3,
     width: 16,
     height: 16,
     borderRadius: 8,
@@ -203,13 +210,14 @@ export function SwitchControl({ checked, onChange }: {
   return React.createElement('button', {
     type: 'button',
     role: 'switch',
-    'aria-checked': checked,
+    'aria-checked': local,
     style: track,
-    onClick: () => { onChange(!checked) },
+    onClick: () => { const next = !local; setLocal(next); onChange(next) },
   }, React.createElement('span', { style: thumb }))
 }
 
-/** The "界面定制" block registered in Settings → General. */export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceProps): React.ReactElement {
+/** The "界面定制" block registered in Settings → General. */
+export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceProps): React.ReactElement {
   return React.createElement('div', { style: { display: 'flex', flexDirection: 'column' } }, [
     React.createElement(SettingsRow, {
       key: 'width',

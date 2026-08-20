@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>为 DeepSeek Harness 打造的界面美化与插件协调层。</strong><br>
-  规范化官方界面 · 协调每个插件 · 设置页自动规范器 · MCP 与自动化管理<br>
+  规范化官方界面 · 协调每个插件 · 设置页自动规范器 · 界面定制（含圆角卡片）<br>
   A polish layer for DeepSeek Harness — normalizes official UI, reconciles plugin styles, and auto-fixes settings pages.
 </p>
 
@@ -56,14 +56,6 @@ Harness UI Enhancer is a **client-only DSH bundle plugin**. It adds no model too
 | 标题/描述贴太紧 | 统一 4px 间距 + hairline 收尾 |
 | 字号/格式不统一 | 标题 18/600、描述 13/20 + `border-bottom` |
 
-### 🔌 MCP 服务器管理 · MCP Server Management
-
-点击左下角 **MCP** 按钮：添加/编辑/删除/测试连接，配置保存在 `~/.dsh/mcp.json`。
-
-### ⏰ 自动化任务调度 · Task Automation
-
-点击左下角 **自动化** 按钮：支持周期/间隔/单次三种调度模式，提示词输入框复用聊天样式。
-
 ### 🎛️ 界面定制 · UI Customization
 
 设置 → 通用设置中的"界面定制"块：对话宽度、markdown 字号、工作区字号、UI 字体、圆角卡片均可实时调节。「圆角卡片」把对话区域显示为左上圆角的卡片并附投影，高度跟随侧栏宽度/详情列自动伸缩。
@@ -76,7 +68,7 @@ Harness UI Enhancer is a **client-only DSH bundle plugin**. It adds no model too
 - **官方设计令牌**：所有样式走 `--dsw-*` 语义令牌，自动跟随明暗主题；
 - **两条注入通道**：静态规则（CSS Modules）+ 动态 `<style data-plugin>` 标签；
 - **可逆清理**：fiber effect disposer 管理所有副作用，卸载即恢复；
-- **Slot 接入**：`settings.general.item` / `settings.section` / `sidebar.footer.action` / `shell.overlay`。
+- **Slot 接入**：`settings.general.item` / `settings.section` / `shell.overlay`（圆角卡片覆盖层）。
 
 ---
 
@@ -129,7 +121,10 @@ pnpm run check      # 类型检查 + 构建
 ## 变更日志 · Changelog
 
 <details>
-<summary>v0.5.0（当前）</summary>
+<summary>v0.6.0（当前）</summary>
+
+**移除：**
+- 🗑️ 移除 MCP 服务器管理 与 自动化任务调度：这两项本不属于"UI 强化"范畴，从插件中整体删除（host half 相关 API 路由随之删除，插件回归纯 client、零 host 逻辑）。左下角不再有 MCP / 自动化按钮。
 
 **新功能：**
 - 🃏 圆角卡片：对话区域显示为左上圆角的卡片并附投影（设置 → 通用设置 → 界面定制 → 圆角卡片）
@@ -139,6 +134,9 @@ pnpm run check      # 类型检查 + 构建
   - 覆盖层用 `ResizeObserver` 跟踪中间列，侧栏拖拽/折叠/详情列开合自动跟随
   - 内容左上角由中间列自身 `border-radius`（+ 既有 overflow:hidden）蒙成圆角，与覆盖层同半径
   - 纯 CSS 门控（`html.enhc-center-card-on` 类），可随时关闭、卸载零残留
+
+**修复：**
+- 🎚️ 界面定制开关实时反馈：圆角卡片开关改为本地镜像状态，按下瞬间 thumb 滑动 + 底色翻转，无需等待重渲染（原先父级原地改 state 不触发重渲染，开关无视觉反馈）
 
 </details>
 

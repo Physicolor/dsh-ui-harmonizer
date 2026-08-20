@@ -15,7 +15,6 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import './enhancer.module.css'
 import { GeneralHeader, SettingsGeneralRow } from './components.tsx'
 import { applyState, disposeDynamicStyle, FONT_PRESETS, loadState, type EnhancerState } from './state.ts'
-import { AutoDialog, AutoLauncher, McpDialog } from './mcp-auto.ts'
 import { CenterColCard } from './card-overlay.tsx'
 
 /** Plugin id stamped on the dynamic style tag (loader unload sweep key). */
@@ -182,22 +181,6 @@ export function apply(ctx: ClientContext): void {
     () => React.createElement(SettingsGeneralRow, surfaceProps),
   ))
 
-  // MCP + Automation: two buttons in ONE sidebar.footer.action entry.
-  // The wrapper is transparent (zero padding) so buttons match the settings
-  // trigger's width exactly. Two separate Settings-style modal dialogs
-  // in shell.overlay.
-  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register(
-    { name: 'sidebar.footer.action', id: 'enhancer-triggers', order: 20 },
-    () => React.createElement(AutoLauncher),
-  ))
-  ctx.slots.inject('shell.overlay', () => ctx.slots.register(
-    { name: 'shell.overlay', id: 'enhancer-mcp-dlg', order: 0 },
-    () => React.createElement(McpDialog),
-  ))
-  ctx.slots.inject('shell.overlay', () => ctx.slots.register(
-    { name: 'shell.overlay', id: 'enhancer-auto-dlg', order: 1 },
-    () => React.createElement(AutoDialog),
-  ))
   // Passive rounded-card chrome over the center column. Always mounted (cheap
   // geometry tracking); its paint is toggled by the enhc-center-card-on root
   // class, which applyState flips from the Settings switch — no re-render.
