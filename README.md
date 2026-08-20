@@ -121,7 +121,15 @@ pnpm run check      # 类型检查 + 构建
 ## 变更日志 · Changelog
 
 <details>
-<summary>v0.6.0（当前）</summary>
+<summary>v0.6.1（当前）</summary>
+
+**修复：**
+- 🧩 侧栏打开时「对话/输入框与右侧面板之间的大段空隙」：修复打开 better-sidebar 右侧面板时对话区的 `margin-right` 二次挤压。此前对 `#root` 的中和只清掉了 `margin-right`，却保留了 better-sidebar 同规则里的 `width: calc(100% - var(--dsh-sidebar-width))` —— width 挤压把整列先缩到面板左缘，viewArea/composerSeat 的 margin 挤压再叠一遍，对话比面板多让出一个整面板宽。现补 `width: 100%` 完整中和 `#root`，内部 margin 成为唯一、正确的挤压（对话右缘贴合面板左缘，仅剩 scrollbar 8px 沟槽）。
+
+</details>
+
+<details>
+<summary>v0.6.0</summary>
 
 **移除：**
 - 🗑️ 移除 MCP 服务器管理 与 自动化任务调度：这两项本不属于"UI 强化"范畴，从插件中整体删除（host half 相关 API 路由随之删除，插件回归纯 client、零 host 逻辑）。左下角不再有 MCP / 自动化按钮。
