@@ -47,12 +47,12 @@ export function apply(ctx: ClientContext): void {
   // index so locale-dependent aria-labels never matter.
   ctx.effect(() => {
     const syncToggleStates = (): void => {
-      const panel = document.querySelector('.W-zNGW_panel')
-      const bottom = document.querySelector('.W-zNGW_bottomPanel')
-      const buttons = document.querySelectorAll('.W-zNGW_toggleButton')
+      const panel = document.querySelector('.nArs4W_panel')
+      const bottom = document.querySelector('.nArs4W_bottomPanel')
+      const buttons = document.querySelectorAll('.nArs4W_toggleButton')
       if (!panel || !bottom || buttons.length < 2) return
-      const panelOpen = !panel.classList.contains('W-zNGW_panelHidden')
-      const bottomOpen = !bottom.classList.contains('W-zNGW_bottomPanelHidden')
+      const panelOpen = !panel.classList.contains('nArs4W_panelHidden')
+      const bottomOpen = !bottom.classList.contains('nArs4W_bottomPanelHidden')
       buttons[0].setAttribute('aria-pressed', String(bottomOpen))
       buttons[1].setAttribute('aria-pressed', String(panelOpen))
     }

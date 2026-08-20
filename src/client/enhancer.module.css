@@ -296,11 +296,11 @@ input[type='range'].uitw-slider::-moz-range-track {
  * toggle cluster is vertically centered on the header utilities row with the
  * header padded right to give it a permanent seat next to the capsules.
  * Selectors match the installed better-sidebar 0.12.1 hashed classes
- * (W-zNGW_*); the panel/bottomPanel are fixed full-height/width frames, so a
+ * (nArs4W_*); the panel/bottomPanel are fixed full-height/width frames, so a
  * bare [class$='_panel'] would risk hitting unrelated panels — the explicit
  * prefix keeps this scoped to the one plugin. Two hardening details: bare
- * .W-zNGW_* classes must be :global() wrapped or CSS Modules rewrites them
- * into <hash>_W-zNGW_* (never matching), and every rule carries a `body`
+ * .nArs4W_* classes must be :global() wrapped or CSS Modules rewrites them
+ * into <hash>_nArs4W_* (never matching), and every rule carries a `body`
  * prefix so its specificity beats better-sidebar's own same-class rules —
  * that bundle loads after this one, so equal specificity would let it win. */
 
@@ -324,8 +324,8 @@ body [class$='_toggleButton']:hover:not(:disabled) {
  * token (light: white, dark: bluish-800) — because brand-primary flips to a
  * near-white fill in dark mode and a hardcoded #fff would vanish. The :hover
  * variant out-specifies the hover rule above so an active toggle stays lit. */
-:global(.W-zNGW_toggleButton[aria-pressed=true]),
-:global(.W-zNGW_toggleButton[aria-pressed=true]:hover) {
+:global(.nArs4W_toggleButton[aria-pressed=true]),
+:global(.nArs4W_toggleButton[aria-pressed=true]:hover) {
   background: var(--dsw-alias-brand-primary);
   color: var(--dsw-alias-label-primary-inverted);
   border-color: transparent;
@@ -338,9 +338,9 @@ body [class$='_toggleButton']:hover:not(:disabled) {
 body [class$='_toggleCluster'] {
   gap: 6px;
   top: 12px; /* vertically centered on the header utilities row (12px pad-top + 32px row) */
-  right: 12px;
+  right: 12px; /* fixed position — stays in place regardless of panel state */
 }
-:global(body .W-zNGW_panel) {
+:global(body .nArs4W_panel) {
   /* Start below the session header so the header is never covered: the widgets
    * rail already measures the conversation scroll top into --dsx-rail-top, so
    * reusing it keeps this panel on the exact same line as the rail (fallback
@@ -352,7 +352,7 @@ body [class$='_toggleCluster'] {
    * source of truth for the corner. box-shadow is a decoration, not content,
    * so it is unaffected by the clip. The resize handle is moved to left:0 so
    * the clip cannot slice it off. */
-  top: var(--dsx-rail-top, 75px);
+  top: 6px;
   background: var(--dsw-alias-bg-layer-1);
   border: none;
   border-left: 1px solid var(--dsw-alias-border-l2);
@@ -360,23 +360,26 @@ body [class$='_toggleCluster'] {
   box-shadow: var(--dsw-shadow-lv3);
   overflow: hidden;
 }
-:global(body .W-zNGW_panelResize) {
+:global(body .nArs4W_panelResize) {
   left: 0;
 }
-:global(body .W-zNGW_bottomPanel) {
+:global(body .nArs4W_bottomPanel) {
   background: var(--dsw-alias-bg-base);
   border-top: 1px solid var(--dsw-alias-border-l2);
 }
-/* Give the floating toggle cluster a permanent seat on the header utilities
- * line: pad the header right by 90px (12px cluster offset + 70px cluster +
- * 8px gap). !important beats better-sidebar's own collapsed-state push
- * (body[data-dsh-sidebar-collapsed] … > header { padding-right: 78px }) so
- * the utilities row never jumps when a panel opens. Bottom padding keeps a
- * breathing gap below the single-row header; the border is dropped entirely
- * (no divider line under the header). */
+/* The header shares its right margin with whichever is wider: the floating
+ * toggle cluster (~82px, position:fixed right:12px) or the better-sidebar
+ * panel (--dsh-sidebar-width). When the sidebar is closed, margin-right is
+ * 82px so Session log and 组件 sit clear of the toggle cluster. When the
+ * sidebar opens, margin-right becomes max(sidebar-width, 82px) — the header
+ * shrinks to the panel edge, and the toggle cluster sits inside the panel
+ * area so no extra padding is needed. !important beats better-sidebar's
+ * collapsed-state push. */
 :global([data-slot='conversation.session.header'] > header) {
-  padding: 12px 90px 12px 20px !important;
+  margin-right: max(var(--dsh-sidebar-width, 0px), 82px) !important;
+  padding: 12px 20px !important;
   border-bottom: none !important;
+  transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
 }
 /* The visible divider under the header is NOT the border (product caps it
  * transparent #0000) but a 1px :after pseudo-element (background border-l2,
@@ -434,10 +437,43 @@ body [class$='_toggleCluster'] {
  * panel's overflow:hidden clip applies the corner for them. Drop the per-tab
  * divider line (fewer dividers); pane carries the inner surface color and is
  * itself clipped to the rounded corner by the panel. */
-:global(body .W-zNGW_panel .W-zNGW_tab) {
-  border-right: none;
+/* better-sidebar tab bar: 44px height with proportionally scaled internals.
+ * The default bar is ~36px; bumping to 44px gives a more spacious feel that
+ * matches the session header's 32px capsule row when accounting for the
+ * panel's own padding. Scale icons, text, and buttons proportionally. */
+:global(body .nArs4W_tabBar) {
+  height: 44px;
+  min-height: 44px;
 }
-:global(body .W-zNGW_panel .W-zNGW_pane) {
+:global(body .nArs4W_panel .nArs4W_tab) {
+  border-right: none;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: 20px;
+  gap: 6px;
+}
+:global(body .nArs4W_panel .nArs4W_tab svg) {
+  width: 16px;
+  height: 16px;
+}
+:global(body .nArs4W_panel .nArs4W_tabClose) {
+  width: 16px;
+  height: 16px;
+}
+:global(body .nArs4W_panel .nArs4W_tabClose svg) {
+  width: 14px;
+  height: 14px;
+}
+:global(body .nArs4W_panel .nArs4W_tabBarPlus) {
+  width: 20px;
+  height: 20px;
+}
+:global(body .nArs4W_panel .nArs4W_tabBarPlus svg) {
+  width: 16px;
+  height: 16px;
+}
+:global(body .nArs4W_panel .nArs4W_pane) {
   background: var(--dsw-alias-bg-layer-1);
 }
 /* No horizontal scroll inside the right panel — professional pattern for a
@@ -446,17 +482,17 @@ body [class$='_toggleCluster'] {
  * then clip X on the explorer and ellipsize long names (already ellipsized by
  * the plugin) instead of letting content push a scrollbar. Code/terminal
  * panes keep their own native vertical + horizontal scrolling. */
-:global(body .W-zNGW_panel .W-zNGW_paneContent),
-:global(body .W-zNGW_panel .W-zNGW_paneTab),
-:global(body .W-zNGW_panel .W-zNGW_explorer),
-:global(body .W-zNGW_panel .W-zNGW_explorerBody) {
+:global(body .nArs4W_panel .nArs4W_paneContent),
+:global(body .nArs4W_panel .nArs4W_paneTab),
+:global(body .nArs4W_panel .nArs4W_explorer),
+:global(body .nArs4W_panel .nArs4W_explorerBody) {
   min-width: 0;
   max-width: 100%;
 }
-:global(body .W-zNGW_panel .W-zNGW_explorerBody) {
+:global(body .nArs4W_panel .nArs4W_explorerBody) {
   overflow-x: hidden;
 }
-:global(body .W-zNGW_panel .W-zNGW_explorerRow) {
+:global(body .nArs4W_panel .nArs4W_explorerRow) {
   max-width: 100%;
 }
 /* better-sidebar OCCUPIES the layout when a panel opens (VSCode-style): it
