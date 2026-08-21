@@ -117,6 +117,10 @@ pnpm run check      # typecheck + build
 
 ## Changelog
 
+### v0.6.2
+**Fix:**
+- 🧱 The session header now has an opaque card surface (`--dsw-alias-bg-base`) and sits one step above the shell's overlay layer (`z-index: 21`, still below better-sidebar's panels at 40 and modals): the harness-widgets rail and its magnify overlay slide UNDER the header's white rectangle instead of visually stacking onto the header buttons. Header rules stay in the enhancer (the widgets plugin no longer touches official elements).
+
 ### v0.6.1
 **Fix:**
 - 🧩 The big empty gap between the chat/input and the right sidebar when it opens: fixed the double-squeeze on the conversation's `margin-right`. The `#root` neutralization previously cleared only `margin-right`, leaving better-sidebar's `width: calc(100% - var(--dsh-sidebar-width))` active — the width squeeze first narrowed the column to the panel's left edge, then the viewArea/composerSeat margin squeezed a second time, pushing the conversation one full panel-width short of the panel. Added `width: 100%` to fully neutralize `#root`, so the inner margin is now the single, correct squeeze (the chat's right edge meets the panel's left edge, minus the 8px scrollbar gutter).

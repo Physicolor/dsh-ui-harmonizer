@@ -411,6 +411,18 @@ body [class$='_toggleCluster'] {
   border-bottom: none !important;
   transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
 }
+/* Opaque white rectangle for the session header. The shell's overlay layer
+ * (z-20) hosts the harness-widgets rail and its magnify overlay; without a
+ * solid header background the magnified cards visually stack ON the header
+ * buttons instead of sliding UNDER the header. Give the header a real card
+ * surface (same fill as the column) and lift it one step above the overlay
+ * layer (21 > 20) — but still below better-sidebar's panels (40) and modals —
+ * so the rail's top edge is always masked by the header rectangle. */
+:global([data-slot='conversation.session.header'] > header) {
+  position: relative;
+  z-index: 21;
+  background: var(--dsw-alias-bg-base);
+}
 /* The visible divider under the header is NOT the border (product caps it
  * transparent #0000) but a 1px :after pseudo-element (background border-l2,
  * bottom:1px). Kill it too — bottom spacing alone separates header/content. */

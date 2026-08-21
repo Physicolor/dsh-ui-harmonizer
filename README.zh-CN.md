@@ -117,6 +117,10 @@ pnpm run check      # 类型检查 + 构建
 
 ## 变更日志
 
+### v0.6.2
+**修复：**
+- 🧱 会话顶部栏获得不透明卡片表面（`--dsw-alias-bg-base`），并提升到 shell overlay 层之上 1 级（`z-index: 21`，仍低于 better-sidebar 面板 40 与弹窗）：harness-widgets 组件栏及其悬浮放大层将滑入顶部栏白色矩形之下，不再与顶部按钮视觉重叠。顶部栏规则统一归 enhancer（widgets 插件不再插手官方元素）。
+
 ### v0.6.1
 **修复：**
 - 🧩 侧栏打开时「对话/输入框与右侧面板之间的大段空隙」：修复对话区 `margin-right` 的二次挤压。此前对 `#root` 的中和只清掉了 `margin-right`，却保留了 better-sidebar 同规则里的 `width: calc(100% - var(--dsh-sidebar-width))` —— width 挤压把整列先缩到面板左缘，viewArea/composerSeat 的 margin 挤压再叠一遍，对话比面板多让出一个整面板宽。现补 `width: 100%` 完整中和 `#root`，内部 margin 成为唯一、正确的挤压（对话右缘贴合面板左缘，仅剩 scrollbar 8px 沟槽）。
