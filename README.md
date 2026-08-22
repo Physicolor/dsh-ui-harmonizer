@@ -39,7 +39,7 @@ DSH UI Harmonizer is a **client-only DSH bundle plugin**. It adds no model tools
 | Target | Approach |
 | --- | --- |
 | `dsh-better-sidebar` | Capsule-ize toggle buttons, unify panel backgrounds, coordinate layout, smooth transitions |
-| `harness-widgets` | Matching stat capsule family, header utilities alignment |
+| `dsh-widgets` | Matching stat capsule family, header utilities alignment |
 | Third-party settings pages | Auto-fill headings, drop redundant icons, normalize spacing |
 
 ### 🧹 Settings Auto-Normalizer ⭐
@@ -100,8 +100,8 @@ pnpm run check      # typecheck + build
 ## Compatibility
 
 - DeepSeek Harness `0.1.0-rc.6` and compatible later `0.1.x`;
-- Integrates via official slots, coexisting with better-sidebar, harness-widgets, dshmarket, etc. by slot order;
-- Known reconciliation targets: `dsh-better-sidebar`, `harness-widgets`, `dsh-notification`, `dshmarket`;
+- Integrates via official slots, coexisting with better-sidebar, dsh-widgets, dshmarket, etc. by slot order;
+- Known reconciliation targets: `dsh-better-sidebar`, `dsh-widgets`, `dsh-notification`, `dshmarket`;
 - The page fully restores to defaults after uninstall/disable — no residue.
 
 ---
@@ -131,7 +131,7 @@ pnpm run check      # typecheck + build
 
 ### v0.6.2
 **Fix:**
-- 🧱 The session header now has an opaque card surface (`--dsw-alias-bg-base`) and sits one step above the shell's overlay layer (`z-index: 21`, still below better-sidebar's panels at 40 and modals): the harness-widgets rail and its magnify overlay slide UNDER the header's white rectangle instead of visually stacking onto the header buttons. Header rules stay in the enhancer (the widgets plugin no longer touches official elements).
+- 🧱 The session header now has an opaque card surface (`--dsw-alias-bg-base`) and sits one step above the shell's overlay layer (`z-index: 21`, still below better-sidebar's panels at 40 and modals): the dsh-widgets rail and its magnify overlay slide UNDER the header's white rectangle instead of visually stacking onto the header buttons. Header rules stay in the enhancer (the widgets plugin no longer touches official elements).
 
 ### v0.6.1
 **Fix:**
@@ -164,7 +164,7 @@ pnpm run check      # typecheck + build
 
 ### v0.3.0
 - Settings auto-normalizer launched;
-- better-sidebar / harness-widgets visual coordination;
+- better-sidebar / dsh-widgets visual coordination;
 - single-line header;
 - light/dark adaptivity.
 

@@ -43,7 +43,7 @@ Class-name convention: end your semantic class names with a **stable suffix** (`
 
 ## What this plugin normalizes automatically
 
-When this plugin (`harness-ui-enhancer`) is installed, these apply to **any** third-party `settings.section` page without you doing anything — build to the spec anyway so you don't depend on them:
+When this plugin (`dsh-ui-harmonizer`) is installed, these apply to **any** third-party `settings.section` page without you doing anything — build to the spec anyway so you don't depend on them:
 
 | Problem | Auto-handling |
 | --- | --- |
@@ -63,7 +63,7 @@ Boundaries: normalization only touches the **header** (visual). It does not reor
 | Notifications (`dsh-notification`, `dsh_notification_*`) | description had no hairline; title–description too tight (~-6px due to gap + negative margin) | heading `gap:4px`, title `margin-bottom:0`, subtitle hairline added |
 | Plugin market (`dshmarket`, `eGUBIq_*`) | 22px logo beside the title | direct `titleRow` svg `display:none` |
 | Side cards (`dsh-better-sidebar`, `Pz1RTq_*`) | no `<h2>` at all, only a `p.intro` | injected `enhc-settings-title` labelled "侧边卡片" |
-| Widgets (`harness-widgets`) | — (self-drawn inline div header, already conformant) | untouched |
+| Widgets (`dsh-widgets`) | — (self-drawn inline div header, already conformant) | untouched |
 
 ## Recommendation for plugin authors
 

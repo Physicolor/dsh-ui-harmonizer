@@ -39,7 +39,7 @@ DSH UI Harmonizer 是一个**纯浏览器端（client-only）**的 DSH bundle �
 | 协调对象 | 做法 |
 | --- | --- |
 | `dsh-better-sidebar` | toggle 按钮胶囊化、面板背景统一、布局协调、平滑过渡动画 |
-| `harness-widgets` | 统计胶囊同族、header utilities 对齐 |
+| `dsh-widgets` | 统计胶囊同族、header utilities 对齐 |
 | 第三方设置页 | 自动补标题、删多余图标、统一间距格式 |
 
 ### 🧹 设置页自动规范器 ⭐
@@ -100,8 +100,8 @@ pnpm run check      # 类型检查 + 构建
 ## 兼容性
 
 - DeepSeek Harness `0.1.0-rc.6` 及兼容的后续 `0.1.x`；
-- 通过官方 slot 接入，与 better-sidebar、harness-widgets、dshmarket 等插件按 slot 顺序共处；
-- 已知协调对象：`dsh-better-sidebar`、`harness-widgets`、`dsh-notification`、`dshmarket`；
+- 通过官方 slot 接入，与 better-sidebar、dsh-widgets、dshmarket 等插件按 slot 顺序共处；
+- 已知协调对象：`dsh-better-sidebar`、`dsh-widgets`、`dsh-notification`、`dshmarket`；
 - 卸载/禁用后页面完全恢复默认，无残留。
 
 ---
@@ -126,7 +126,7 @@ pnpm run check      # 类型检查 + 构建
 
 ### v0.6.2
 **修复：**
-- 🧱 会话顶部栏获得不透明卡片表面（`--dsw-alias-bg-base`），并提升到 shell overlay 层之上 1 级（`z-index: 21`，仍低于 better-sidebar 面板 40 与弹窗）：harness-widgets 组件栏及其悬浮放大层将滑入顶部栏白色矩形之下，不再与顶部按钮视觉重叠。顶部栏规则统一归 enhancer（widgets 插件不再插手官方元素）。
+- 🧱 会话顶部栏获得不透明卡片表面（`--dsw-alias-bg-base`），并提升到 shell overlay 层之上 1 级（`z-index: 21`，仍低于 better-sidebar 面板 40 与弹窗）：dsh-widgets 组件栏及其悬浮放大层将滑入顶部栏白色矩形之下，不再与顶部按钮视觉重叠。顶部栏规则统一归 enhancer（widgets 插件不再插手官方元素）。
 
 ### v0.6.1
 **修复：**
@@ -159,7 +159,7 @@ pnpm run check      # 类型检查 + 构建
 
 ### v0.3.0
 - 设置页自动规范器上线
-- better-sidebar、harness-widgets 视觉协调
+- better-sidebar、dsh-widgets 视觉协调
 - 顶部栏单行化
 - 深浅主题自适应
 
