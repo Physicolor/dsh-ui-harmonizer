@@ -1,25 +1,25 @@
 <p align="right"><a href="README.md">English</a> · <b>简体中文</b></p>
 
-<h1 align="center">Harness UI Enhancer</h1>
+<h1 align="center">DSH UI Harmonizer</h1>
 
 <p align="center">
-  <strong>为 DeepSeek Harness 打造的界面美化与插件协调层。</strong><br>
+  <strong>为 DeepSeek Harness 打造的界面规范化与协调层。</strong><br>
   规范化官方界面 · 协调每个插件 · 设置页自动规范器 · 界面定制（含圆角卡片）
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/npm/v/harness-ui-enhancer?style=flat&label=latest%20release&color=4D6BFE" alt="Latest release">
-  <img src="https://img.shields.io/npm/dt/harness-ui-enhancer?style=flat&label=total%20downloads&color=4D6BFE" alt="Total downloads">
-  <a href="https://github.com/Physicolor/harness-ui-enhancer/stargazers"><img src="https://img.shields.io/github/stars/Physicolor/harness-ui-enhancer?style=flat&label=%E2%98%85&color=08C" alt="GitHub stars"></a>
+  <img src="https://img.shields.io/npm/v/dsh-ui-harmonizer?style=flat&label=latest%20release&color=4D6BFE" alt="Latest release">
+  <img src="https://img.shields.io/npm/dt/dsh-ui-harmonizer?style=flat&label=total%20downloads&color=4D6BFE" alt="Total downloads">
+  <a href="https://github.com/Physicolor/dsh-ui-harmonizer/stargazers"><img src="https://img.shields.io/github/stars/Physicolor/dsh-ui-harmonizer?style=flat&label=%E2%98%85&color=08C" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/license-MIT-2EA44F?style=flat" alt="MIT License">
   <img src="https://img.shields.io/badge/DSH%200.1.x-4493F8?style=flat-square" alt="Supported: DeepSeek Harness 0.1.x">
 </p>
 
 ---
 
-> **一句话：** 你装了一堆 DSH 插件，界面却风格割裂？Harness UI Enhancer 用「**CSS 覆盖 + 运行时 DOM 协调**」把它们拉回官方设计语言——**不破坏任何插件源码、卸载即还原、零模型开销**。
+> **一句话：** 你装了一堆 DSH 插件，界面却风格割裂？DSH UI Harmonizer 用「**CSS 覆盖 + 运行时 DOM 协调**」把它们拉回官方设计语言——**不破坏任何插件源码、卸载即还原、零模型开销**。
 
-Harness UI Enhancer 是一个**纯浏览器端（client-only）**的 DSH bundle 插件。它不新增模型工具、不改写会话日志，只通过官方 `settings.section` / `settings.general.item` 槽位与 `--dsw-*` 语义令牌体系调整界面。
+DSH UI Harmonizer 是一个**纯浏览器端（client-only）**的 DSH bundle 插件。它不新增模型工具、不改写会话日志，只通过官方 `settings.section` / `settings.general.item` 槽位与 `--dsw-*` 语义令牌体系调整界面。
 
 ---
 
@@ -73,7 +73,7 @@ Harness UI Enhancer 是一个**纯浏览器端（client-only）**的 DSH bundle 
 
 ```sh
 # 通过 npm（插件市场）
-dsh plugin --profile web add harness-ui-enhancer
+dsh plugin --profile web add dsh-ui-harmonizer
 
 # 本地开发（link 方式）
 dsh plugin --profile web add link:D:/dsh-home/plugins/harness-ui-enhancer
@@ -93,7 +93,7 @@ pnpm run check      # 类型检查 + 构建
 
 - `peerDependencies`：`@deepseek-ai/dsh-client-ui-slots`、`dsh-client-runtime`（由 DSH web profile 提供）；
 - 纯 client 插件：`cordis.patch.yml` 插入 `ui-enhancer` 行，浏览器半由 `dsh.client` 声明；
-- **修改后需同步**：`npx tsdown` 重建 → 同步到 `profiles/web/node_modules/harness-ui-enhancer/lib/` → 硬刷新浏览器。
+- **修改后需同步**：`npx tsdown` 重建 → 同步到 `profiles/web/node_modules/dsh-ui-harmonizer/lib/` → 硬刷新浏览器。
 
 ---
 
@@ -116,6 +116,13 @@ pnpm run check      # 类型检查 + 构建
 ---
 
 ## 变更日志
+
+### v0.7.0
+**元信息 — 包名改为 `dsh-ui-harmonizer`：**
+- 📦 npm 包由 `harness-ui-enhancer` 更名为 `dsh-ui-harmonizer`（dsh 前缀 + harmonizer 命名贴合生态惯例与检索；旧包已 deprecate 并指路）。
+- 🎯 定位：「为 DeepSeek Harness 打造界面规范化与协调层」——把 UI 规范化/调和进官方设计语言（不只是美化）。
+- 🔀 GitHub 仓库由 `Physicolor/harness-ui-enhancer` 更名为 `Physicolor/dsh-ui-harmonizer`（旧链接自动跳转，star/issue 保留）。
+- ♻️ 安装命令：`dsh plugin --profile web add dsh-ui-harmonizer`。无数据影响（纯 client 插件，无持久化键）。
 
 ### v0.6.2
 **修复：**

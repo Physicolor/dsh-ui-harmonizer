@@ -1,5 +1,5 @@
 /**
- * tsdown config for harness-ui-enhancer.
+ * tsdown config for dsh-ui-harmonizer.
  *
  * Two artifacts:
  * - lib/index.js — the host (node) half: a no-op apply the loader mounts.
@@ -44,7 +44,7 @@ function sourceAssetPath(source: string, importer: string): string {
 
 /** Host (node) half: plain ESM, tsc-emitted types aside, just the no-op apply. */
 const nodeConfig: UserConfig = {
-  name: 'harness-ui-enhancer/node',
+  name: 'dsh-ui-harmonizer/node',
   entry: { index: 'src/index.ts' },
   outDir: 'lib',
   format: ['esm'],
@@ -59,7 +59,7 @@ const nodeConfig: UserConfig = {
 
 /** Browser bundle: closure-factory format consumed by the loader module table. */
 const clientConfig: UserConfig = {
-  name: 'harness-ui-enhancer/client',
+  name: 'dsh-ui-harmonizer/client',
   entry: { client: 'src/client/index.ts' },
   outDir: 'lib',
   format: 'cjs',
@@ -95,13 +95,13 @@ const clientConfig: UserConfig = {
         })
         const classMap: Record<string, string> = {}
         for (const [local, exp] of Object.entries(cssExports ?? {})) classMap[local] = exp.name
-        const tagId = `${'harness-ui-enhancer'}/${basename(fileId)}`
+        const tagId = `${'dsh-ui-harmonizer'}/${basename(fileId)}`
         return [
           `const css = ${JSON.stringify(code.toString())};`,
           `const tagId = ${JSON.stringify(tagId)};`,
           'if (typeof document !== \'undefined\' && document.querySelector(\'style[data-plugin-css=\' + JSON.stringify(tagId) + \']\') === null) {',
           '  const tag = document.createElement(\'style\');',
-          '  tag.dataset.plugin = ' + JSON.stringify('harness-ui-enhancer') + ';',
+          '  tag.dataset.plugin = ' + JSON.stringify('dsh-ui-harmonizer') + ';',
           '  tag.dataset.pluginCss = tagId;',
           '  tag.textContent = css;',
           '  document.head.appendChild(tag);',
@@ -114,7 +114,7 @@ const clientConfig: UserConfig = {
   outputOptions: {
     entryFileNames: 'client.js',
     sourcemapPathTransform: browserSourcePath,
-    banner: 'window.__ModuleLoader__.load({ id: "harness-ui-enhancer", factory: (require) => {',
+    banner: 'window.__ModuleLoader__.load({ id: "dsh-ui-harmonizer", factory: (require) => {',
     footer: 'return module.exports; } });',
     intro: 'var module = { exports: {} }; var exports = module.exports;',
   },

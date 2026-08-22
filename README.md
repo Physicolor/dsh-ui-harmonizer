@@ -1,25 +1,25 @@
 <p align="right"><b>English</b> · <a href="README.zh-CN.md">简体中文</a></p>
 
-<h1 align="center">Harness UI Enhancer</h1>
+<h1 align="center">DSH UI Harmonizer</h1>
 
 <p align="center">
-  <strong>A UI polish &amp; plugin-coordination layer for DeepSeek Harness.</strong><br>
+  <strong>UI harmonizer for DeepSeek Harness.</strong><br>
   Normalizes the official UI · reconciles every plugin · settings auto-normalizer · UI customization (incl. rounded card)
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/npm/v/harness-ui-enhancer?style=flat&label=latest%20release&color=4D6BFE" alt="Latest release">
-  <img src="https://img.shields.io/npm/dt/harness-ui-enhancer?style=flat&label=total%20downloads&color=4D6BFE" alt="Total downloads">
-  <a href="https://github.com/Physicolor/harness-ui-enhancer/stargazers"><img src="https://img.shields.io/github/stars/Physicolor/harness-ui-enhancer?style=flat&label=%E2%98%85&color=08C" alt="GitHub stars"></a>
+  <img src="https://img.shields.io/npm/v/dsh-ui-harmonizer?style=flat&label=latest%20release&color=4D6BFE" alt="Latest release">
+  <img src="https://img.shields.io/npm/dt/dsh-ui-harmonizer?style=flat&label=total%20downloads&color=4D6BFE" alt="Total downloads">
+  <a href="https://github.com/Physicolor/dsh-ui-harmonizer/stargazers"><img src="https://img.shields.io/github/stars/Physicolor/dsh-ui-harmonizer?style=flat&label=%E2%98%85&color=08C" alt="GitHub stars"></a>
   <img src="https://img.shields.io/badge/license-MIT-2EA44F?style=flat" alt="MIT License">
   <img src="https://img.shields.io/badge/DSH%200.1.x-4493F8?style=flat-square" alt="Supported: DeepSeek Harness 0.1.x">
 </p>
 
 ---
 
-> **TL;DR:** You installed a bunch of DSH plugins but the UI looks inconsistent? Harness UI Enhancer uses **CSS overrides + runtime DOM coordination** to bring them back to the official design language — **non-destructive, fully reversible, zero model cost**.
+> **TL;DR:** You installed a bunch of DSH plugins but the UI looks inconsistent? DSH UI Harmonizer uses **CSS overrides + runtime DOM coordination** to bring them back to the official design language — **non-destructive, fully reversible, zero model cost**.
 
-Harness UI Enhancer is a **client-only DSH bundle plugin**. It adds no model tools and modifies no session logs — it adjusts the UI purely through official slots (`settings.section` / `settings.general.item`) and the `--dsw-*` semantic token system.
+DSH UI Harmonizer is a **client-only DSH bundle plugin**. It adds no model tools and modifies no session logs — it adjusts the UI purely through official slots (`settings.section` / `settings.general.item`) and the `--dsw-*` semantic token system.
 
 ---
 
@@ -73,7 +73,7 @@ The "UI Customization" block under Settings → General: chat width, markdown fo
 
 ```sh
 # via npm (plugin market)
-dsh plugin --profile web add harness-ui-enhancer
+dsh plugin --profile web add dsh-ui-harmonizer
 
 # local development (link)
 dsh plugin --profile web add link:D:/dsh-home/plugins/harness-ui-enhancer
@@ -93,7 +93,7 @@ pnpm run check      # typecheck + build
 
 - `peerDependencies`: `@deepseek-ai/dsh-client-ui-slots`, `dsh-client-runtime` (provided by the DSH web profile);
 - A pure client plugin: `cordis.patch.yml` inserts the `ui-enhancer` row; the browser half is declared by `dsh.client`;
-- **Must sync after changes**: `npx tsdown` rebuild → sync into `profiles/web/node_modules/harness-ui-enhancer/lib/` → hard-refresh the browser.
+- **Must sync after changes**: `npx tsdown` rebuild → sync into `profiles/web/node_modules/dsh-ui-harmonizer/lib/` → hard-refresh the browser.
 
 ---
 
@@ -116,6 +116,13 @@ pnpm run check      # typecheck + build
 ---
 
 ## Changelog
+
+### v0.7.0
+**Meta — renamed package to `dsh-ui-harmonizer`:**
+- 📦 npm package renamed `harness-ui-enhancer` → `dsh-ui-harmonizer` (dsh- prefix + "harmonizer" naming matches the ecosystem norm and search; old package deprecated, redirects here).
+- 🎯 Positioning: "UI harmonizer for DeepSeek Harness" — normalize/reconcile/unify the UI into the official design language (not just polish).
+- 🔀 GitHub repo renamed `Physicolor/harness-ui-enhancer` → `Physicolor/dsh-ui-harmonizer` (old URL auto-redirects; stars/issues preserved).
+- ♻️ Install: `dsh plugin --profile web add dsh-ui-harmonizer`. No data impact (client-only plugin, no persisted keys).
 
 ### v0.6.3
 **Meta:**
