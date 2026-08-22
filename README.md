@@ -117,6 +117,11 @@ pnpm run check      # typecheck + build
 
 ## Changelog
 
+### v0.6.3
+**Meta:**
+- 🏷️ Added npm `keywords` (deepseek-harness / dsh / cordis / plugin / web-ui / ui-enhancement) so the package shows up in npm search; no code change.
+- 🪧 GitHub repo topics expanded (deepseek-harness, cordis, cordis-plugin, browser-extension, web-ui, ui-enhancement, plugins).
+
 ### v0.6.2
 **Fix:**
 - 🧱 The session header now has an opaque card surface (`--dsw-alias-bg-base`) and sits one step above the shell's overlay layer (`z-index: 21`, still below better-sidebar's panels at 40 and modals): the harness-widgets rail and its magnify overlay slide UNDER the header's white rectangle instead of visually stacking onto the header buttons. Header rules stay in the enhancer (the widgets plugin no longer touches official elements).

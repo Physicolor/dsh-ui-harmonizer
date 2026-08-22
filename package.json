@@ -1,6 +1,6 @@
 {
   "name": "harness-ui-enhancer",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Web UI polish layer for DeepSeek Harness: normalizes unfinished or self-contradictory official UI, reconciles style conflicts between installed plugins, and unifies the visual language — with live-customizable chat width, markdown font size, workspace scale, UI font stack and a rounded center-column card from Settings → General, all following official design tokens. Client-only dsh bundle, zero model cost, no host side, removable without residue.",
   "type": "module",
   "main": "lib/index.js",
@@ -32,6 +32,7 @@
     "build": "tsdown",
     "prepare": "tsdown"
   },
+  "keywords": ["deepseek-harness", "dsh", "cordis", "plugin", "web-ui", "ui-enhancement", "browser-plugin", "css"],
   "license": "MIT",
   "author": "Physicolor",
   "repository": {
