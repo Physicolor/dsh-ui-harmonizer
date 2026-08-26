@@ -117,6 +117,12 @@ pnpm run check      # typecheck + build
 
 ## Changelog
 
+### v0.7.1 — unreleased
+**Fix (better-sidebar Files tab strip):**
+- 📏 Tabs now FILL the 44px tab bar: the previous fixed `height: 36px` broke better-sidebar's native `align-items: stretch` chain, leaving ~8px of dead space at the strip's bottom. Reverted to `height: auto` + explicit `align-self: stretch` — the 14px label and icons stay vertically centered inside the taller strip.
+- ↔️ The open right panel's tab strip now reserves 90px on its right end (was 72px): the toggle cluster got bigger (two 32px capsules + 6px gap at `right: 12px` = 82px total), so the old seat let the rightmost tab / + button slide under the capsules. 90px = 82px cluster + 8px breathing room. The bottom panel's 40px seat is untouched.
+- 🧭 The session header's shared right margin bumped 82px → 90px to match the wider cluster (covers both the collapsed corner seat and the open-panel `max()` path).
+
 ### v0.7.0
 **Meta — renamed package to `dsh-ui-harmonizer`:**
 - 📦 npm package renamed `harness-ui-enhancer` → `dsh-ui-harmonizer` (dsh- prefix + "harmonizer" naming matches the ecosystem norm and search; old package deprecated, redirects here).

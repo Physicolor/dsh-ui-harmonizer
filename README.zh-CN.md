@@ -117,6 +117,12 @@ pnpm run check      # 类型检查 + 构建
 
 ## 变更日志
 
+### v0.7.1 — 未发布
+**修复（better-sidebar Files 标签栏）：**
+- 📏 标签现在撑满 44px 标签栏：此前固定 `height: 36px` 破坏了 better-sidebar 原生的 `align-items: stretch` 链条，在栏底留下约 8px 空白。改回 `height: auto` + 显式 `align-self: stretch`——14px 标签文字与图标仍在更高的栏内垂直居中。
+- ↔️ 右面板打开时标签栏右端让位 72px → 90px：toggle cluster 变大后（两个 32px 胶囊 + 6px 间隙、`right: 12px` 起共 82px），旧让位会让最右侧标签 / + 按钮滑到胶囊下面。90px = 82px cluster + 8px 呼吸空间。底部面板的 40px 让位不受影响。
+- 🧭 会话 header 的共享右外边距由 82px → 90px，与加大后的 cluster 对齐（覆盖折叠态角部座位与打开面板的 `max()` 两种路径）。
+
 ### v0.7.0
 **元信息 — 包名改为 `dsh-ui-harmonizer`：**
 - 📦 npm 包由 `harness-ui-enhancer` 更名为 `dsh-ui-harmonizer`（dsh 前缀 + harmonizer 命名贴合生态惯例与检索；旧包已 deprecate 并指路）。

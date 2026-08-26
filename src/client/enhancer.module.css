@@ -398,15 +398,16 @@ body [class$='_toggleCluster'] {
   border-top: 1px solid var(--dsw-alias-border-l2);
 }
 /* The header shares its right margin with whichever is wider: the floating
- * toggle cluster (~82px, position:fixed right:12px) or the better-sidebar
- * panel (--dsh-sidebar-width). When the sidebar is closed, margin-right is
- * 82px so Session log and 组件 sit clear of the toggle cluster. When the
- * sidebar opens, margin-right becomes max(sidebar-width, 82px) — the header
- * shrinks to the panel edge, and the toggle cluster sits inside the panel
- * area so no extra padding is needed. !important beats better-sidebar's
- * collapsed-state push. */
+ * toggle cluster (~90px: fixed right:12px, two 32px capsules + 6px gap,
+ * + 8px breathing) or the better-sidebar panel (--dsh-sidebar-width). When
+ * the sidebar is closed, margin-right is 90px so Session log and 组件 sit
+ * clear of the toggle cluster. When the sidebar opens, margin-right becomes
+ * max(sidebar-width, 90px) — the header shrinks to the panel edge, and the
+ * toggle cluster sits inside the panel area so no extra padding is needed.
+ * !important beats better-sidebar's own collapsed-state push (its 78px was
+ * sized for the old 28px buttons; ours are 32px capsules). */
 :global([data-slot='conversation.session.header'] > header) {
-  margin-right: max(var(--dsh-sidebar-width, 0px), 82px) !important;
+  margin-right: max(var(--dsh-sidebar-width, 0px), 90px) !important;
   padding: 12px 20px !important;
   border-bottom: none !important;
   transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
@@ -482,14 +483,30 @@ body [class$='_toggleCluster'] {
 /* better-sidebar tab bar: 44px height with proportionally scaled internals.
  * The default bar is ~36px; bumping to 44px gives a more spacious feel that
  * matches the session header's 32px capsule row when accounting for the
- * panel's own padding. Scale icons, text, and buttons proportionally. */
+ * panel's own padding. Scale icons, text, and buttons proportionally.
+ * The tabs themselves FILL the whole bar: better-sidebar's own .tab has no
+ * height and relies on the bar's align-items: stretch, but our previous
+ * fixed height: 36px broke that chain and left the 44px bar with ~8px dead
+ * space at the bottom. Reverting to auto + explicit stretch restores the
+ * full-height tab (its inner align-items: center keeps the 14px label and
+ * icons vertically centered in the taller strip). */
 :global(body .nArs4W_tabBar) {
   height: 44px;
   min-height: 44px;
 }
+/* The open right panel's tab strip reserves the toggle cluster's rendered
+ * width at its right end. The cluster now spans 12px (right) + 32px + 6px
+ * (gap) + 32px = 82px, so the 72px better-sidebar reserves for its own
+ * 28px buttons would let the rightmost tab slide under our bigger capsules.
+ * 90px = 82px cluster + 8px breathing room. Scoped to the right panel —
+ * the bottom panel's strip keeps its own 40px close-control seat. */
+:global(body .nArs4W_panel:not(.nArs4W_panelHidden) .nArs4W_tabBar) {
+  padding-right: 90px;
+}
 :global(body .nArs4W_panel .nArs4W_tab) {
   border-right: none;
-  height: 36px;
+  height: auto;
+  align-self: stretch;
   padding: 0 12px;
   font-size: 14px;
   line-height: 20px;
