@@ -123,6 +123,10 @@ pnpm run check      # 类型检查 + 构建
 - ↔️ 右面板打开时标签栏右端让位 72px → 90px：toggle cluster 变大后（两个 32px 胶囊 + 6px 间隙、`right: 12px` 起共 82px），旧让位会让最右侧标签 / + 按钮滑到胶囊下面。90px = 82px cluster + 8px 呼吸空间。底部面板的 40px 让位不受影响。
 - 🧭 会话 header 的共享右外边距由 82px → 90px，与加大后的 cluster 对齐（覆盖折叠态角部座位与打开面板的 `max()` 两种路径）。
 
+**修复（深色模式激活态文字）：**
+- ⚪ 激活的「对话」标签在深色模式下改为蓝色填充 + 白色文字。此前用的是 `--dsw-alias-label-primary-inverted`，在深色主题下解析为近黑的 bluish-800——蓝底黑字。
+- ⚪ 激活的「组件」胶囊保留插件自带的正确搭配（`state-business-primary` + `#fff`）：此前本插件的一条覆盖把白色换成了同一近黑 token（仅深色下出现）。该覆盖已删除，两个按钮在明暗两种主题下均呈现「品牌蓝填充 + 白字」，与官方导航 cell 的范式一致。
+
 ### v0.7.0
 **元信息 — 包名改为 `dsh-ui-harmonizer`：**
 - 📦 npm 包由 `harness-ui-enhancer` 更名为 `dsh-ui-harmonizer`（dsh 前缀 + harmonizer 命名贴合生态惯例与检索；旧包已 deprecate 并指路）。

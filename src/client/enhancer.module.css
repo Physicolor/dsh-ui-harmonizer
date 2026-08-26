@@ -360,11 +360,14 @@ body [class$='_toggleButton']:hover:not(:disabled) {
   color: var(--dsw-alias-label-primary-inverted);
   border-color: transparent;
 }
-/* harness-widgets capsule: same dark-mode fix — its own rule hardcodes
- * color:#fff on the brand fill; body prefix out-specifies (0,2,1)>(0,2,0). */
-:global(body .dsx-stats-capsule[aria-pressed=true]) {
-  color: var(--dsw-alias-label-primary-inverted);
-}
+/* harness-widgets capsule: its own rule already paints the pressed state as
+ * brand-blue fill + white glyphs (state-business-primary + #fff) in BOTH
+ * themes — correct as shipped. Earlier we overrode the color to
+ * --dsw-alias-label-primary-inverted, which resolves to a near-black in dark
+ * mode, turning the white glyphs black on the blue fill. Dropped: the capsule
+ * keeps its own (0,2,0) rule, which is exactly the blue-fill/white-glyph pair
+ * we want. */
+/* (no override: dsh-widgets .dsx-stats-capsule[aria-pressed='true'] stays) */
 body [class$='_toggleCluster'] {
   gap: 6px;
   top: 12px; /* vertically centered on the header utilities row (12px pad-top + 32px row) */
@@ -433,8 +436,9 @@ body [class$='_toggleCluster'] {
 /* Session tabs (对话/轨迹) — relocated into the title row by the client half
  * (inserted right after the header actions) and restyled as two standalone
  * capsules that reuse the harness-widgets component-button recipe
- * (dsx-stats-capsule), mutually exclusive: the active tab fills brand-primary
- * + label-primary-inverted, the idle one is a transparent bordered capsule.
+ * (dsx-stats-capsule), mutually exclusive: the active tab fills the DeepSeek
+ * brand blue (state-business-primary) with white glyphs, the idle one is a
+ * transparent bordered capsule.
  * NOTE on selectors: the tab classes carry a build hash prefix (wSkVaW_) and
  * the active one adds a second "_tabActive" class, so ends-with "…_tab" fails
  * on the two-class active node and starts-with fails on the hash prefix —
@@ -468,9 +472,14 @@ body [class$='_toggleCluster'] {
 :global([class$='_tabs'] [class*='_tab'][aria-selected='true']) {
   /* DeepSeek brand blue (state-business-primary: deepseek-500 light /
    * deepseek-400 dark) — deliberately distinct from the neutral-black
-   * brand-primary used by the widgets capsule and better-sidebar toggles. */
+   * brand-primary used by the better-sidebar toggles. Blue fill MUST pair
+   * with white glyphs: --dsw-alias-label-primary-inverted would resolve to
+   * a near-black bluish-800 in dark mode and vanish into the blue. #fff is
+   * the same pair dsh-widgets uses on its capsule and the official nav cell
+   * (state-business-primary + #fff) — white stays legible on both the deep
+   * light-mode blue and the brighter dark-mode blue. */
   background: var(--dsw-alias-state-business-primary);
-  color: var(--dsw-alias-label-primary-inverted);
+  color: #fff;
   border-color: transparent;
 }
 :global([class$='_tabs'] [class*='_tab']:after) {

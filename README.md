@@ -123,6 +123,10 @@ pnpm run check      # typecheck + build
 - ↔️ The open right panel's tab strip now reserves 90px on its right end (was 72px): the toggle cluster got bigger (two 32px capsules + 6px gap at `right: 12px` = 82px total), so the old seat let the rightmost tab / + button slide under the capsules. 90px = 82px cluster + 8px breathing room. The bottom panel's 40px seat is untouched.
 - 🧭 The session header's shared right margin bumped 82px → 90px to match the wider cluster (covers both the collapsed corner seat and the open-panel `max()` path).
 
+**Fix (dark-mode active-state glyphs):**
+- ⚪ The active "对话" tab now renders WHITE glyphs on the DeepSeek brand-blue fill in dark mode. It had used `--dsw-alias-label-primary-inverted`, which resolves to a near-black bluish-800 on dark themes — black text on the blue fill.
+- ⚪ The activated "组件" capsule keeps its own shipped pair (`state-business-primary` + `#fff`): an earlier override in this plugin had replaced that white with the same near-black token (dark-mode only). That override is dropped, so both buttons read as blue fill + white glyphs in light AND dark themes, matching the official nav-cell pattern.
+
 ### v0.7.0
 **Meta — renamed package to `dsh-ui-harmonizer`:**
 - 📦 npm package renamed `harness-ui-enhancer` → `dsh-ui-harmonizer` (dsh- prefix + "harmonizer" naming matches the ecosystem norm and search; old package deprecated, redirects here).
