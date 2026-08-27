@@ -33,6 +33,7 @@ DSH UI Harmonizer is a **client-only DSH bundle plugin**. It adds no model tools
 | Button capsule family | Session log, widgets, and toggle buttons unified into 32px capsules |
 | Right-rail flush rounded rect | better-sidebar panel overlay layout; the header stays put |
 | Unified settings header | Title 18/600 + description 13px + hairline divider |
+| Native-title tooltips | Raw `title` attributes render as the official dark tooltip bubble instead of the OS-native popup |
 
 ### ♻️ Plugin Visual Reconciliation
 
@@ -110,14 +111,27 @@ pnpm run check      # typecheck + build
 
 - **Phase 1 · Official UI Normalization** (in progress): keep fixing unfinished parts of the official UI;
 - **Phase 2 · Plugin compatibility coordinator** (in progress): detect and fix layout/style conflicts between plugins;
-- **Phase 3 · Unified visual style** (in progress): an optional style layer — the "rounded card" is live (rounded top-left + shadow); next: spacing density, more radius/animation unification;
+- **Phase 3 · Unified visual style** (in progress): an optional style layer — the "rounded card" is live (wrapped-header model), plus title-tooltip unification; next: spacing density, more radius/animation unification;
+  - *Liquid Glass exploration*: normalization's end goal is lowering cognitive cost — unified headings and tooltips remove the micro-fatigue of switching between styles; a material layer goes further, using one consistent physical metaphor to signal elevation and interactivity so the whole page reads as a single mental model. Scope: pure CSS/token experiments on top of semantic aliases — an opt-in switch, at most a couple of large backdrop surfaces (GPU budget), honoring reduced-transparency/reduced-motion, falling back to today's solid fills where unsupported, never touching plugin sources, and only shipping if readability measurably survives it;
 - **Phase 4 · Ecosystem**: crystallize into an extensible rule-registration mechanism.
 
 ---
 
 ## Changelog
 
-### v0.7.1 — unreleased
+### v0.8.0 — unreleased
+
+**Feature (native-title tooltip harmonizer):**
+- Any element that only carries the raw HTML `title` attribute (the model selector trigger, assorted product controls) used to pop the OS-native tooltip and break the visual language kept by every surface routed through the official Tooltip primitive. Hover/focus is now intercepted: the title is lifted for the interaction and re-rendered as the official bubble — `--dsw-alias-tooltip-bg` chip, padding 3px 7px, radius 8px, 13px/20px type, 50vw width cap, 500ms hover delay, immediate on keyboard focus, placed 8px below the anchor (flips above when clipped), clamped to a 12px viewport margin, z-index 100 popup band.
+- Rollback safety: an ancestor carrying `data-enhc-no-tooltip` opts a subtree out; the lifted attribute is restored verbatim on leave/blur/plugin stop (if the app rewrote the title mid-hover, its newer value wins); the fade-in respects reduced motion.
+
+**Fix (toggle cluster seat):**
+- The floating better-sidebar toggle cluster got an opaque seat in `bg-base`. Default (panel closed): a whole-height block spanning the session header band (top 0 → 56px), so buttons/seat/header read as one flush right edge and widgets-rail cards can no longer show through. While a better-sidebar right panel is open (`html.enhc-panel-open`, kept in sync by the client half) the seat collapses back to a compact floating chip, because the panel's top edge deliberately sits below the page top and a tall seat would jut into it.
+
+**Fix (rounded card wraps the session header):**
+- The AppFrame's shell.overlay outlet is itself a z-20 stacking context, so the card chrome painted inside it can never out-draw the z-21 session header. Zero-pixel split-paint model (no white slab anywhere): the HEADER draws the card's top edge as an INSET box-shadow hairline (a real border-top grew the header by 1px and misaligned it against out-of-flow controls) plus the 18px top-left radius, while the overlay box demotes to a pure shadow caster spanning header + content with a custom left/top-emphasized recipe — official lv3 offsets down-right and its tight contact halo painted a stray edge line along the window. Routes without a session header fall back to the classic self-drawn card. Hover/active fills ride above the seat; the seat carries a continuation of the header's top line so the edge reads unbroken across the full card width.
+
+### v0.7.1 (folded into v0.8.0)
 **Fix (better-sidebar Files tab strip):**
 - 📏 Tabs now FILL the 44px tab bar: the previous fixed `height: 36px` broke better-sidebar's native `align-items: stretch` chain, leaving ~8px of dead space at the strip's bottom. Reverted to `height: auto` + explicit `align-self: stretch` — the 14px label and icons stay vertically centered inside the taller strip.
 - ↔️ The open right panel's tab strip now reserves 90px on its right end (was 72px): the toggle cluster got bigger (two 32px capsules + 6px gap at `right: 12px` = 82px total), so the old seat let the rightmost tab / + button slide under the capsules. 90px = 82px cluster + 8px breathing room. The bottom panel's 40px seat is untouched.

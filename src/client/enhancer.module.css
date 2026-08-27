@@ -370,8 +370,33 @@ body [class$='_toggleButton']:hover:not(:disabled) {
 /* (no override: dsh-widgets .dsx-stats-capsule[aria-pressed='true'] stays) */
 body [class$='_toggleCluster'] {
   gap: 6px;
-  top: 12px; /* vertically centered on the header utilities row (12px pad-top + 32px row) */
-  right: 12px; /* fixed position — stays in place regardless of panel state */
+  /* Whole-seat form (default): the seat spans the session header's full band
+   * (top 0 → 56px = header's 12px pad + 32px row + 12px pad) so buttons,
+   * seat and header read as ONE flush right edge of the card silhouette —
+   * vertically centered (buttons land at exactly y=12..44 as before; zero
+   * pixel drift). The right rail panel top is deliberately BELOW the page
+   * top (~6px), so when a better-sidebar panel opens this tall seat would
+   * jut into its reserved corner → html.enhc-panel-open (kept in sync by the
+   * client half) collapses the seat back to a compact floating chip below. */
+  top: 0;
+  right: 0;
+  height: 56px;
+  padding: 0 8px 0 12px; /* horizontal only; centering comes from height+align */
+  border-radius: 0;
+  align-items: center;
+  /* Opaque fill identical to the header so header + seat are one surface;
+   * capsule hover/active fills paint above it. */
+  background: var(--dsw-alias-bg-base);
+}
+/* Compact floating form while a better-sidebar panel is open: the pre-v0.8
+ * chip shape (4px pad, stays inside the header's visual band, never juts
+ * into the panel area whose top edge sits lower than the page top). */
+:global(html.enhc-panel-open) body [class$='_toggleCluster'] {
+  top: 8px;
+  right: 8px;
+  height: auto;
+  padding: 4px;
+  border-radius: 12px;
 }
 :global(body .nArs4W_panel) {
   /* Start below the session header so the header is never covered: the widgets
@@ -635,7 +660,7 @@ body [class$='_toggleCluster'] {
 
 /* ── rounded center-column card ───────────────────────────────────────────
  * Non-invasive "card" chrome around the flat conversation surface. Two pieces
- * share one 14px top-left radius:
+ * share one 18px top-left radius:
  *
  *  1) Content corner mask — the center column's own overflow:hidden clips its
  *     content, so giving it a top-left border-radius rounds the conversation's
@@ -645,15 +670,22 @@ body [class$='_toggleCluster'] {
  *     square flush to the window, and the left edge is the sidebar's own line.
  *  2) The overlay chrome (CenterColCard, shell.overlay) — a transparent box
  *     over the column carrying the top border, the same rounded top-left
- *     corner and a lv3 drop shadow. It lives OUTSIDE the clipped column so the
- *     shadow can bleed left over the sidebar; its paint is gated by the root
- *     class flipped from the Settings toggle. The 1px top inset on the box
- *     gives the top shadow a sliver of viewport to render into.
+ *     corner and a lv3 drop shadow (SELF-DRAWN mode only — see the wrapped
+ *     rules below for the header-present split). It lives OUTSIDE the clipped
+ *     column so the shadow can bleed left over the sidebar; its paint is
+ *     gated by the root class flipped from the Settings toggle. The 1px top
+ *     inset on the box gives the top shadow a sliver of viewport to render.
+ *
+ * WRAPPED mode (session header present, v0.8.0): the shell.overlay outlet is
+ * itself a z-20 stacking context, so chrome inside it cannot out-paint the
+ * z-21 header. The header then paints the card's top edge + radius itself and
+ * the chrome casts shadow only — header + content together read as ONE card,
+ * exactly the "no white slab" model: no background fill anywhere.
  * Both rules are inert (display:none / no radius) unless the toggle is on. */
 
 /* 1) Round the content's top-left corner (masked by the column's overflow). */
 :global(html.enhc-center-card-on div:has(> [data-slot='conversation'])) {
-  border-radius: 14px 0 0 0;
+  border-radius: 18px 0 0 0;
 }
 
 /* 2) The overlay chrome box — transparent, only border + radius + shadow.
@@ -669,9 +701,56 @@ body [class$='_toggleCluster'] {
   border-left: none;
   border-right: none;
   border-bottom: none;
-  border-radius: 14px 0 0 0;
+  border-radius: 18px 0 0 0;
   background: transparent;
   box-shadow: var(--dsw-shadow-lv3);
   pointer-events: none;
+}
+/* Wrapped mode (session header present): the shell.overlay outlet is itself a
+ * z-20 stacking context, so this box could never paint its border above the
+ * z-21 header. The split therefore is: the HEADER paints the card's top edge
+ * (rule below), and this box demotes to a pure shadow caster — no border, no
+ * radius, no doubled line; the header cannot clip the shadow because the
+ * shadow fringes around/below it render outside its own rectangle.
+ *
+ * The shadow here is a CUSTOM caster recipe, not --dsw-shadow-lv3: the
+ * official lv3 offsets down-right (12px 32px) and carries a tight 1px contact
+ * halo (`0 0 1px`) that paints a faint hairline around the WHOLE box bounds —
+ * readable as a stray right/left edge line where the card meets the window.
+ * The wrapped recipe instead emphasizes LEFT (over the sidebar) and TOP
+ * (above the header) elevation, keeps blurs large and spreads negative so no
+ * boundary line forms, matching the official shadow palette's alpha range. */
+:global(html.enhc-center-card-on .enhc-center-card-wrapped) {
+  border-top: none;
+  border-radius: 0;
+  box-shadow:
+    -20px 10px 36px -18px rgba(0, 0, 0, 0.11),
+    0 -10px 26px -16px rgba(0, 0, 0, 0.06),
+    16px 26px 42px -22px rgba(0, 0, 0, 0.08);
+}
+/* The card's top edge lives ON the session header while wrapping. It must be
+ * an INSET box-shadow, not border-top: a border participates in layout and
+ * grew the header by 1px, misaligning it against the out-of-flow toggle
+ * cluster / tabs at their seams. An inset shadow paints the identical 1px
+ * l2 line following the 18px radius into the corner with ZERO layout shift.
+ * It sits in the z-21 band — above every overlay resident and the widget
+ * rail — so the edge and corner are always visible, which is what makes the
+ * card read as WRAPPING the header. */
+:global(html.enhc-center-card-on [data-slot='conversation.session.header'] > header) {
+  box-shadow: inset 0 1px 0 var(--dsw-alias-border-l2);
+  border-radius: 18px 0 0 0;
+}
+/* Continue the header's top line across the toggle-cluster seat so the edge
+ * reads as ONE unbroken line over the full card width (the seat is part of
+ * the card silhouette in whole-seat mode). Suppressed while a better-sidebar
+ * panel is open, where the seat collapses to its compact floating form. */
+:global(html.enhc-center-card-on:not(.enhc-panel-open)) [class$='_toggleCluster']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--dsw-alias-border-l2);
 }
 

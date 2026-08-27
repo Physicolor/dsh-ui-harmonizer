@@ -16,6 +16,7 @@ import './enhancer.module.css'
 import { GeneralHeader, SettingsGeneralRow } from './components.tsx'
 import { applyState, disposeDynamicStyle, FONT_PRESETS, loadState, type EnhancerState } from './state.ts'
 import { CenterColCard } from './card-overlay.tsx'
+import { mountTitleTooltips } from './title-tooltip.ts'
 
 /** Plugin id stamped on the dynamic style tag (loader unload sweep key). */
 const PLUGIN_ID = 'harness-ui-enhancer'
@@ -50,11 +51,20 @@ export function apply(ctx: ClientContext): void {
       const panel = document.querySelector('.nArs4W_panel')
       const bottom = document.querySelector('.nArs4W_bottomPanel')
       const buttons = document.querySelectorAll('.nArs4W_toggleButton')
-      if (!panel || !bottom || buttons.length < 2) return
+      if (!panel || !bottom || buttons.length < 2) {
+        // Panels gone (plugin off / other route): make sure the compact-seat
+        // signal is cleared so the whole-height seat never lingers.
+        document.documentElement.classList.remove('enhc-panel-open')
+        return
+      }
       const panelOpen = !panel.classList.contains('nArs4W_panelHidden')
       const bottomOpen = !bottom.classList.contains('nArs4W_bottomPanelHidden')
       buttons[0].setAttribute('aria-pressed', String(bottomOpen))
       buttons[1].setAttribute('aria-pressed', String(panelOpen))
+      // Toggle-cluster seat shape lives in CSS keyed on this root class:
+      // whole-height (default) vs compact floating chip while a better-sidebar
+      // right panel is open (its top edge sits below the page top).
+      document.documentElement.classList.toggle('enhc-panel-open', panelOpen)
     }
     syncToggleStates()
     const observer = new MutationObserver(syncToggleStates)
@@ -161,6 +171,16 @@ export function apply(ctx: ClientContext): void {
       window.clearInterval(tick)
     }
   }, `${PLUGIN_ID}: settings section title fill`)
+
+  // Tooltip harmonizer: elements that only carry the raw HTML `title`
+  // attribute (model selector trigger, various product controls) pop the
+  // OS-native tooltip and break the visual language kept by every surface
+  // that routes through the official Tooltip primitive. The mount lifts the
+  // title during hover/focus, suppresses the native popup, and re-renders the
+  // same text in a bubble replicating the primitive's geometry + tokens.
+  // One effect owns listeners/timers/bubble/style; the disposer restores any
+  // lifted title so stopping the plugin leaves zero residue.
+  ctx.effect(() => mountTitleTooltips(), `${PLUGIN_ID}: unified native-title tooltips`)
 
   const patch = (next: Partial<EnhancerState>): void => {
     Object.assign(state, next)
