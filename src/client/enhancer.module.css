@@ -1,4 +1,4 @@
-/* Harness UI Enhancer — static override rules.
+/* Harness UI Enhancer 鈥?static override rules.
  * Chat/sidebar/input sizes ride CSS custom properties that the plugin updates
  * at runtime (--enhancer-*). Defaults match the product's shipped values so a
  * cold load without the settings panel touching anything still reads sanely.
@@ -13,25 +13,25 @@
   --enhancer-chat-scale: 1;
 }
 
-/* Conversation column width — overrides ConversationRoot's --dsh-chat-content-width. */
+/* Conversation column width 鈥?overrides ConversationRoot's --dsh-chat-content-width. */
 div[data-phase] {
   --dsh-chat-content-width: var(--enhancer-content-width);
 }
 
-/* Composer input text — textarea/mirror/backdrop all inherit, one override syncs all three. */
+/* Composer input text 鈥?textarea/mirror/backdrop all inherit, one override syncs all three. */
 [data-input-scroll] {
   font-size: var(--enhancer-font-size);
   line-height: var(--enhancer-font-line);
 }
 
-/* User message bubble — product hardcodes 16px/24px; make it follow the chat
+/* User message bubble 鈥?product hardcodes 16px/24px; make it follow the chat
  * font so sent messages match the dialog size. */
 [data-slot='conversation.session'] [class$='_bubble'] {
   font-size: var(--enhancer-font-size);
   line-height: var(--enhancer-font-line);
 }
 
-/* Composer tool row — trigger pills, command/add icon, send/primary icon scale with chat font. */
+/* Composer tool row 鈥?trigger pills, command/add icon, send/primary icon scale with chat font. */
 [data-slot='conversation.composer.bar'] [class$='_trigger'] {
   font-size: calc(13px * var(--enhancer-chat-scale, 1));
   line-height: calc(20px * var(--enhancer-chat-scale, 1));
@@ -47,12 +47,12 @@ div[data-phase] {
   height: calc(16px * var(--enhancer-chat-scale, 1));
 }
 
-/* Dropdown menus (ui-primitives Menu: model picker, permission picker, …) —
+/* Dropdown menus (ui-primitives Menu: model picker, permission picker, 鈥? 鈥?
  * scale with the composer chrome so the popup matches its trigger. The
  * numeric-hash classes come from the web-frontend bundle and change per
  * build, so match by [class^='_<name>_'] prefix inside [role='menu'] only
  * (version-proof and collision-free). Baselines are the product Menu spec:
- * list 4/12/218/360, item 14/22/40/8×10/10, icon+check 16, label 12/16. */
+ * list 4/12/218/360, item 14/22/40/8脳10/10, icon+check 16, label 12/16. */
 [role='menu'] [class^='_list_'] {
   padding: calc(4px * var(--enhancer-chat-scale, 1));
   border-radius: calc(12px * var(--enhancer-chat-scale, 1));
@@ -78,7 +78,7 @@ div[data-phase] {
   padding: calc(8px * var(--enhancer-chat-scale, 1)) calc(10px * var(--enhancer-chat-scale, 1));
 }
 
-/* Sidebar chrome — New Session button, brand wordmark, collapse toggle. */
+/* Sidebar chrome 鈥?New Session button, brand wordmark, collapse toggle. */
 [data-slot='sidebar'] [class$='_newSession'] {
   font-size: calc(14px * var(--enhancer-sidebar-scale));
   height: calc(38px * var(--enhancer-sidebar-scale));
@@ -90,8 +90,8 @@ div[data-phase] {
   width: calc(182px * var(--enhancer-sidebar-scale));
   height: calc(24px * var(--enhancer-sidebar-scale));
 }
-/* Logo row icon buttons — same collapsed-state fix as workspace icon buttons.
- * Expanded: scale-knob sizing. Collapsed: yield to product's 36×36. */
+/* Logo row icon buttons 鈥?same collapsed-state fix as workspace icon buttons.
+ * Expanded: scale-knob sizing. Collapsed: yield to product's 36脳36. */
 :not([data-sidebar-collapsed]) [data-slot='sidebar'] [class$='_logoRow'] [class$='_iconButton'] {
   width: calc(28px * var(--enhancer-sidebar-scale));
   height: calc(28px * var(--enhancer-sidebar-scale));
@@ -127,7 +127,7 @@ div[data-phase] {
   line-height: calc(16px * var(--enhancer-sidebar-scale));
 }
 
-/* Workspace browsing region (sidebar.workspaces) — rows, section header, icons. */
+/* Workspace browsing region (sidebar.workspaces) 鈥?rows, section header, icons. */
 [data-slot='sidebar.workspaces'] {
   font-size: calc(14px * var(--enhancer-sidebar-scale));
 }
@@ -142,10 +142,10 @@ div[data-phase] {
 [data-slot='sidebar.workspaces'] [class$='_sectionHeader'] {
   font-size: calc(13px * var(--enhancer-sidebar-scale));
 }
-/* Workspace browsing region (sidebar.workspaces) — rows, section header, icons.
+/* Workspace browsing region (sidebar.workspaces) 鈥?rows, section header, icons.
  * In the expanded state the sidebar scale knob controls icon-button size
- * (28×28 scaled). In the collapsed (rail) state the product's own
- * .rail .iconButton rules set 36×36 — our override must not win there or the
+ * (28脳28 scaled). In the collapsed (rail) state the product's own
+ * .rail .iconButton rules set 36脳36 鈥?our override must not win there or the
  * add-workspace icon stays 28px while the new-session button renders at 36px.
  *
  * [data-sidebar-collapsed] lives on the AppFrame (.frame), an ancestor of
@@ -160,7 +160,7 @@ div[data-phase] {
   width: calc(16px * var(--enhancer-sidebar-scale));
   height: calc(16px * var(--enhancer-sidebar-scale));
 }
-/* Collapsed state: reset to product default 36×36 so all icon buttons align.
+/* Collapsed state: reset to product default 36脳36 so all icon buttons align.
  * (0,3,1) beats the expanded rule's (0,2,1), guaranteeing the reset wins. */
 [data-sidebar-collapsed] [data-slot='sidebar.workspaces'] [class$='_iconButton'] {
   width: 36px;
@@ -171,10 +171,10 @@ div[data-phase] {
   height: 16px;
 }
 
-/* Settings page headers — unify Model / Plugins / Agent-presets with the
+/* Settings page headers 鈥?unify Model / Plugins / Agent-presets with the
  * General header the plugin registers. The section container is flex column
  * gap:12px, so a negative bottom margin on the h2 pulls the description up to
- * the GeneralHeader's 4px title→desc gap; the description's bottom hairline
+ * the GeneralHeader's 4px title鈫抎esc gap; the description's bottom hairline
  * then reads as the header block's closing rule. Typography matches
  * GeneralHeader exactly (h2 18/600, p 13px tertiary). */
 [data-slot='settings.section'] h2[class$='_title'],
@@ -196,7 +196,7 @@ div[data-phase] {
  * reach the official structure (h2[class$='_title'] + p[class$='_intro']).
  * Plugins that ship their own header mark-up keep the title FONT either way
  * when their title class ends in `_title`, but their description goes
- * un-normalized because it is not called `_intro` — e.g. dsh-notification's
+ * un-normalized because it is not called `_intro` 鈥?e.g. dsh-notification's
  * `.dsh_notification_subtitle` and dshmarket's `[class$='_head'] > [class$='_sub']`.
  * Real symptom: the title/description block reads cramped next to the official
  * pages, which close their header with a 12px padding + hairline under the
@@ -214,28 +214,28 @@ div[data-phase] {
  * `<svg>` that sits beside the title in a `_titleRow` so every section title
  * reads the same way (dshmarket's 22px market logo is the known case; the
  * selector is generic so any future plugin with an icon-in-title-row is
- * covered — the title text itself is untouched). */
+ * covered 鈥?the title text itself is untouched). */
 [data-slot='settings.section'] [class$='_titleRow'] > svg {
   display: none;
 }
 /* dsh-notification wraps its title + subtitle in a flex column with a 2px gap
  * and its own title has no bottom margin, so once the enhancer's h2 rule
  * applies its -8px bottom margin on top of that gap the subtitle gets pulled
- * ~6px INTO the title — visibly too cramped vs. the official 4px title→desc
+ * ~6px INTO the title 鈥?visibly too cramped vs. the official 4px title鈫抎esc
  * gap. Neutralize the enhancer's negative margin for this wrapper and use the
  * official 4px gap instead, then keep the hairline under the subtitle. */
 [data-slot='settings.section'] :global(.dsh_notification_heading) {
   gap: 4px;
 }
 /* Neutralize the enhancer's own h2 bottom margin for the notification title so
- * the heading gap (4px above) — not a negative margin — owns the title→desc
+ * the heading gap (4px above) 鈥?not a negative margin 鈥?owns the title鈫抎esc
  * spacing. `h2.` bumps specificity from (0,2,0) to (0,2,1) so it ties the
  * `h2[class$='_title']` rule and, being declared later in the same sheet, wins. */
 [data-slot='settings.section'] :global(h2.dsh_notification_title) {
   margin-bottom: 0;
 }
 /* Setting pages that ship a `p[class$='_intro']` description but no page
- * heading (e.g. better-sidebar's "侧边卡片") get a page title injected by the
+ * heading (e.g. better-sidebar's "渚ц竟鍗＄墖") get a page title injected by the
  * client half (`enhc-settings-title`). Style it exactly like the official
  * h2[class$='_title'] heading so every settings page opens with the same
  * 18/600 title + 13px tertiary description + hairline block. */
@@ -247,13 +247,13 @@ div[data-phase] {
   margin: 0 0 -8px;
 }
 
-/* Session title crumb — widen so long titles avoid the ellipsis. */
+/* Session title crumb 鈥?widen so long titles avoid the ellipsis. */
 button[class$='_crumb'],
 button[class$='_crumbCurrent'] {
   max-width: 560px;
 }
 
-/* Plugin version picker — product selector-pill look for the native select. */
+/* Plugin version picker 鈥?product selector-pill look for the native select. */
 [class$='_versionPicker'] select {
   -webkit-appearance: none;
   appearance: none;
@@ -315,7 +315,7 @@ input[type='range'].uitw-slider::-moz-range-track {
   background: var(--dsw-alias-border-l2);
 }
 
-/* ── cross-plugin visual coordination ────────────────────────────────
+/* 鈹€鈹€ cross-plugin visual coordination 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
  * dsh-better-sidebar (third-party bundle) ships bare 28px circular icon
  * toggles and a sidebar-fill right/bottom panel. Without touching its source
  * we: restyle the toggles as session-header capsules (32px, 1px border-l2,
@@ -327,11 +327,11 @@ input[type='range'].uitw-slider::-moz-range-track {
  * header padded right to give it a permanent seat next to the capsules.
  * Selectors match the installed better-sidebar 0.12.1 hashed classes
  * (nArs4W_*); the panel/bottomPanel are fixed full-height/width frames, so a
- * bare [class$='_panel'] would risk hitting unrelated panels — the explicit
+ * bare [class$='_panel'] would risk hitting unrelated panels 鈥?the explicit
  * prefix keeps this scoped to the one plugin. Two hardening details: bare
  * .nArs4W_* classes must be :global() wrapped or CSS Modules rewrites them
  * into <hash>_nArs4W_* (never matching), and every rule carries a `body`
- * prefix so its specificity beats better-sidebar's own same-class rules —
+ * prefix so its specificity beats better-sidebar's own same-class rules 鈥?
  * that bundle loads after this one, so equal specificity would let it win. */
 
 body [class$='_toggleButton'] {
@@ -349,9 +349,9 @@ body [class$='_toggleButton']:hover:not(:disabled) {
 /* Active state mirrors the widgets capsule (dsx-stats-capsule[aria-pressed=true]):
  * brand fill + contrast glyph. The harness-ui-enhancer client half keeps
  * aria-pressed in sync with the open state of each better-sidebar panel, so a
- * pressed toggle reads exactly like the activated "组件" capsule. Glyph color
- * is --dsw-alias-label-primary-inverted — the product primary-button text
- * token (light: white, dark: bluish-800) — because brand-primary flips to a
+ * pressed toggle reads exactly like the activated "缁勪欢" capsule. Glyph color
+ * is --dsw-alias-label-primary-inverted 鈥?the product primary-button text
+ * token (light: white, dark: bluish-800) 鈥?because brand-primary flips to a
  * near-white fill in dark mode and a hardcoded #fff would vanish. The :hover
  * variant out-specifies the hover rule above so an active toggle stays lit. */
 :global(.nArs4W_toggleButton[aria-pressed=true]),
@@ -362,7 +362,7 @@ body [class$='_toggleButton']:hover:not(:disabled) {
 }
 /* harness-widgets capsule: its own rule already paints the pressed state as
  * brand-blue fill + white glyphs (state-business-primary + #fff) in BOTH
- * themes — correct as shipped. Earlier we overrode the color to
+ * themes 鈥?correct as shipped. Earlier we overrode the color to
  * --dsw-alias-label-primary-inverted, which resolves to a near-black in dark
  * mode, turning the white glyphs black on the blue fill. Dropped: the capsule
  * keeps its own (0,2,0) rule, which is exactly the blue-fill/white-glyph pair
@@ -371,12 +371,12 @@ body [class$='_toggleButton']:hover:not(:disabled) {
 body [class$='_toggleCluster'] {
   gap: 6px;
   /* Whole-seat form (default): the seat spans the session header's full band
-   * (top 0 → 56px = header's 12px pad + 32px row + 12px pad) so buttons,
-   * seat and header read as ONE flush right edge of the card silhouette —
+   * (top 0 鈫?56px = header's 12px pad + 32px row + 12px pad) so buttons,
+   * seat and header read as ONE flush right edge of the card silhouette 鈥?
    * vertically centered (buttons land at exactly y=12..44 as before; zero
    * pixel drift). The right rail panel top is deliberately BELOW the page
    * top (~6px), so when a better-sidebar panel opens this tall seat would
-   * jut into its reserved corner → html.enhc-panel-open (kept in sync by the
+   * jut into its reserved corner 鈫?html.enhc-panel-open (kept in sync by the
    * client half) collapses the seat back to a compact floating chip below. */
   top: 0;
   right: 0;
@@ -406,7 +406,7 @@ body [class$='_toggleCluster'] {
    * divider line: flush against right/bottom, 1px border-l2 on top+left, a
    * 14px top-left corner and a lv3 drop shadow. overflow:hidden makes the
    * outer rounded rectangle clip ALL inner right-angled content (active-tab
-   * fill, pane sheet, …) so no inner element needs its own radius — one
+   * fill, pane sheet, 鈥? so no inner element needs its own radius 鈥?one
    * source of truth for the corner. box-shadow is a decoration, not content,
    * so it is unaffected by the clip. The resize handle is moved to left:0 so
    * the clip cannot slice it off. */
@@ -428,9 +428,9 @@ body [class$='_toggleCluster'] {
 /* The header shares its right margin with whichever is wider: the floating
  * toggle cluster (~90px: fixed right:12px, two 32px capsules + 6px gap,
  * + 8px breathing) or the better-sidebar panel (--dsh-sidebar-width). When
- * the sidebar is closed, margin-right is 90px so Session log and 组件 sit
+ * the sidebar is closed, margin-right is 90px so Session log and 缁勪欢 sit
  * clear of the toggle cluster. When the sidebar opens, margin-right becomes
- * max(sidebar-width, 90px) — the header shrinks to the panel edge, and the
+ * max(sidebar-width, 90px) 鈥?the header shrinks to the panel edge, and the
  * toggle cluster sits inside the panel area so no extra padding is needed.
  * !important beats better-sidebar's own collapsed-state push (its 78px was
  * sized for the old 28px buttons; ours are 32px capsules). */
@@ -445,7 +445,7 @@ body [class$='_toggleCluster'] {
  * solid header background the magnified cards visually stack ON the header
  * buttons instead of sliding UNDER the header. Give the header a real card
  * surface (same fill as the column) and lift it one step above the overlay
- * layer (21 > 20) — but still below better-sidebar's panels (40) and modals —
+ * layer (21 > 20) 鈥?but still below better-sidebar's panels (40) and modals 鈥?
  * so the rail's top edge is always masked by the header rectangle. */
 :global([data-slot='conversation.session.header'] > header) {
   position: relative;
@@ -454,19 +454,19 @@ body [class$='_toggleCluster'] {
 }
 /* The visible divider under the header is NOT the border (product caps it
  * transparent #0000) but a 1px :after pseudo-element (background border-l2,
- * bottom:1px). Kill it too — bottom spacing alone separates header/content. */
+ * bottom:1px). Kill it too 鈥?bottom spacing alone separates header/content. */
 :global([data-slot='conversation.session.header'] > header::after) {
   content: none;
 }
-/* Session tabs (对话/轨迹) — relocated into the title row by the client half
+/* Session tabs (瀵硅瘽/杞ㄨ抗) 鈥?relocated into the title row by the client half
  * (inserted right after the header actions) and restyled as two standalone
  * capsules that reuse the harness-widgets component-button recipe
  * (dsx-stats-capsule), mutually exclusive: the active tab fills the DeepSeek
  * brand blue (state-business-primary) with white glyphs, the idle one is a
  * transparent bordered capsule.
  * NOTE on selectors: the tab classes carry a build hash prefix (wSkVaW_) and
- * the active one adds a second "_tabActive" class, so ends-with "…_tab" fails
- * on the two-class active node and starts-with fails on the hash prefix —
+ * the active one adds a second "_tabActive" class, so ends-with "鈥tab" fails
+ * on the two-class active node and starts-with fails on the hash prefix 鈥?
  * must match with contains "[class*='_tab']" inside the tabs shell. */
 :global([class$='_tabs']) {
   gap: 8px;
@@ -496,12 +496,12 @@ body [class$='_toggleCluster'] {
 :global([class$='_tabs'] [class*='_tabActive']),
 :global([class$='_tabs'] [class*='_tab'][aria-selected='true']) {
   /* DeepSeek brand blue (state-business-primary: deepseek-500 light /
-   * deepseek-400 dark) — deliberately distinct from the neutral-black
+   * deepseek-400 dark) 鈥?deliberately distinct from the neutral-black
    * brand-primary used by the better-sidebar toggles. Blue fill MUST pair
    * with white glyphs: --dsw-alias-label-primary-inverted would resolve to
    * a near-black bluish-800 in dark mode and vanish into the blue. #fff is
    * the same pair dsh-widgets uses on its capsule and the official nav cell
-   * (state-business-primary + #fff) — white stays legible on both the deep
+   * (state-business-primary + #fff) 鈥?white stays legible on both the deep
    * light-mode blue and the brighter dark-mode blue. */
   background: var(--dsw-alias-state-business-primary);
   color: #fff;
@@ -510,7 +510,7 @@ body [class$='_toggleCluster'] {
 :global([class$='_tabs'] [class*='_tab']:after) {
   content: none;
 }
-/* better-sidebar panel chrome: inner rectangles can stay right-angled — the
+/* better-sidebar panel chrome: inner rectangles can stay right-angled 鈥?the
  * panel's overflow:hidden clip applies the corner for them. Drop the per-tab
  * divider line (fewer dividers); pane carries the inner surface color and is
  * itself clipped to the rounded corner by the panel. */
@@ -532,7 +532,7 @@ body [class$='_toggleCluster'] {
  * width at its right end. The cluster now spans 12px (right) + 32px + 6px
  * (gap) + 32px = 82px, so the 72px better-sidebar reserves for its own
  * 28px buttons would let the rightmost tab slide under our bigger capsules.
- * 90px = 82px cluster + 8px breathing room. Scoped to the right panel —
+ * 90px = 82px cluster + 8px breathing room. Scoped to the right panel 鈥?
  * the bottom panel's strip keeps its own 40px close-control seat. */
 :global(body .nArs4W_panel:not(.nArs4W_panelHidden) .nArs4W_tabBar) {
   padding-right: 90px;
@@ -569,7 +569,7 @@ body [class$='_toggleCluster'] {
 :global(body .nArs4W_panel .nArs4W_pane) {
   background: var(--dsw-alias-bg-layer-1);
 }
-/* No horizontal scroll inside the right panel — professional pattern for a
+/* No horizontal scroll inside the right panel 鈥?professional pattern for a
  * fixed-width sidebar: break the flex "min-width:auto" stretch chain so no
  * child can widen the column (long names would otherwise overflow and scroll),
  * then clip X on the explorer and ellipsize long names (already ellipsized by
@@ -591,7 +591,7 @@ body [class$='_toggleCluster'] {
 /* better-sidebar OCCUPIES the layout when a panel opens (VSCode-style): it
  * sets --dsh-sidebar-width/--dsh-sidebar-height and pushes #root right / the
  * center column up, dragging the session header along with the whole app.
- * We keep the panel's squeeze semantics for the conversation itself — only
+ * We keep the panel's squeeze semantics for the conversation itself 鈥?only
  * the session content below the header (viewArea) and the composer seat
  * yield var(--dsh-sidebar-width): #root is neutralized so the header keeps
  * its full width while messages and the input bar shift left and the fixed
@@ -599,11 +599,11 @@ body [class$='_toggleCluster'] {
  * prefix out-specifies better-sidebar's bare #root rules ((1,0,1)>(1,0,0),
  * (1,2,4)>(1,2,3)).
  *
- * #root must be FULLY neutralized — not just margin-right but ALSO the
+ * #root must be FULLY neutralized 鈥?not just margin-right but ALSO the
  * `width: calc(100% - var(--dsh-sidebar-width))` from the same better-sidebar
  * rule. If only the margin is zeroed, the width squeeze still shrinks the app
  * column (right edge already lands at the panel's left edge) and then the
- * viewArea/composerSeat margin-right squeezes a SECOND time — the conversation
+ * viewArea/composerSeat margin-right squeezes a SECOND time 鈥?the conversation
  * ends up one full panel-width short of the panel: the empty gap between the
  * chat/input and the sidebar. Restoring width:100% makes the inner margin the
  * single, correct squeeze. */
@@ -618,7 +618,7 @@ body [class$='_toggleCluster'] {
   margin-right: var(--dsh-sidebar-width, 0px);
   transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
 }
-/* The composer seat yields the sidebar width via margin-right ONLY — never
+/* The composer seat yields the sidebar width via margin-right ONLY 鈥?never
    via `right`. The seat has TWO geometries owned by the product: the chat
    (sticky, no composer overlay) seat, whose scrollBody reserves the 8px
    scrollbar gutter via `scrollbar-gutter: stable`, and the trajectory overlay
@@ -630,7 +630,7 @@ body [class$='_toggleCluster'] {
    `right` is out-specified, so it never squeezes), and on the chat seat it
    stacks on top of the already-reserved gutter AND the margin-right,
    over-squeezing chat. The result is the input visibly jumping right when
-   switching 对话 <-> 轨迹. `margin-right` is the one property that narrows both
+   switching 瀵硅瘽 <-> 杞ㄨ抗. `margin-right` is the one property that narrows both
    seats symmetrically, so it alone keeps them aligned at every sidebar width. */
 :global(div[class$='_composerSeat']) {
   margin-right: var(--dsh-sidebar-width, 0px);
@@ -646,10 +646,10 @@ body [class$='_toggleCluster'] {
  * which already excludes that padding-right. But the product switches the
  * TRAJECTORY seat to `position: absolute; left: 0; right: var(--dsh-
  * scrollbar-width)` under `:has([data-conversation-composer-overlay])`, and an
- * absolutely positioned box sizes against the PADDING box — it never sees the
+ * absolutely positioned box sizes against the PADDING box 鈥?it never sees the
  * scrollBody's own padding-right. So with the rail active the trajectory seat
  * is ~198px wider and shifted right, exactly the input jump seen on switching
- * 对话 <-> 轨迹. Re-apply the rail width to that seat's `right` so it ends on
+ * 瀵硅瘽 <-> 杞ㄨ抗. Re-apply the rail width to that seat's `right` so it ends on
  * the same line as chat (box right - scrollbar - rail). Wide only in the rail +
  * overlay state (specificity (0,4,1) beats the product's (0,3,0)), so a
  * rail-less setup is untouched. */
@@ -658,19 +658,19 @@ body [class$='_toggleCluster'] {
 }
 
 
-/* ── rounded center-column card ───────────────────────────────────────────
+/* 鈹€鈹€ rounded center-column card 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
  * Non-invasive "card" chrome around the flat conversation surface. Two pieces
  * share one 18px top-left radius:
  *
- *  1) Content corner mask — the center column's own overflow:hidden clips its
+ *  1) Content corner mask 鈥?the center column's own overflow:hidden clips its
  *     content, so giving it a top-left border-radius rounds the conversation's
  *     square corner. `:has(> [data-slot='conversation'])` targets the center
- *     column (parent of the conversation slot outlet) — hash-independent and
+ *     column (parent of the conversation slot outlet) 鈥?hash-independent and
  *     the only such element. Only one corner is rounded; right/bottom stay
  *     square flush to the window, and the left edge is the sidebar's own line.
- *  2) The overlay chrome (CenterColCard, shell.overlay) — a transparent box
+ *  2) The overlay chrome (CenterColCard, shell.overlay) 鈥?a transparent box
  *     over the column carrying the top border, the same rounded top-left
- *     corner and a lv3 drop shadow (SELF-DRAWN mode only — see the wrapped
+ *     corner and a lv3 drop shadow (SELF-DRAWN mode only 鈥?see the wrapped
  *     rules below for the header-present split). It lives OUTSIDE the clipped
  *     column so the shadow can bleed left over the sidebar; its paint is
  *     gated by the root class flipped from the Settings toggle. The 1px top
@@ -679,7 +679,7 @@ body [class$='_toggleCluster'] {
  * WRAPPED mode (session header present, v0.8.0): the shell.overlay outlet is
  * itself a z-20 stacking context, so chrome inside it cannot out-paint the
  * z-21 header. The header then paints the card's top edge + radius itself and
- * the chrome casts shadow only — header + content together read as ONE card,
+ * the chrome casts shadow only 鈥?header + content together read as ONE card,
  * exactly the "no white slab" model: no background fill anywhere.
  * Both rules are inert (display:none / no radius) unless the toggle is on. */
 
@@ -688,7 +688,7 @@ body [class$='_toggleCluster'] {
   border-radius: 18px 0 0 0;
 }
 
-/* 2) The overlay chrome box — transparent, only border + radius + shadow.
+/* 2) The overlay chrome box 鈥?transparent, only border + radius + shadow.
  * Selectors are fully :global() because the component sets the literal class
  * string `enhc-center-card` at runtime (CSS Modules would otherwise hash it). */
 :global(html.enhc-center-card-on .enhc-center-card) {
@@ -709,13 +709,13 @@ body [class$='_toggleCluster'] {
 /* Wrapped mode (session header present): the shell.overlay outlet is itself a
  * z-20 stacking context, so this box could never paint its border above the
  * z-21 header. The split therefore is: the HEADER paints the card's top edge
- * (rule below), and this box demotes to a pure shadow caster — no border, no
+ * (rule below), and this box demotes to a pure shadow caster 鈥?no border, no
  * radius, no doubled line; the header cannot clip the shadow because the
  * shadow fringes around/below it render outside its own rectangle.
  *
  * The shadow here is a CUSTOM caster recipe, not --dsw-shadow-lv3: the
  * official lv3 offsets down-right (12px 32px) and carries a tight 1px contact
- * halo (`0 0 1px`) that paints a faint hairline around the WHOLE box bounds —
+ * halo (`0 0 1px`) that paints a faint hairline around the WHOLE box bounds 鈥?
  * readable as a stray right/left edge line where the card meets the window.
  * The wrapped recipe instead emphasizes LEFT (over the sidebar) and TOP
  * (above the header) elevation, keeps blurs large and spreads negative so no
@@ -733,8 +733,8 @@ body [class$='_toggleCluster'] {
  * grew the header by 1px, misaligning it against the out-of-flow toggle
  * cluster / tabs at their seams. An inset shadow paints the identical 1px
  * l2 line following the 18px radius into the corner with ZERO layout shift.
- * It sits in the z-21 band — above every overlay resident and the widget
- * rail — so the edge and corner are always visible, which is what makes the
+ * It sits in the z-21 band 鈥?above every overlay resident and the widget
+ * rail 鈥?so the edge and corner are always visible, which is what makes the
  * card read as WRAPPING the header. */
 :global(html.enhc-center-card-on [data-slot='conversation.session.header'] > header) {
   box-shadow: inset 0 1px 0 var(--dsw-alias-border-l2);
@@ -754,3 +754,36 @@ body [class$='_toggleCluster'] {
   background: var(--dsw-alias-border-l2);
 }
 
+
+/* 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+   Cross-plugin width hygiene (dsh-genui render_ui panels & tool cards):
+   their flex children carry long nowrap titles/meta without min-width:0,
+   so the intrinsic (max-content) width inflates the row beyond the message
+   column. Give those children a shrink baseline so ellipsis engages and the
+   row stays inside its parent; selectors are hash-agnostic (suffix/substring)
+   so an upstream CSS-module rebuild cannot silently orphan the fix. */
+
+/* 同上宽度卫生修复的单条 :global() 形式（block syntax unsupported）。
+   升级为护栏版：genui 面板/内联块根用 inline-size containment 切断内容
+   对元素宽度的回传（flex 循环宽度解），面板体自身横向滚动兜底，
+   面板/工具折叠条标题补收缩基线使其与官方任务条同宽。 */
+/* 宽度基准=对话内容宽度（harmonizer「对话列最大宽度」滑杆，--enhancer-content-width，
+   当前 840px）：width:100% 显式填充（避免 flex cross-axis 下 margin:auto 触发
+   shrink-to-fit 竖线回归），max-width 封顶对话内容宽，margin auto 水平居中。 */
+:global([data-genui-panel]) { display: block; width: 100% !important; max-width: var(--enhancer-content-width, 748px) !important; min-width: 0 !important; margin: 10px auto 2px !important; box-sizing: border-box; contain: inline-size; }
+:global([data-genui]) { max-width: 100% !important; min-width: 0 !important; contain: inline-size; }
+:global([data-genui-tool]) { min-width: 0 !important; max-width: 100% !important; contain: inline-size; }
+:global([data-genui-panel-body]) { min-width: 0 !important; max-width: 100% !important; overflow-x: auto !important; }
+:global([data-genui-panel] svg),
+:global([data-genui] svg),
+:global([data-genui] pre),
+:global([data-genui] canvas),
+:global([data-genui] img),
+:global([data-genui-mermaid] svg) { max-width: 100% !important; height: auto; }
+:global([class*="panelToggle"]) { max-width: 100% !important; padding: 11px 16px !important; box-sizing: border-box; }
+:global([class*="panelToggle"] [class*="panelTitle"]) { flex: 1 1 0% !important; min-width: 0 !important; }
+:global([class*="panelToggle"] [class*="panelBadge"]),
+:global([class*="panelToggle"] [class*="panelChevron"]) { flex: none !important; margin-left: 8px; }
+:global([class*="toolFallback"]) { min-width: 0 !important; }
+:global([class*="toolFallbackMeta"]) { flex: 1 1 0% !important; min-width: 0 !important; }
+:global([class*="tlTime"]) { flex: none !important; min-width: 0 !important; }
