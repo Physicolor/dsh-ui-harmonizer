@@ -41,6 +41,7 @@ DSH UI Harmonizer 是一个**纯浏览器端（client-only）**的 DSH bundle �
 | --- | --- |
 | `dsh-better-sidebar` | toggle 按钮胶囊化、面板背景统一、布局协调、平滑过渡动画 |
 | `dsh-widgets` | 统计胶囊同族、header utilities 对齐 |
+| `@omdsh-dev/dsh-genui` | `render_ui` 面板与工具卡片：宽度跟随「对话列最大宽度」（`--enhancer-content-width`，如 840px）而非冒泡到整列；修复折叠条 flex-nowrap 长标题撑宽根因并统一 11px/16px 内边距；`banner`/`steps` 等横贯块按 16px 左右间距规范（不向外扩盒）；svg/pre/canvas/img/mermaid 全部限宽护栏 |
 | 第三方设置页 | 自动补标题、删多余图标、统一间距格式 |
 
 ### 🧹 设置页自动规范器 ⭐
@@ -119,7 +120,7 @@ pnpm run check      # 类型检查 + 构建
 
 ## 变更日志
 
-### v0.8.0 — 未发布
+### v0.8.0 — 已发布（2026-08-27）
 
 **新功能（原生 title 悬浮提示统一）：**
 - 仅依赖裸 HTML `title` 属性的元素（模型选择器 trigger 及其他直接用 title 的官方控件）此前弹出的都是系统默认样式的悬浮提示，与走官方 Tooltip 组件的所有表面不在一个视觉语言里。现在悬浮/键盘聚焦时接管：title 在交互期间被暂时摘除，同文案以官方气泡重绘——`--dsw-alias-tooltip-bg` 深色底、3px 7px 内边距、8px 圆角、13/20 字号、50vw 宽度上限；悬浮延迟 500ms、键盘聚焦立即显示；锚点下方 8px 放置（下方放不下自动翻转到上方）、距视口边缘 12px 钳制、处于 z-index 100 弹层带。

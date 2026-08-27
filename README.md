@@ -41,6 +41,7 @@ DSH UI Harmonizer is a **client-only DSH bundle plugin**. It adds no model tools
 | --- | --- |
 | `dsh-better-sidebar` | Capsule-ize toggle buttons, unify panel backgrounds, coordinate layout, smooth transitions |
 | `dsh-widgets` | Matching stat capsule family, header utilities alignment |
+| `@omdsh-dev/dsh-genui` | `render_ui` 面板与工具卡片：宽度跟随「对话列最大宽度」（`--enhancer-content-width`，如 840px）而非冒泡到整列；折叠条修复 flex-nowrap 长标题撑宽根因并统一 11px/16px 内边距；`banner`/`steps` 等横贯块按 16px 左右间距规范（不向外扩盒）；svg/pre/canvas/img/mermaid 全部限宽护栏 |
 | Third-party settings pages | Auto-fill headings, drop redundant icons, normalize spacing |
 
 ### 🧹 Settings Auto-Normalizer ⭐
@@ -119,7 +120,7 @@ pnpm run check      # typecheck + build
 
 ## Changelog
 
-### v0.8.0 — unreleased
+### v0.8.0 — released (2026-08-27)
 
 **Fix (cross-plugin width hygiene — dsh-genui render_ui panels):**
 - `@omdsh-dev/dsh-genui` renders render_ui 面板与工具卡片：其 `.panelToggle` 内的标题 span（长 nowrap 文本，如「opencode-go 多 Key 迷你池 — 最终架构」）是 flex 子项却缺 `flex/min-width:0`，flex 默认 `min-width:auto` 不允许收缩 → 标题的 max-content 宽度把整条折叠条与面板一起撑出对话列宽。harmonizer 以 hash 无关的属性选择器补上收缩基线（`flex:1 1 0%; min-width:0` 使 ellipsis 生效），并给面板根/折叠条限 `max-width:100%`；同类缺陷一并覆盖：`.toolFallbackMeta`（工具兜底卡片长 meta）、`.tlTime`（时间线长时间）。纯 CSS 覆盖、零侵入 dsh-genui 源码；上游 CSS-module 重建换 hash 后规则仍有效（按 class 子串匹配）。
