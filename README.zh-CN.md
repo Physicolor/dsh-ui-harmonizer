@@ -120,7 +120,14 @@ pnpm run check      # 类型检查 + 构建
 
 ## 变更日志
 
-### v0.8.0 — 已发布（2026-08-27）
+### v0.8.1 — 已发布（2026-08-27）
+
+**修复（跨插件宽度卫生 — @omdsh-dev/dsh-genui 的 render_ui 面板与工具卡片）：**
+- 根因：`.panelToggle` 标题 span（长 nowrap 文本，如「opencode-go 多 Key 迷你池 — 最终架构」）是 flex 子项却缺 `min-width:0`，flex 默认 `min-width:auto` 不允许收缩 → 标题 max-content 宽度把折叠条与面板一起撑出对话列。harmonizer 以 hash 无关属性选择器补 `flex:1 1 0%; min-width:0`（ellipsis 生效）；同类（`.toolFallbackMeta`、`.tlTime`）一并覆盖。纯 CSS 覆盖、零侵入 dsh-genui 源码。
+- 最终基准（定稿）：面板宽度 = **对话内容宽度**（`--enhancer-content-width`，当前 840px，与官方 `Md3f7G_column` 一致），`[data-genui-panel]{ display:block; width:100% !important; max-width: var(--enhancer-content-width, 748px) !important; margin:10px auto 2px !important; contain:inline-size }`，随「对话列最大宽度」滑杆即时自适应；此前「实测输入框宽」方案废弃（基准偏差）。教训：`width:auto + margin:auto` 会在 flex 交叉轴触发 shrink-to-fit 竖线回归，必须显式 `width:100%` 再叠加 max-width。
+- 横贯块左右间距：`banner` 与折叠条复用同一宽度格式（内容宽 + 16px 左右内缩，不向外扩盒）；`steps` 在无容器 padding 的内联/工具卡内补 16px；svg/pre/canvas/img/mermaid 全部限宽护栏；块组件（callout/card/list）不动。
+
+### v0.8.0 — 已发布
 
 **新功能（原生 title 悬浮提示统一）：**
 - 仅依赖裸 HTML `title` 属性的元素（模型选择器 trigger 及其他直接用 title 的官方控件）此前弹出的都是系统默认样式的悬浮提示，与走官方 Tooltip 组件的所有表面不在一个视觉语言里。现在悬浮/键盘聚焦时接管：title 在交互期间被暂时摘除，同文案以官方气泡重绘——`--dsw-alias-tooltip-bg` 深色底、3px 7px 内边距、8px 圆角、13/20 字号、50vw 宽度上限；悬浮延迟 500ms、键盘聚焦立即显示；锚点下方 8px 放置（下方放不下自动翻转到上方）、距视口边缘 12px 钳制、处于 z-index 100 弹层带。
