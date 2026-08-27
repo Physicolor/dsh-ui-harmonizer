@@ -787,3 +787,14 @@ body [class$='_toggleCluster'] {
 :global([class*="toolFallback"]) { min-width: 0 !important; }
 :global([class*="toolFallbackMeta"]) { flex: 1 1 0% !important; min-width: 0 !important; }
 :global([class*="tlTime"]) { flex: none !important; min-width: 0 !important; }
+
+/* genui 横贯块左右间距规范：
+   - 面板体（自带 16px padding）内的 banner：文字与外缘保持 16px 内缩，横线仍铺满
+     宽度（负 margin 抵消 body padding，保留官方的 banner 横线观感）；
+   - 内联/工具卡（[data-genui] / [data-genui-tool] 无容器 padding）内的 banner 与
+     steps：补 16px 左右，避免贴边。块组件（callout/card/list）自带形态不动。 */
+:global([data-genui-panel-body] [class*='banner']) { padding-left: 16px !important; padding-right: 16px !important; margin-left: -16px !important; margin-right: -16px !important; }
+:global([data-genui-tool] [class*='banner']),
+:global([data-genui] [class*='banner']) { padding-left: 16px !important; padding-right: 16px !important; }
+:global([data-genui-tool] [class*='steps']),
+:global([data-genui] [class*='steps']) { padding-left: 16px !important; padding-right: 16px !important; }
