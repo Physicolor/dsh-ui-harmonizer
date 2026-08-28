@@ -17,6 +17,7 @@ import { GeneralHeader, SettingsGeneralRow } from './components.tsx'
 import { applyState, disposeDynamicStyle, FONT_PRESETS, loadState, type EnhancerState } from './state.ts'
 import { CenterColCard } from './card-overlay.tsx'
 import { mountTitleTooltips } from './title-tooltip.ts'
+import { getKnownTitles } from './i18n.ts'
 
 /** Plugin id stamped on the dynamic style tag (loader unload sweep key). */
 const PLUGIN_ID = 'harness-ui-enhancer'
@@ -118,11 +119,6 @@ export function apply(ctx: ClientContext): void {
   // nav label is resolvable we skip rather than invent a wrong one.
   ctx.effect(() => {
     const FILL_CLASS = 'enhc-settings-title'
-    /** Deterministic fallback: known intro → page title, so a missing heading is
-     *  filled even if the active-nav label cannot be resolved in time. */
-    const KNOWN_TITLES: ReadonlyArray<readonly [prefix: string, title: string]> = [
-      ['管理侧边卡片', '侧边卡片'], // dsh-better-sidebar SideCardSection (no h2 in its markup)
-    ]
     const fillSectionTitle = (): void => {
       const section = document.querySelector('[data-slot="settings.section"]')
       if (section === null || section === undefined) return
@@ -137,18 +133,33 @@ export function apply(ctx: ClientContext): void {
       // aria-current="true" + an `_active` class). Fall back to KNOWN_TITLES keyed
       // by the intro's stable text so a late-rendered nav never blocks the fill.
       let text = ''
-      for (const el of document.querySelectorAll('[class$="_navCell"]')) {
-        if (el.getAttribute('aria-current') === 'true' || /(^|\s)\S*_active(\s|$)/.test(el.className)) {
+      // Try DSH native nav buttons first ([role="dialog"] nav button pattern)
+      for (const el of document.querySelectorAll('[role="dialog"] nav button')) {
+        if (el.getAttribute('aria-current') === 'true' || el.classList.toString().includes('_active')) {
           text = el.textContent?.trim() ?? ''
           break
         }
       }
+      // Fallback: try _navCell pattern (older DSH versions)
+      if (text === '') {
+        for (const el of document.querySelectorAll('[class$="_navCell"]')) {
+          if (el.getAttribute('aria-current') === 'true' || /(^|\s)\S*_active(\s|$)/.test(el.className)) {
+            text = el.textContent?.trim() ?? ''
+            break
+          }
+        }
+      }
       if (text === '') {
         const it = intro.textContent?.trim() ?? ''
+        // Re-evaluate on each call so language switches take effect
+        const KNOWN_TITLES = getKnownTitles()
         const hit = KNOWN_TITLES.find(([prefix]) => it.startsWith(prefix))
         text = hit?.[1] ?? ''
       }
-      if (text === '') return
+      if (text === '') {
+        console.debug(`[harness-ui-enhancer] fillSectionTitle: no title found, intro=${JSON.stringify(intro.textContent?.trim())}`)
+        return
+      }
       const title = document.createElement('h2')
       title.className = FILL_CLASS
       title.textContent = text

@@ -618,6 +618,21 @@ body [class$='_toggleCluster'] {
   margin-right: var(--dsh-sidebar-width, 0px);
   transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
 }
+/* Render only what is near the viewport. The conversation flow keeps every
+ * turn/step as a `*_flowItem` (a long session easily holds ~90 of them, well
+ * over a thousand DOM nodes); off-screen items then skip layout entirely, so
+ * the sidebar-squeeze margin animation above — and ordinary scrolling —
+ * reflows just the handful of visible items instead of the whole tree. This
+ * is what keeps the 0.3s squeeze glide at full frame rate on long
+ * conversations WITHOUT giving up the smooth progressive reflow (left edge
+ * pinned, right edge gliding). `auto <length>` lets the browser remember each
+ * item's last rendered size once seen, so scrollbar height barely shifts.
+ * Browsers without support ignore the rule and simply fall back to the old
+ * (slower) behavior. */
+:global([data-slot='conversation.session'] [class$='_flowItem']) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}
 /* The composer seat yields the sidebar width via margin-right ONLY 鈥?never
    via `right`. The seat has TWO geometries owned by the product: the chat
    (sticky, no composer overlay) seat, whose scrollBody reserves the 8px

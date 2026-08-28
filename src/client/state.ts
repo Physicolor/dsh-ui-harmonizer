@@ -11,15 +11,24 @@
  *   loader's unload sweep removes it together with the bundled stylesheet.
  */
 
-/** Font presets: id → label + CSS font stack (null keeps the product default). */
+import { getFontLabel } from './i18n.ts'
+
+/** Font presets: id → stack (null keeps the product default). Labels are
+ *  resolved at render time via getFontLabel() so language switches take effect
+ *  without a page reload. */
 export const FONT_PRESETS = [
-  { id: 'default', label: '系统默认（HarmonyOS Sans SC）', stack: null },
-  { id: 'harmony', label: 'HarmonyOS Sans SC', stack: "'HarmonyOS Sans SC', 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif" },
-  { id: 'yahei', label: '微软雅黑优先', stack: "'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif" },
-  { id: 'noto', label: 'Noto Sans SC', stack: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" },
-  { id: 'serif', label: '衬线（宋体风）', stack: "Georgia, 'Times New Roman', 'Songti SC', 'SimSun', serif" },
-  { id: 'mono', label: '等宽', stack: "'JetBrains Mono', 'SF Mono', Consolas, 'Courier New', monospace" },
+  { id: 'default', stack: null },
+  { id: 'harmony', stack: "'HarmonyOS Sans SC', 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif" },
+  { id: 'yahei', stack: "'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif" },
+  { id: 'noto', stack: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif" },
+  { id: 'serif', stack: "Georgia, 'Times New Roman', 'Songti SC', 'SimSun', serif" },
+  { id: 'mono', stack: "'JetBrains Mono', 'SF Mono', Consolas, 'Courier New', monospace" },
 ] as const
+
+/** Resolved preset with locale-aware label (for use in components). */
+export function getPresetLabel(id: string): string {
+  return getFontLabel(id)
+}
 
 /** One sizing knob's in-memory value. */
 export interface EnhancerState {

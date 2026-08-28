@@ -9,7 +9,16 @@
  */
 
 import * as React from 'react'
-import type { FONT_PRESETS } from './state.ts'
+import { FONT_PRESETS, getPresetLabel } from './state.ts'
+import {
+  getGeneralTitle, getGeneralDesc,
+  getRowWidthTitle, getRowWidthDesc,
+  getRowFontSizeTitle, getRowFontSizeDesc,
+  getRowSidebarSizeTitle, getRowSidebarSizeDesc,
+  getRowFontTitle, getRowFontDesc,
+  getRowCardTitle, getRowCardDesc,
+  getFontLabel,
+} from './i18n.ts'
 
 /** Icon path constants copied from @deepseek-ai/dsh-client-ui-primitives. */
 const CHEVRON_PATH = 'M11.8486 5.5L11.4238 5.92383L8.69727 8.65137C8.44157 8.90706 8.21562 9.13382 8.01172 9.29785C7.79912 9.46883 7.55595 9.61756 7.25 9.66602C7.08435 9.69222 6.91565 9.69222 6.75 9.66602C6.44405 9.61756 6.20088 9.46883 5.98828 9.29785C5.78438 9.13382 5.55843 8.90706 5.30273 8.65137L2.57617 5.92383L2.15137 5.5L3 4.65137L3.42383 5.07617L6.15137 7.80273C6.42595 8.07732 6.59876 8.24849 6.74023 8.3623C6.87291 8.46904 6.92272 8.47813 6.9375 8.48047C6.97895 8.48703 7.02105 8.48703 7.0625 8.48047C7.07728 8.47813 7.12709 8.46904 7.25977 8.3623C7.40124 8.24849 7.57405 8.07732 7.84863 7.80273L10.5762 5.07617L11 4.65137L11.8486 5.5Z'
@@ -56,6 +65,7 @@ export function FontSelector({ value, onChange, presets }: {
   }, [open])
 
   const selected = presets.find(p => p.id === local) ?? presets[0]
+  const selectedLabel = getPresetLabel(selected.id)
   const toggle = (e: React.MouseEvent<HTMLButtonElement>): void => {
     if (!open) {
       const rect = e.currentTarget.getBoundingClientRect()
@@ -104,7 +114,7 @@ export function FontSelector({ value, onChange, presets }: {
       onClick: toggle,
       key: 'trigger',
     }, [
-      React.createElement('span', { key: 'label', style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 } }, selected.label),
+      React.createElement('span', { key: 'label', style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 } }, selectedLabel),
       React.createElement('svg', { key: 'chevron', width: 14, height: 14, viewBox: '0 0 14 14', fill: 'none', style: { flex: 'none', color: 'var(--dsw-alias-label-tertiary)' } },
         React.createElement('path', { d: CHEVRON_PATH, fill: 'currentColor' })),
     ]),
@@ -117,7 +127,7 @@ export function FontSelector({ value, onChange, presets }: {
           onMouseLeave: (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = 'transparent' },
           onClick: () => { setLocal(p.id); setOpen(false); onChange(p.id) },
         }, [
-          React.createElement('span', { key: 'label', style: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, p.label),
+          React.createElement('span', { key: 'label', style: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, getPresetLabel(p.id)),
           p.id === local ? React.createElement('span', { key: 'check', style: { flex: 'none' } }, checkIcon) : null,
         ])))
       : null,
@@ -216,13 +226,13 @@ export function SwitchControl({ checked, onChange }: {
   }, React.createElement('span', { style: thumb }))
 }
 
-/** The "界面定制" block registered in Settings → General. */
+/** The interface customization block registered in Settings -> General. */
 export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceProps): React.ReactElement {
   return React.createElement('div', { style: { display: 'flex', flexDirection: 'column' } }, [
     React.createElement(SettingsRow, {
       key: 'width',
-      title: '对话内容宽度',
-      desc: '对话列的最大宽度，滑动即时预览',
+      title: getRowWidthTitle(),
+      desc: getRowWidthDesc(),
       control: React.createElement(SliderControl, {
         min: 748, max: 1000, step: 4, value: state.width, unit: 'px',
         onChange: (v) => { onApply({ width: v }) },
@@ -230,8 +240,8 @@ export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceP
     }),
     React.createElement(SettingsRow, {
       key: 'font',
-      title: '对话字号',
-      desc: 'markdown 正文与输入框文字大小',
+      title: getRowFontSizeTitle(),
+      desc: getRowFontSizeDesc(),
       control: React.createElement(SliderControl, {
         min: 12, max: 20, step: 1, value: state.fontSize, unit: 'px',
         onChange: (v) => { onApply({ fontSize: v }) },
@@ -239,8 +249,8 @@ export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceP
     }),
     React.createElement(SettingsRow, {
       key: 'sidebar',
-      title: '工作区字号',
-      desc: '左侧工作区列表、按钮与图标的整体大小',
+      title: getRowSidebarSizeTitle(),
+      desc: getRowSidebarSizeDesc(),
       control: React.createElement(SliderControl, {
         min: 12, max: 20, step: 1, value: state.sidebarSize, unit: 'px',
         onChange: (v) => { onApply({ sidebarSize: v }) },
@@ -248,8 +258,8 @@ export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceP
     }),
     React.createElement(SettingsRow, {
       key: 'font-family',
-      title: 'UI 字体',
-      desc: '界面与对话使用的字体栈',
+      title: getRowFontTitle(),
+      desc: getRowFontDesc(),
       control: React.createElement(FontSelector, {
         value: state.fontId,
         presets,
@@ -258,8 +268,8 @@ export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceP
     }),
     React.createElement(SettingsRow, {
       key: 'center-card',
-      title: '圆角卡片',
-      desc: '将对话区域显示为左上圆角的卡片，附投影',
+      title: getRowCardTitle(),
+      desc: getRowCardDesc(),
       control: React.createElement(SwitchControl, {
         checked: state.card,
         onChange: (v) => { onApply({ card: v }) },
@@ -268,10 +278,10 @@ export function SettingsGeneralRow({ state, onApply, presets }: EnhancerSurfaceP
   ])
 }
 
-/** The "通用设置" page header block (title + description), registered first in General. */
+/** The General settings page header block (title + description), registered first in General. */
 export function GeneralHeader(): React.ReactElement {
   return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, padding: '4px 0 12px', borderBottom: '1px solid var(--dsw-alias-border-l2)' } }, [
-    React.createElement('div', { key: 'title', style: { fontSize: 18, fontWeight: 600, lineHeight: '26px', color: 'var(--dsw-alias-label-primary)' } }, '通用设置'),
-    React.createElement('div', { key: 'desc', style: { fontSize: 13, lineHeight: '20px', color: 'var(--dsw-alias-label-tertiary)' } }, '管理语言、外观、界面与对话行为等基础偏好。'),
+    React.createElement('div', { key: 'title', style: { fontSize: 18, fontWeight: 600, lineHeight: '26px', color: 'var(--dsw-alias-label-primary)' } }, getGeneralTitle()),
+    React.createElement('div', { key: 'desc', style: { fontSize: 13, lineHeight: '20px', color: 'var(--dsw-alias-label-tertiary)' } }, getGeneralDesc()),
   ])
 }

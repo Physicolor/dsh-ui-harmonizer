@@ -120,10 +120,28 @@ pnpm run check      # typecheck + build
 
 ## Changelog
 
+### v0.8.3 (unreleased, pending acceptance)
+
+**Perf — the sidebar squeeze keeps its smooth progressive glide at full frame rate (companion to dsh-widgets v1.2.3):**
+
+- Root cause of the panel-toggle jank: the three squeezed surfaces (conversation `viewArea`, `composerSeat`, header) animate `margin-right: var(--dsh-sidebar-width)` over 0.3s — a per-frame reflow of the WHOLE conversation DOM — which on long sessions (thousands of nodes) dropped to 20–31% dropped frames and visibly desynced from the compositor-driven widget rail and panel slide.
+- Fix: keep the progressive margin animation exactly as-is (left edge pinned, right edge gliding, text reflowing progressively — no "jump to final width, then slide" compromise) and make each per-frame reflow cheap instead: every conversation turn/step (`*_flowItem`) now gets `content-visibility: auto` + `contain-intrinsic-size: auto 120px`, so off-screen items skip layout entirely and each animation frame reflows only the handful of visible items. `auto` lets the browser remember each item's last rendered height, so scrollbar height stays stable; browsers without support simply ignore the rule.
+- Measured (playwright + local Edge, widget rail open, heavy sessions, panel open/close window): dropped frames **20–31% → 11.5% (rail fix) → 0%**; viewArea LEFT edge drift during the animation: **0 px** (always aligned); rail↔conversation right-edge offset constant (std 0.01 px — perfect lockstep); scrollHeight after a jump-to-bottom: 0% shift (intrinsic sizes converge); once warm, the largest single-frame step is ~89 px — a mid-curve frame under headless software rendering, smaller on real GPUs. Known one-off: the FIRST panel open after a page load still has one large step (better-sidebar's first panel render long-task, unrelated to this change).
+- Self-contained verification: `scripts/verify-glide.cjs` (`npm i -D playwright-core && node scripts/verify-glide.cjs [session]`).
+
+### v0.8.2 — released
+
+**Feature (i18n — Chinese/English locale adaptation):**
+- All hardcoded Chinese UI strings in Settings → General now adapt to the browser locale: page header title/description, five setting row titles/descriptions, and font preset labels all render in English when the locale is not `zh-*`.
+- New `src/client/i18n.ts` module centralizes every user-facing string; language detection is **responsive** — re-evaluated on every render call, so switching Settings → Language takes effect immediately without a page reload.
+- Detection priority: `localStorage('dsh-language')` (written by the official Settings panel) → `<html lang="...">` attribute → `navigator.language` fallback.
+- The `KNOWN_TITLES` fallback table (used by the settings-section title-inject logic for third-party pages without a heading) is now locale-aware, matching both Chinese and English intro prefixes, and re-evaluated on each call so language switches take effect for injected titles too.
+- No visual or behavioral change in Chinese locales; English locales now see fully translated labels instead of a mix of Chinese and English.
+
 ### v0.8.1 — released (2026-08-27)
 
 **Fix (cross-plugin width hygiene — @omdsh-dev/dsh-genui render_ui panels & tool cards):**
-- **Root cause** — the fold bar's `.panelToggle` title span (long nowrap text such as "opencode-go 多 Key 迷你池 — 最终架构") is a flex child missing `min-width:0`; flex default `min-width:auto` refuses to shrink, so the title's max-content width inflates the fold bar and the whole panel beyond the conversation column. Harmonizer adds a hash-agnostic `flex: 1 1 0%; min-width: 0` shrink baseline (so ellipsis engages) and caps the panel/fold bar width; the same family is covered for `.toolFallbackMeta` (tool fallback long meta) and `.tlTime` (timeline long timestamps). Pure CSS overrides, zero modification of dsh-genui source; the rules survive upstream CSS-module rebuilds (class-substring matching).
+- **Root cause** — the fold bar's `.panelToggle` title span (long nowrap text such as "opencode-go Multi-key Mini Pool — Final Architecture") is a flex child missing `min-width:0`; flex default `min-width:auto` refuses to shrink, so the title's max-content width inflates the fold bar and the whole panel beyond the conversation column. Harmonizer adds a hash-agnostic `flex: 1 1 0%; min-width: 0` shrink baseline (so ellipsis engages) and caps the panel/fold bar width; the same family is covered for `.toolFallbackMeta` (tool fallback long meta) and `.tlTime` (timeline long timestamps). Pure CSS overrides, zero modification of dsh-genui source; the rules survive upstream CSS-module rebuilds (class-substring matching).
 - **Final baseline (user acceptance criteria, settled)** — panel/tool width follows the **conversation content width**, i.e. the harmonizer chat column max-width slider's `--enhancer-content-width` (currently 840px), matching the official `Md3f7G_column` conversation-content column — not the input box and not the outer composer seat. Final rule: `[data-genui-panel]{ display:block; width:100% !important; max-width: var(--enhancer-content-width, 748px) !important; margin:10px auto 2px !important; contain:inline-size; box-sizing:border-box }` — adapts live to the chat-width slider and centers horizontally in the conversation column. The earlier "measured input-box width via `--enhc-message-maxw`" approach was dropped (baseline drift). Lesson: `width:auto` + `margin:auto` triggers shrink-to-fit on a flex cross axis and collapses the panel into a vertical sliver (regression); always pair an explicit `width:100%` with a max-width instead.
 - **Horizontal spacing for full-width blocks** — `banner` reuses the fold bar's width format: content width with 16px side insets (text starts at the same x as the panelToggle title), never a negative-margin box expansion (which pushed padding past the card edge), in every container (panel body / inline / tool card); `steps` gets 16px side padding inside padding-less inline/tool-card containers; svg/pre/canvas/img/mermaid are all width-guarded; block components (callout/card/list) keep their own shape untouched.
 
@@ -146,8 +164,8 @@ pnpm run check      # typecheck + build
 - 🧭 The session header's shared right margin bumped 82px → 90px to match the wider cluster (covers both the collapsed corner seat and the open-panel `max()` path).
 
 **Fix (dark-mode active-state glyphs):**
-- ⚪ The active "对话" tab now renders WHITE glyphs on the DeepSeek brand-blue fill in dark mode. It had used `--dsw-alias-label-primary-inverted`, which resolves to a near-black bluish-800 on dark themes — black text on the blue fill.
-- ⚪ The activated "组件" capsule keeps its own shipped pair (`state-business-primary` + `#fff`): an earlier override in this plugin had replaced that white with the same near-black token (dark-mode only). That override is dropped, so both buttons read as blue fill + white glyphs in light AND dark themes, matching the official nav-cell pattern.
+- ⚪ The active "Chat" tab now renders WHITE glyphs on the DeepSeek brand-blue fill in dark mode. It had used `--dsw-alias-label-primary-inverted`, which resolves to a near-black bluish-800 on dark themes — black text on the blue fill.
+- ⚪ The activated "Components" capsule keeps its own shipped pair (`state-business-primary` + `#fff`): an earlier override in this plugin had replaced that white with the same near-black token (dark-mode only). That override is dropped, so both buttons read as blue fill + white glyphs in light AND dark themes, matching the official nav-cell pattern.
 
 ### v0.7.0
 **Meta — renamed package to `dsh-ui-harmonizer`:**
