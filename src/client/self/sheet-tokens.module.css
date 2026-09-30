@@ -1,0 +1,20 @@
+/* @dsh-split-header
+ * self/sheet-tokens.module.css - Serves: this plugin's own token defaults (`--enhancer-content-width`, `--enhancer-sidebar-scale`) plus the sheet's original preamble comment.
+ * Why here: those variables are this plugin's settings channel (state.ts writes them), not the product's.
+ * Note: --enhancer-content-width is still written by that channel but has no CSS consumer left (see harness/chat-chrome-scale.module.css and plugins/dsh-genui/width-hygiene.module.css).
+ * Origin: src/client/enhancer.module.css L1-L12, byte-identical below; this header is the only addition.
+ */
+/* Harness UI Enhancer — static override rules.
+ * Chat/sidebar/input sizes ride CSS custom properties that the plugin updates
+ * at runtime (--enhancer-*). Defaults match the product's shipped values so a
+ * cold load without the settings panel touching anything still reads sanely.
+ * Scoped selectors stick to slot roots and stable class suffixes; that is a
+ * shape rule for THIS sheet. It is not a promise about the whole project:
+ * harness/sidebar-chrome.module.css deliberately does anchor on
+ * [data-slot='sidebar.settings'] (_trigger sizing). */
+
+:root {
+  --enhancer-content-width: 748px;
+  --enhancer-sidebar-scale: 1;
+}
+

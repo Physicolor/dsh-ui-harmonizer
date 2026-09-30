@@ -17,7 +17,9 @@ import { basename, dirname, resolve as resolvePath, sep } from 'node:path'
 import type { UserConfig } from 'tsdown'
 import { transform } from 'lightningcss'
 
-/** Module specifiers resolved from the loader module table (never bundled). */
+/** Module specifiers resolved from the loader module table (never bundled).
+ *  `@deepseek-ai/dsh-client-runtime/client` was retired in DSH 0.1.5 (the client
+ *  runtime folded into the shell), and the client half no longer imports it. */
 const PLATFORM_MODULES = [
   'react',
   'react/jsx-runtime',
@@ -26,7 +28,6 @@ const PLATFORM_MODULES = [
   '@deepseek-ai/cordis',
   '@deepseek-ai/dsh-client-ui-slots',
   '@deepseek-ai/dsh-client-web-react',
-  '@deepseek-ai/dsh-client-runtime/client',
 ] as const
 
 const CSS_VIRTUAL_PREFIX = '\0dsh-css:'

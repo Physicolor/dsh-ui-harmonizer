@@ -1,0 +1,35 @@
+/* @dsh-split-header
+ * plugins/dsh-better-sidebar/root-squeeze.module.css - Serves: dsh-better-sidebar's layout push - neutralizing `#root` and yielding `--dsh-sidebar-width` on the session viewArea.
+ * Why here: the squeeze and the variable are that plugin's.
+ * Origin: src/client/enhancer.module.css L888-L917, byte-identical below; this header is the only addition.
+ */
+/* better-sidebar OCCUPIES the layout when a panel opens (VSCode-style): it
+ * sets --dsh-sidebar-width/--dsh-sidebar-height and pushes #root right / the
+ * center column up, dragging the session header along with the whole app.
+ * We keep the panel's squeeze semantics for the conversation itself — only
+ * the session content below the header (viewArea) and the composer seat
+ * yield var(--dsh-sidebar-width): #root is neutralized so the header keeps
+ * its full width while messages and the input bar shift left and the fixed
+ * panel covers the vacated strip, exactly like the widgets rail. An html
+ * prefix out-specifies better-sidebar's bare #root rules ((1,0,1)>(1,0,0),
+ * (1,2,4)>(1,2,3)).
+ *
+ * #root must be FULLY neutralized — not just margin-right but ALSO the
+ * `width: calc(100% - var(--dsh-sidebar-width))` from the same better-sidebar
+ * rule. If only the margin is zeroed, the width squeeze still shrinks the app
+ * column (right edge already lands at the panel's left edge) and then the
+ * viewArea/composerSeat margin-right squeezes a SECOND time — the conversation
+ * ends up one full panel-width short of the panel: the empty gap between the
+ * chat/input and the sidebar. Restoring width:100% makes the inner margin the
+ * single, correct squeeze. */
+:global(html #root) {
+  margin-right: 0;
+  width: 100%;
+}
+:global(html #root > div[data-slot='root'] > div > div:nth-child(2)) {
+  margin-bottom: 0;
+}
+:global([data-slot='conversation.session'] > [class$='_viewArea']) {
+  margin-right: var(--dsh-sidebar-width, 0px);
+  transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}

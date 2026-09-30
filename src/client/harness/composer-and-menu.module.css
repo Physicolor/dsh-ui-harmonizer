@@ -1,0 +1,74 @@
+/* @dsh-split-header
+ * harness/composer-and-menu.module.css - Serves: DSH's composer bar (trigger pills, add/send icons) and the ui-primitives dropdown Menu.
+ * Why here: both are product surfaces, scaled through the product's own channel.
+ * Origin: src/client/enhancer.module.css L99-L155, byte-identical below; this header is the only addition.
+ */
+/* Composer text and the user bubble are NOT overridden any more.
+ *
+ * Both are sized by the product from `--dsh-content-font-size` (measured in the
+ * 0.1.5 bundles: `[data-input-scroll] { font-size: var(--dsh-content-font-size,
+ * 14px) }` and `.…_bubble { font-size: var(--dsh-content-font-size, 14px) }`).
+ * Our former overrides froze them on the plugin's own slider and made the
+ * product's own content-size row look broken in those two surfaces. The plugin
+ * now only derives its *chrome* scale from the same variable (see body above);
+ * the text surfaces stay with their owner. */
+
+/* Composer tool row — trigger pills, command/add icon, send/primary icon scale with chat font. */
+[data-slot='conversation.composer.bar'] [class$='_trigger'] {
+  font-size: calc(13px * var(--enhancer-chat-scale, 1));
+  line-height: calc(20px * var(--enhancer-chat-scale, 1));
+  height: calc(28px * var(--enhancer-chat-scale, 1));
+}
+[data-slot='conversation.composer.bar'] [class$='_trigger'] svg,
+[data-slot='conversation.composer.bar'] [class$='_add'] svg {
+  width: calc(14px * var(--enhancer-chat-scale, 1));
+  height: calc(14px * var(--enhancer-chat-scale, 1));
+}
+[data-slot='conversation.composer.bar'] [class$='_primary'] svg {
+  width: calc(16px * var(--enhancer-chat-scale, 1));
+  height: calc(16px * var(--enhancer-chat-scale, 1));
+}
+
+/* Dropdown menus (ui-primitives Menu: model picker, permission picker, …).
+ * scale with the composer chrome so the popup matches its trigger.
+ *
+ * SELECTOR SHAPE — measured on the live DOM 2026-09-30, because the previous
+ * shape was dead twice over:
+ *   - the menu surface carries role AND the list class on the SAME element
+ *     (`<… class="_surface_ri079_1 _list_4ub78_7 _denseList_4ub78_124 …" role="menu">`),
+ *     so `[role='menu'] [class^='_list_']` (a DESCENDANT) matched nothing;
+ *   - the class attribute is a LIST whose first item is not the list class, so
+ *     `[class^='_list_']` (prefix) matched nothing either — even as a sibling
+ *     selector. `[class*='_list_']` (contains) is the one that hits, and it is
+ *     still version-proof: the local name is followed by a build hash.
+ * Measured counts with a menu open: descendant 0, prefix 0, contains 1.
+ * Item/icon/label are children of the list, so they stay descendant selectors —
+ * with `*=` for the same reason. `_item_` cannot collide with `_itemIcon_`
+ * (the underscore after `item` is what discriminates them).
+ * Baselines are the product Menu spec: list 4/12/144min/360max, item
+ * 14/22/40/8×10/10, icon+check 16, label 12/16. */
+[role='menu'][class*='_list_'] {
+  padding: calc(4px * var(--enhancer-chat-scale, 1));
+  border-radius: calc(12px * var(--enhancer-chat-scale, 1));
+  min-width: calc(218px * var(--enhancer-chat-scale, 1));
+  max-width: calc(360px * var(--enhancer-chat-scale, 1));
+}
+[role='menu'] [class*='_item_'] {
+  font-size: calc(14px * var(--enhancer-chat-scale, 1));
+  line-height: calc(22px * var(--enhancer-chat-scale, 1));
+  min-height: calc(40px * var(--enhancer-chat-scale, 1));
+  padding: calc(8px * var(--enhancer-chat-scale, 1)) calc(10px * var(--enhancer-chat-scale, 1));
+  border-radius: calc(10px * var(--enhancer-chat-scale, 1));
+  gap: calc(8px * var(--enhancer-chat-scale, 1));
+}
+[role='menu'] [class*='_itemIcon_'],
+[role='menu'] [class*='_check_'] {
+  width: calc(16px * var(--enhancer-chat-scale, 1));
+  height: calc(16px * var(--enhancer-chat-scale, 1));
+}
+[role='menu'] [class*='_label_'] {
+  font-size: calc(12px * var(--enhancer-chat-scale, 1));
+  line-height: calc(16px * var(--enhancer-chat-scale, 1));
+  padding: calc(8px * var(--enhancer-chat-scale, 1)) calc(10px * var(--enhancer-chat-scale, 1));
+}
+

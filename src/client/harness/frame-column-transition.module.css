@@ -1,0 +1,43 @@
+/* @dsh-split-header
+ * harness/frame-column-transition.module.css - Serves: DSH 0.2.0's AppFrame grid-template-columns transition.
+ * Why here: it patches the product's own frame animation.
+ * Origin: src/client/enhancer.module.css L952-L989, byte-identical below; this header is the only addition.
+ */
+/* ---- the AppFrame's column track has to actually ANIMATE ------------------
+ *
+ * DSH 0.2.0 moved the frame's `transition: grid-template-columns …` behind
+ * `[data-animating]`, and the component sets that attribute from a
+ * `useLayoutEffect` on the very same commit that writes the new inline track —
+ * so the BEFORE-CHANGE style (the one CSS Transitions starts from) still has
+ * `transition-property: all; duration: 0s` and NO transition runs at all.
+ *
+ * Measured on 0.2.0-rc.2 (1920x1080, one right-panel toggle):
+ *   - the center column went 1640px -> 776px in a SINGLE frame;
+ *   - the frame fired no transitionrun/start/end for grid-template-columns;
+ *   - `data-animating` stayed on for 600ms and was then cleared by the
+ *     component's own fallback timer (the transitionend path never ran).
+ * The conversation therefore SNAPS to its new width instead of gliding, and
+ * every consumer of that clock loses it with the animation: this plugin's
+ * center-card overlay (card-overlay.tsx, which waits for transitionrun before
+ * switching to its free ResizeObserver path), dsh-widgets' rail yield (whose
+ * `--dsx-rail-right` pin is read on the track's first frame) and the
+ * viewArea/composerSeat margin squeeze declared above — which is why the panel
+ * sweep read as "the column jumped left, then the width grew".
+ *
+ * Keep the transition ON the frame permanently instead. Everything the product
+ * wanted to exclude is already excluded by its own higher-specificity rules
+ * (`.…_frame[data-dragging]`, `[data-rightbar-instant]`,
+ * `[data-rightbar-fullscreen]` all carry two classes against our one), and
+ * window resizing — the one case the product guards with JS (`viewportChanged`,
+ * which skips `setAnimating`) — is excluded by the `enhc-window-resizing` class
+ * frame-track.ts holds while the window is being dragged. First paint is
+ * unaffected: an element has no before-change style. The declaration is byte
+ * for byte the product's own (same tokens), so nothing else about the motion
+ * changes. */
+:global(html [class$='_frame']) {
+  transition: grid-template-columns var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+:global(html.enhc-window-resizing [class$='_frame']) {
+  transition: none;
+}
+

@@ -1,0 +1,58 @@
+/* @dsh-split-header
+ * harness/chat-chrome-scale.module.css - Serves: DSH's content-size channel (`--dsh-content-font-size` -> `--enhancer-chat-scale`) and the note that the conversation column width belongs to the product.
+ * Why here: the product owns both values; this sheet only derives from them.
+ * Origin: src/client/enhancer.module.css L13-L59, byte-identical below; this header is the only addition.
+ */
+/* Chat chrome scale follows the PRODUCT's content-size channel.
+ *
+ * DSH 0.1.5 owns "content font size" (Settings → General → 内容字号, namespace
+ * ui-theme) and publishes it as an inline `--dsh-content-font-size` on <body>,
+ * consuming it in the composer, the user bubble and all 102 markdown tokens.
+ * This plugin therefore stops owning that value: it derives its chrome scale
+ * from the same variable, so there is exactly one owner and one source of
+ * truth. Measured before this change (probe-harmony, 2026-09-16): our
+ * `[data-input-scroll]` rule set a fixed px and thereby froze the composer at
+ * our own slider's value, while the product's slider could not move it.
+ *
+ * Declared on body (not :root) because the product writes the variable on
+ * <body>; custom properties only inherit downward.
+ *
+ * THE DIVISOR CARRIES ITS UNIT ON PURPOSE: `calc(14px / 14)` is a LENGTH
+ * (`1px`), not the number `1`, so every `calc(Npx * var(--enhancer-chat-scale))`
+ * downstream became length × length — invalid at computed-value time — and fell
+ * back to the INITIAL value of each property (padding 0, gap normal, min-height
+ * auto, radius 0). That silently flattened every menu row, composer pill and
+ * icon box this stylesheet sizes (measured 2026-09-16: `calc(8px * var(…))`
+ * computed `0px` while `calc(8px * calc(14px / 14px))` computed `8px`).
+ * `calc(14px / 14px)` cancels the units and yields the number, and because the
+ * consumers read `var(--enhancer-chat-scale, 1)` an engine that rejects
+ * length÷length drops this declaration and degrades to scale 1 — the sane
+ * default — instead of flattening the layout. */
+body {
+  --enhancer-chat-scale: calc(var(--dsh-content-font-size, 14px) / 14px);
+}
+
+/* Conversation column width — owned by the PRODUCT, not by this plugin.
+ *
+ * ConversationRoot declares
+ *   --dsh-chat-content-width: var(--dsh-chat-user-width, clamp(680px, col*.64, 920px))
+ * on the SAME element that carries [data-phase], and renders two drag handles
+ * (div[data-width-handle][data-side=left|right]) that write --dsh-chat-user-width
+ * and persist it under localStorage['dsh.conversation.contentWidth'].
+ *
+ * This block used to override the variable outright:
+ *   div[data-phase] { --dsh-chat-content-width: var(--enhancer-content-width) }
+ * That out-specified the product's own rule ((0,1,1) > (0,1,0)) on the shared
+ * element, so both handles dragged a variable nothing consumed — live-looking
+ * strips that moved nothing. The width now flows through the product's channel
+ * instead (state.ts writes the key AND the inline property), so the settings row
+ * and the handles share one value and either can change it.
+ *
+ * The plugin's own --enhancer-content-width is now ORPHANED: the setting and
+ * the Harmony Doctor still write and read it, but NO CSS RULE in this project
+ * consumes it any more. The GenUI panel cap this comment used to point at was
+ * handed back to dsh-genui — plugins/dsh-genui/width-hygiene.module.css
+ * resolves the panel against the product's own --dsh-composer-card-max-width —
+ * so the claim that this file's tail still reads the variable is false.
+ * Reattach a consumer or drop the variable before treating it as live. */
+

@@ -1,0 +1,49 @@
+/* @dsh-split-header
+ * self/settings-section-headers.module.css - Serves: this plugin's settings-header normalizer - the `enhc-page-title` / `enhc-page-intro` skeleton it writes into `settings.section`.
+ * Why here: the classes are this plugin's own; without it they never exist.
+ * Origin: src/client/enhancer.module.css L249-L292, byte-identical below; this header is the only addition.
+ */
+/* Settings page headers — ONE skeleton for every page.
+ *
+ * The architecture lives in settings-page.ts: this plugin's own pages render
+ * `SettingsPageHeader` and every other page is normalized by the reconciler.
+ * Both produce the same two sibling nodes — `h2.enhc-page-title` and
+ * `p.enhc-page-intro` — which is exactly the skeleton the official pages ship
+ * (`_section > h2._title + p._intro`). There is no wrapper of ours anywhere, so a
+ * page cannot end up with a different header shape than its neighbours.
+ *
+ * The distance between the two nodes is NOT a stylesheet constant: the official
+ * value is the official section's own `gap` (12px, measured on models / agent
+ * presets / bundled plugins with this plugin's sheets disabled), while
+ * third-party containers use their own (4 / 16 / none at all). The reconciler
+ * measures the container and writes the difference onto the description's
+ * `margin-top`, so the rendered distance — and the title's position on screen —
+ * is identical on every page. See scripts/probe-header-geometry.mjs. */
+[data-slot='settings.section'] :global(.enhc-page-title) {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+  margin: 0;
+}
+[data-slot='settings.section'] :global(.enhc-page-intro) {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-tertiary);
+  /* `margin-top` is left to the reconciler: it is the one number that has to
+   * differ per page so the rendered result does not. */
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+/* Auto-normalizer: any plugin's settings-section title row may decorate the
+ * page title with a logo/icon glyph, but every official page (models / plugins /
+ * agent presets / general) is a bare 18px/600 text title. Drop a direct
+ * `<svg>` that sits beside the title in a `_titleRow` so every section title
+ * reads the same way (dshmarket's 22px market logo is the known case; the
+ * selector is generic so any future plugin with an icon-in-title-row is
+ * covered — the title text itself is untouched). */
+[data-slot='settings.section'] [class$='_titleRow'] > svg {
+  display: none;
+}
+

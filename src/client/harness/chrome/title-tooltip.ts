@@ -1,6 +1,12 @@
 /**
  * Unified native-title tooltips ("tooltip harmonizer").
  *
+ * Layer: harness/chrome (DOM behaviour aimed at the DSH shell's own chrome).
+ * Seams: the product's Tooltip design language, reproduced with official alias
+ * tokens (`--dsw-alias-tooltip-bg`, `--dsw-static-neutral-bluish-00`,
+ * `--ds-ease-in-out`) and the raw HTML `title` attribute; the only tag we write is
+ * our own `<style data-plugin-css>`. No third-party private class names.
+ *
  * The product ships a styled Tooltip primitive (@deepseek-ai/dsh-client-ui-primitives)
  * — dark inverted bubble, `--dsw-alias-tooltip-bg`, fixed positioning in the
  * z-index-100 popup band, 500ms hover delay, immediate on keyboard focus — but
@@ -67,8 +73,12 @@ const TOOLTIP_CSS = `
 
 /** Opt-out marker: an ancestor carrying this attribute keeps its native tooltip. */
 const OPT_OUT_SELECTOR = '[data-enhc-no-tooltip]'
-/** Tag id of the injected stylesheet (swept together with the plugin tags). */
-const STYLE_TAG_ID = 'harness-ui-harmonizer/title-tooltip'
+/** Loader id of this plugin and tag id of its injected stylesheet. Both spellings
+ *  are the ones the loader knows (`tsdown.config.ts`: banner id `dsh-ui-harmonizer`,
+ *  tagId `<id>/<basename>`), so an unload sweep actually finds and removes the tag
+ *  instead of leaving it behind for the whole session. */
+const PLUGIN_ID = 'dsh-ui-harmonizer'
+const STYLE_TAG_ID = `${PLUGIN_ID}/title-tooltip`
 
 /** One active presentation: which element, and the title text lifted from it. */
 interface ActiveTip {
@@ -109,7 +119,11 @@ function ensureBubble(): HTMLDivElement {
   if (document.getElementById('enhc-tt-style') === null) {
     const style = document.createElement('style')
     style.id = 'enhc-tt-style'
-    style.dataset.plugin = 'harness-ui-harmonizer'
+    style.dataset.plugin = PLUGIN_ID
+    // `data-plugin-css` is what the loader's `removeOwnedStyles` sweeps on, and what
+    // style-keeper reads to tell "the loader's sheet" from "a hand-injected one":
+    // this tag is ours to create AND to delete, never a straggler to restore.
+    style.dataset.pluginCss = STYLE_TAG_ID
     style.dataset.pluginDynamic = STYLE_TAG_ID
     style.textContent = TOOLTIP_CSS
     document.head.appendChild(style)

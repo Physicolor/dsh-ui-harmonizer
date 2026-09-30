@@ -12,7 +12,8 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "lib/types",
-    "rootDir": "src"
+    "rootDir": "src",
+    "allowImportingTsExtensions": true
   },
   "include": ["src"]
 }

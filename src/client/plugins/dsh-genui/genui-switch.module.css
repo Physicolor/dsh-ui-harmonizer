@@ -1,0 +1,87 @@
+/* @dsh-split-header
+ * plugins/dsh-genui/genui-switch.module.css - Serves: dsh-genui's `V1MMBW_switch`, with the shared verdict note covering every third-party on/off control.
+ * Why here: the rules only match dsh-genui's hashed classes.
+ * Origin: src/client/enhancer.module.css L486-L567, byte-identical below; this header is the only addition.
+ */
+/* ── third-party on/off controls, normalised to that same spec ───────────────
+ *
+ * The 2026-09-30 sweep (probe-switch-rules.mjs) found these switch
+ * implementations installed; each is attributed by the stylesheet that declares
+ * its classes, and each is listed with the verdict that produced (or withheld)
+ * the rule below:
+ *
+ *   @deepseek-ai/dsh-client-ui-primitives  the reference (above)
+ *   @mars-sea/dsh-commandcode-provider     `cc-toggle` — ALREADY the official
+ *                                          spec: 36×20, `padding: 2px`, full pill
+ *                                          (+ `corner-shape: round`), `border-l3`
+ *                                          → `brand-primary`, 16px thumb on a .12s
+ *                                          `translateX(16px)`, disabled .5. Only
+ *                                          its focus ring differs (brand black
+ *                                          where the product's fallback is
+ *                                          business blue) → one line below.
+ *   @omdsh-dev/dsh-genui                   `V1MMBW_switch` — 38×22, 14px knob, own
+ *                                          `--dsl-g-*` tokens and a blue accent →
+ *                                          normalised below.
+ *   dshmarket                              `nUhMVa_switch` (38×22, green) — its
+ *                                          rules are loaded but the control never
+ *                                          reaches the screen: the market page
+ *                                          renders 573 `nUhMVa_*` nodes and ZERO
+ *                                          switches (measured). Deliberately NOT
+ *                                          adapted — a rule that can never match
+ *                                          is the dead-CSS class the Doctor exists
+ *                                          to report. Revisit if the market ships
+ *                                          the view that uses it.
+ *   dsh-notification                       native `<input type=checkbox>` with
+ *                                          `accent-color` — a multi-select filter
+ *                                          list, not an on/off setting; the
+ *                                          product treats content checkboxes the
+ *                                          same way (`accent-color`), so there is
+ *                                          no official skin to copy. Left alone.
+ *
+ * Every rule carries a `body` prefix: these plugins' own selectors are single
+ * classes at equal specificity and load order is not ours to rely on. All of it
+ * is inert until the third-party control actually renders, and none of it reads
+ * state — it redeclares geometry and token-driven colour only. */
+
+/* dsh-genui's switch: same box, same tokens, same motion as the product's. The
+ * knob is absolutely positioned there, so the slide stays a `transform` (no
+ * layout) and `left` is pinned to the padding edge on both states. */
+:global(body .V1MMBW_switch) {
+  box-sizing: border-box;
+  width: 36px;
+  height: 20px;
+  padding: 2px;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--dsw-alias-border-l3);
+  transition: none;
+}
+:global(body .V1MMBW_switch.V1MMBW_switchOn) {
+  background: var(--dsw-alias-brand-primary);
+  border-color: transparent;
+}
+:global(body .V1MMBW_switch .V1MMBW_switchKnob) {
+  width: 16px;
+  height: 16px;
+  top: 2px;
+  left: 2px;
+  border-radius: 50%;
+  corner-shape: round;
+  background: var(--dsw-alias-switch-thumb);
+  box-shadow: none;
+  transition: transform 0.12s;
+}
+:global(body .V1MMBW_switch.V1MMBW_switchOn .V1MMBW_switchKnob) {
+  background: var(--dsw-alias-label-primary-foreground);
+  left: 2px;
+  transform: translate(16px);
+}
+/* Its row paints a 3px accent halo on focus-within (from tokens that only exist
+ * inside genui's own panels); the product's ring is the shared token pair. */
+:global(body .V1MMBW_switchRow:focus-within .V1MMBW_switch) {
+  box-shadow: none;
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 2px;
+}
+

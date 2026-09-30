@@ -1,0 +1,39 @@
+/* @dsh-split-header
+ * harness/settings-and-crumb.module.css - Serves: the product's session-title crumb buttons and the plugin-manager version picker select.
+ * Why here: both are product chrome on product slots.
+ * Origin: src/client/enhancer.module.css L293-L326, byte-identical below; this header is the only addition.
+ */
+/* Session title crumb — widen so long titles avoid the ellipsis. */
+button[class$='_crumb'],
+button[class$='_crumbCurrent'] {
+  max-width: 560px;
+}
+
+/* Plugin version picker — product selector-pill look for the native select. */
+[class$='_versionPicker'] select {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  border-radius: 18px;
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  line-height: 20px;
+  height: 32px;
+  padding: 0 32px 0 14px;
+  cursor: pointer;
+  min-width: 0;
+}
+[class$='_versionPicker'] select:hover {
+  background-color: var(--dsw-alias-interactive-bg-hover);
+}
+[class$='_versionPicker'] select:focus-visible {
+  outline: 2px solid var(--dsw-alias-border-l3);
+  outline-offset: 1px;
+}
+[class$='_versionPicker'] select option {
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+}
+

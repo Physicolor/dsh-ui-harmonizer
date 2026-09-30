@@ -1,0 +1,38 @@
+/* @dsh-split-header
+ * plugins/dsh-better-sidebar/panel-chrome.module.css - Serves: dsh-better-sidebar's right/bottom panel frames (`nArs4W_panel`, `nArs4W_bottomPanel`).
+ * Why here: third-party hashed classes.
+ * Origin: src/client/enhancer.module.css L661-L692, byte-identical below; this header is the only addition.
+ */
+/* The toggle-cluster seat is GONE (better-sidebar 0.9.0). The installed 0.24.1
+ * no longer renders a `_toggleCluster` at all — it registers its controls into
+ * the product's own header seats, and `toggleCluster` / `panelHidden` /
+ * `panelResize` are absent from its CSS-module map — so every rule here matched
+ * nothing, and the `html.enhc-panel-open` switch that drove its two shapes was
+ * computed from a class (`nArs4W_panelHidden`) the plugin no longer ships,
+ * latching the "compact" shape on permanently. Deleted rather than repaired:
+ * the seat does not exist and reading another plugin's private classes is what
+ * the Harmony Contract exists to stop. */
+:global(body .nArs4W_panel) {
+  /* Start below the session header so the header is never covered: the widgets
+   * rail already measures the conversation scroll top into --dsx-rail-top, so
+   * reusing it keeps this panel on the exact same line as the rail (fallback
+   * 75px = header height when widgets is absent). Edge rectangle instead of a
+   * divider line: flush against right/bottom, 1px border-l2 on top+left, a
+   * 14px top-left corner and a lv3 drop shadow. overflow:hidden makes the
+   * outer rounded rectangle clip ALL inner right-angled content (active-tab
+   * fill, pane sheet, — so no inner element needs its own radius — one
+   * source of truth for the corner. box-shadow is a decoration, not content,
+   * so it is unaffected by the clip. The resize handle is moved to left:0 so
+   * the clip cannot slice it off. */
+  top: 6px;
+  background: var(--enhc-solid-fill, var(--dsw-alias-bg-layer-1));
+  border: none;
+  border-left: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 14px 0 0 14px;
+  box-shadow: var(--dsw-shadow-lv3);
+  overflow: hidden;
+}
+:global(body .nArs4W_bottomPanel) {
+  background: var(--enhc-solid-fill, var(--dsw-alias-bg-base));
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}

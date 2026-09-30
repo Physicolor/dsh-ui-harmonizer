@@ -1,0 +1,20 @@
+/* @dsh-split-header
+ * harness/flow-item-rendering.module.css - Serves: DSH's conversation flow items (`content-visibility: auto`).
+ * Why here: a product-surface rendering optimisation that also serves ordinary scrolling.
+ * Origin: src/client/enhancer.module.css L918-L932, byte-identical below; this header is the only addition.
+ */
+/* Render only what is near the viewport. The conversation flow keeps every
+ * turn/step as a `*_flowItem` (a long session easily holds ~90 of them, well
+ * over a thousand DOM nodes); off-screen items then skip layout entirely, so
+ * the sidebar-squeeze margin animation above — and ordinary scrolling —
+ * reflows just the handful of visible items instead of the whole tree. This
+ * is what keeps the 0.3s squeeze glide at full frame rate on long
+ * conversations WITHOUT giving up the smooth progressive reflow (left edge
+ * pinned, right edge gliding). `auto <length>` lets the browser remember each
+ * item's last rendered size once seen, so scrollbar height barely shifts.
+ * Browsers without support ignore the rule and simply fall back to the old
+ * (slower) behavior. */
+:global([data-slot='conversation.session'] [class$='_flowItem']) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}

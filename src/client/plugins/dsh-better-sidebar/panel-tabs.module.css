@@ -1,0 +1,84 @@
+/* @dsh-split-header
+ * plugins/dsh-better-sidebar/panel-tabs.module.css - Serves: dsh-better-sidebar's panel tab bar, tabs, close/plus buttons and explorer column.
+ * Why here: third-party hashed classes.
+ * Origin: src/client/enhancer.module.css L809-L887, byte-identical below; this header is the only addition.
+ */
+/* better-sidebar panel chrome: inner rectangles can stay right-angled — the
+ * panel's overflow:hidden clip applies the corner for them. Drop the per-tab
+ * divider line (fewer dividers); pane carries the inner surface color and is
+ * itself clipped to the rounded corner by the panel. */
+/* better-sidebar tab bar: 44px height with proportionally scaled internals.
+ * The default bar is ~36px; bumping to 44px gives a more spacious feel that
+ * matches the session header's 32px capsule row when accounting for the
+ * panel's own padding. Scale icons, text, and buttons proportionally.
+ * The tabs themselves FILL the whole bar: better-sidebar's own .tab has no
+ * height and relies on the bar's align-items: stretch, but our previous
+ * fixed height: 36px broke that chain and left the 44px bar with ~8px dead
+ * space at the bottom. Reverting to auto + explicit stretch restores the
+ * full-height tab (its inner align-items: center keeps the 14px label and
+ * icons vertically centered in the taller strip). */
+:global(body .nArs4W_tabBar) {
+  height: 44px;
+  min-height: 44px;
+}
+/* The open right panel's tab strip reserves the toggle cluster's rendered
+ * width at its right end. The cluster now spans 12px (right) + 32px + 6px
+ * (gap) + 32px = 82px, so the 72px better-sidebar reserves for its own
+ * 28px buttons would let the rightmost tab slide under our bigger capsules.
+ * 90px = 82px cluster + 8px breathing room. Scoped to the right panel —
+ * the bottom panel's strip keeps its own 40px close-control seat. */
+/* The right panel's tab strip is left to its owner: it used to reserve 90px for
+ * a toggle cluster this plugin restyled, and that cluster no longer exists (the
+ * plugin registers its controls into the product's header seat). */
+
+:global(body .nArs4W_panel .nArs4W_tab) {
+  border-right: none;
+  height: auto;
+  align-self: stretch;
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: 20px;
+  gap: 6px;
+}
+:global(body .nArs4W_panel .nArs4W_tab svg) {
+  width: 16px;
+  height: 16px;
+}
+:global(body .nArs4W_panel .nArs4W_tabClose) {
+  width: 16px;
+  height: 16px;
+}
+:global(body .nArs4W_panel .nArs4W_tabClose svg) {
+  width: 14px;
+  height: 14px;
+}
+:global(body .nArs4W_panel .nArs4W_tabBarPlus) {
+  width: 20px;
+  height: 20px;
+}
+:global(body .nArs4W_panel .nArs4W_tabBarPlus svg) {
+  width: 16px;
+  height: 16px;
+}
+:global(body .nArs4W_panel .nArs4W_pane) {
+  background: var(--dsw-alias-bg-layer-1);
+}
+/* No horizontal scroll inside the right panel — professional pattern for a
+ * fixed-width sidebar: break the flex "min-width:auto" stretch chain so no
+ * child can widen the column (long names would otherwise overflow and scroll),
+ * then clip X on the explorer and ellipsize long names (already ellipsized by
+ * the plugin) instead of letting content push a scrollbar. Code/terminal
+ * panes keep their own native vertical + horizontal scrolling. */
+:global(body .nArs4W_panel .nArs4W_paneContent),
+:global(body .nArs4W_panel .nArs4W_paneTab),
+:global(body .nArs4W_panel .nArs4W_explorer),
+:global(body .nArs4W_panel .nArs4W_explorerBody) {
+  min-width: 0;
+  max-width: 100%;
+}
+:global(body .nArs4W_panel .nArs4W_explorerBody) {
+  overflow-x: hidden;
+}
+:global(body .nArs4W_panel .nArs4W_explorerRow) {
+  max-width: 100%;
+}

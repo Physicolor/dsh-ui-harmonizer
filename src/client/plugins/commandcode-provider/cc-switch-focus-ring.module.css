@@ -1,0 +1,12 @@
+/* @dsh-split-header
+ * plugins/commandcode-provider/cc-switch-focus-ring.module.css - Serves: @mars-sea/dsh-commandcode-provider's `.cc-toggle` focus ring.
+ * Why here: one rule, one third-party class.
+ * Origin: src/client/enhancer.module.css L568-L574, byte-identical below; this header is the only addition.
+ */
+/* Command Code's toggle: geometry, colours and motion already match the product;
+ * only the keyboard focus ring is off-spec (brand black vs the product's
+ * business-blue fallback). */
+:global(body .cc-toggle:focus-visible) {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+}
+

@@ -1,0 +1,26 @@
+/* @dsh-split-header
+ * plugins/dsh-widgets/rail-overlay-squeeze.module.css - Serves: dsh-widgets' rail against the product's trajectory composer-overlay seat.
+ * Why here: the rule only comes alive while `body.dsx-stats-active` is on.
+ * Origin: src/client/enhancer.module.css L990-L1010, byte-identical below; this header is the only addition.
+ */
+/* -- cross-plugin rail squeeze for the overlay seat -------------------
+ *
+ * harness-widgets reclaims the right rail by padding the conversation
+ * scrollBody: `body.dsx-stats-active [data-conversation-scroll] {
+ * padding-right: var(--dsx-rail-w, 220px) !important }`. That works for the
+ * CHAT seat because sticky/flex-items stretch to the scrollBody's CONTENT box,
+ * which already excludes that padding-right. But the product switches the
+ * TRAJECTORY seat to `position: absolute; left: 0; right: var(--dsh-
+ * scrollbar-width)` under `:has([data-conversation-composer-overlay])`, and an
+ * absolutely positioned box sizes against the PADDING box — it never sees the
+ * scrollBody's own padding-right. So with the rail active the trajectory seat
+ * is ~198px wider and shifted right, exactly the input jump seen on switching
+ * 对话 <-> 轨迹. Re-apply the rail width to that seat's `right` so it ends on
+ * the same line as chat (box right - scrollbar - rail). Wide only in the rail +
+ * overlay state (specificity (0,4,1) beats the product's (0,3,0)), so a
+ * rail-less setup is untouched. */
+:global(body.dsx-stats-active [data-conversation-scroll]:has([data-conversation-composer-overlay]) > [class$='_composerSeat']) {
+  right: calc(var(--dsh-scrollbar-width, 0px) + var(--dsx-rail-w, 220px));
+}
+
+

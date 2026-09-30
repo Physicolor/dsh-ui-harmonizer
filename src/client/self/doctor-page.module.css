@@ -1,0 +1,106 @@
+/* @dsh-split-header
+ * self/doctor-page.module.css - Serves: this plugin's Harmony Doctor page (`enhc-doctor*`).
+ * Why here: the page is this plugin's own.
+ * Origin: src/client/enhancer.module.css L1103-L1203, byte-identical below; this header is the only addition.
+ */
+/* ── Harmony Doctor page ────────────────────────────────────────────────── */
+:global(.enhc-doctor) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+:global(.enhc-doctor-bar) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+:global(.enhc-doctor-btn) {
+  appearance: none;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 18px;
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-primary);
+  font: var(--dsw-font-s-14, 14px/22px var(--dsw-font-family));
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background var(--ds-transition-duration-fast) var(--ds-ease-in-out);
+}
+:global(.enhc-doctor-btn:hover:not(:disabled)) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+:global(.enhc-doctor-btn:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+:global(.enhc-doctor-btn-quiet) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--dsw-alias-label-secondary);
+}
+:global(.enhc-doctor-stats) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+:global(.enhc-doctor-stat) {
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  padding: 8px 0 10px;
+}
+:global(.enhc-doctor-stat-v) {
+  font: var(--dsw-font-l-20, 500 20px/28px var(--dsw-font-family));
+  color: var(--dsw-alias-label-primary);
+  font-variant-numeric: tabular-nums;
+}
+:global(.enhc-doctor-stat-l) {
+  font: var(--dsw-font-xs-13, 13px/20px var(--dsw-font-family));
+  color: var(--dsw-alias-label-tertiary);
+}
+:global(.enhc-warn) {
+  color: var(--dsw-alias-state-warn-primary);
+}
+:global(.enhc-doctor-block) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+:global(.enhc-doctor-h3) {
+  font: var(--dsw-font-s-14, 14px/22px var(--dsw-font-family));
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+  margin: 4px 0 0;
+}
+:global(.enhc-doctor-rows) {
+  display: flex;
+  flex-direction: column;
+}
+:global(.enhc-doctor-row) {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+:global(.enhc-doctor-code) {
+  flex: 1;
+  min-width: 0;
+  font: var(--dsw-font-markdown-code, 12px/19px var(--ds-font-family-code));
+  color: var(--dsw-alias-label-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:global(.enhc-doctor-right) {
+  flex: none;
+  font: var(--dsw-font-xs-13, 13px/20px var(--dsw-font-family));
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+:global(.enhc-doctor-empty) {
+  font: var(--dsw-font-xs-13, 13px/20px var(--dsw-font-family));
+  color: var(--dsw-alias-label-tertiary);
+  margin: 0;
+}
+
+

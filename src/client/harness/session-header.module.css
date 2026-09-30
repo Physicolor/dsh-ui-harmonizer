@@ -1,0 +1,126 @@
+/* @dsh-split-header
+ * harness/session-header.module.css - Serves: DSH's conversation header: geometry, opaque surface, divider removal, relocated session tabs.
+ * Why here: the selectors are the product's header slots; the single better-sidebar fallback var is inert without it.
+ * Origin: src/client/enhancer.module.css L693-L808, byte-identical below; this header is the only addition.
+ */
+/* The header's right margin tracks the better-sidebar panel width:
+ *   margin-right: var(--dsh-sidebar-width, 0px) !important
+ * and nothing more. The floating better-sidebar toggle cluster this block used
+ * to reserve room for is GONE. The installed dsh-better-sidebar 0.24.1 no
+ * longer renders a `toggleCluster` and no longer publishes
+ * `--dsh-sidebar-width`, so the variable resolves to its 0px fallback and the
+ * header ends at the panel's own edge (the grid column already yields the
+ * space).
+ *
+ * !important is now belt-and-braces rather than the load-bearing part the old
+ * comment claimed: it originally had to beat better-sidebar's own 78px
+ * collapsed-state push (sized for its old 28px buttons, ours are 32px
+ * capsules), and no such push exists in 0.24.1. It is kept only so an older
+ * better-sidebar that still writes margin-right cannot win.
+ *
+ * ANCHOR — read this before touching any header rule. The installed
+ * ConversationRoot moved the header OUT of the `conversation.session.header`
+ * slot: that node is now `display: contents` and hosts only the title row,
+ * while the header itself is its PARENT, inside `[data-slot='conversation.header']`.
+ * Every `…session.header] > header` rule therefore stopped matching at once —
+ * silently, because a dead selector is not an error — and the product's own
+ * two-row metrics came back with it. Anchor on the real parent; the old
+ * spelling is kept in the list so pre-0.1.5 builds keep their behaviour.
+ *
+ * Product header metrics are `padding: 10px 28px 0 20px; min-height: 76px`,
+ * sized for TWO rows (title cluster + tab strip), and the product only drops
+ * that when the header has no tab strip at all:
+ *   `.header:where(:not(:has(.tabs))) { min-height: 0; padding-bottom: 10px }`
+ * The client half moves the strip INTO the title row, so `:has(.tabs)` stays
+ * true and the 76px two-row band survives with a single 28px row floating in
+ * it — the "too much space above and below" the row reads as. Re-apply the
+ * product's own single-row shape: 10 + 30 (title-row min-height) + 10 = 50px,
+ * which is also the Codex reference bar's measured height (docs/MEASUREMENTS.md).
+ * Guarded by `:has(titleCluster > tabs)` so it only lands once the strip has
+ * really been relocated; if that move ever stops happening the native two-row
+ * geometry returns instead of being squashed.
+ *
+ * Keep the product's horizontal padding — the right-bar expand button sits in
+ * the corner seat with `margin-right: -16px`, calibrated to the 28px right
+ * padding, and a narrower one parks that button visibly off its seat. */
+:global([data-slot='conversation.header'] > header:has([class$='_titleCluster'] > [class$='_tabs'])),
+:global([data-slot='conversation.session.header'] > header) {
+  /* better-sidebar 0.24.1 registers its controls in the product's own header
+   * seats (ctx.sidebarRight / header corner) and no longer publishes
+   * --dsh-sidebar-width, so the old max(..., 90px) band that reserved room for
+   * a floating toggle cluster would leave a dead gap at the header's right
+   * edge. Track the variable only: it resolves to 0 here (the grid column
+   * already yields the space), while an older better-sidebar that still sets it
+   * keeps its reservation. */
+  margin-right: var(--dsh-sidebar-width, 0px) !important;
+  padding: 10px 28px 10px 20px !important;
+  min-height: 0 !important;
+  border-bottom: none !important;
+  transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+/* Opaque white rectangle for the session header. The shell's overlay layer
+ * (z-20) hosts the harness-widgets rail and its magnify overlay; without a
+ * solid header background the magnified cards visually stack ON the header
+ * buttons instead of sliding UNDER the header. Give the header a real card
+ * surface (same fill as the column) and lift it one step above the overlay
+ * layer (21 > 20) — but still below better-sidebar's panels (40) and modals —
+ * so the rail's top edge is always masked by the header rectangle. */
+/* Header surface — MATERIAL-AWARE.
+ *
+ * The shell's overlay layer (z-20) hosts the widgets rail and its magnify
+ * overlay; without a solid header background the magnified cards visually stack
+ * ON the header buttons instead of sliding UNDER the header, so this rule gives
+ * the header a real card surface and lifts it one step above that layer
+ * (21 > 20, still below panels at 40 and modals).
+ *
+ * The fill comes from `--enhc-solid-fill`, which the Harmony Contract flips to
+ * `transparent` the moment the semantic tokens stop being opaque (any glass
+ * theme, e.g. dsh-theme-liquid-glass, replaces `--dsw-alias-*` with translucent
+ * values through `ctx.theme.overrideTokens`). Painting `--dsw-alias-bg-base`
+ * directly there produced a "hole in the glass": a see-through rectangle with no
+ * backdrop-filter. Yielding the fill keeps the glass unbroken, at the cost of
+ * the rail-masking trick — which the widget rail's own z-order still honours. */
+:global([data-slot='conversation.header'] > header),
+:global([data-slot='conversation.session.header'] > header) {
+  position: relative;
+  z-index: 21;
+  background: var(--enhc-solid-fill, var(--dsw-alias-bg-base));
+}
+/* The divider under the header is killed on both channels, because the product
+ * has shipped it two different ways: a `::after` bar (background border-l2,
+ * bottom:1px) in the build whose header lived inside the slot, and today a real
+ * `border-bottom: .5px solid var(--dsw-alias-border-l3)` on the header itself
+ * (killed by `border-bottom: none` in the geometry rule above). Bottom spacing
+ * alone separates header from content. */
+:global([data-slot='conversation.header'] > header::after),
+:global([data-slot='conversation.session.header'] > header::after) {
+  content: none;
+}
+/* Session tabs (对话/轨迹) — relocated into the title row by the client half
+ * (inserted right after the header actions) and restyled as two standalone
+ * capsules that reuse the harness-widgets component-button recipe
+ * (dsx-stats-capsule), mutually exclusive: the active tab fills the DeepSeek
+ * brand blue (state-business-primary) with white glyphs, the idle one is a
+ * transparent bordered capsule.
+ * NOTE on selectors: the tab classes carry a build hash prefix (wSkVaW_) and
+ * the active one adds a second "_tabActive" class, so ends-with "_tab" fails
+ * on the two-class active node and starts-with fails on the hash prefix —
+ * must match with contains "[class*='_tab']" inside the tabs shell. */
+:global([class$='_titleCluster'] > [class$='_tabs']) {
+  /* The product lays this strip out for a standalone row under the header
+   * (margin-top: 10px, gap 36px, padding-left 8px). The client half relocates
+   * it into the title row, so cancel the vertical offset and let the cluster's
+   * own align-items: center put it on the header's centre line — that offset
+   * was exactly the "tab sits lower than the header row" misalignment. */
+  margin: 0 0 0 8px;
+  padding-left: 0;
+  gap: 24px;
+  align-self: center;
+  align-items: center;
+}
+:global([class$='_titleCluster'] > [class$='_tabs'] [class*='_tab']) {
+  /* Product padding is 0 0 9px (blank space reserved under the label for the
+   * underline indicator). Symmetric 5px keeps the indicator visible while the
+   * label stays optically centred against the 32px header row. */
+  padding: 5px 0;
+}

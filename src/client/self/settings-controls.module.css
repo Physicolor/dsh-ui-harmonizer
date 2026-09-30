@@ -1,0 +1,164 @@
+/* @dsh-split-header
+ * self/settings-controls.module.css - Serves: this plugin's own settings-row controls: `.uitw-stepper*`, `.uitw-segmented*`, `.uitw-switch*`.
+ * Why here: `.uitw-*` is this plugin's control namespace (components.tsx renders it).
+ * Origin: src/client/enhancer.module.css L327-L485, byte-identical below; this header is the only addition.
+ */
+/* Product stepper control — the official theme's FontSizeRow recipe, reused so
+ * every numeric row in this block speaks the product's own vocabulary instead
+ * of a bespoke range slider: a pill carrying the centred value, the up/down
+ * arrow column revealed on hover and anchored to the pill's right edge, and the
+ * unit label after the pill. */
+:global(.uitw-stepper-control) {
+  align-items: center;
+  gap: 8px;
+  display: inline-flex;
+}
+:global(.uitw-stepper) {
+  background: var(--dsw-alias-bg-module-platform);
+  border-radius: 18px;
+  justify-content: center;
+  align-items: center;
+  min-width: 72px;
+  height: 36px;
+  display: inline-flex;
+  position: relative;
+}
+:global(.uitw-stepper-value) {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  min-width: 18px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  line-height: 22px;
+}
+:global(.uitw-stepper-arrows) {
+  opacity: 0;
+  flex-direction: column;
+  gap: 2px;
+  display: flex;
+  position: absolute;
+  right: 8px;
+  transition: opacity var(--ds-transition-duration-fast, 0.15s) var(--ds-ease-in-out, ease);
+}
+:global(.uitw-stepper:hover .uitw-stepper-arrows),
+:global(.uitw-stepper:focus-within .uitw-stepper-arrows) {
+  opacity: 1;
+}
+:global(.uitw-stepper-arrow) {
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 75%, transparent);
+  width: 17px;
+  height: 12px;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  border: none;
+  border-radius: 3px;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  display: inline-flex;
+}
+:global(.uitw-stepper-arrow:hover:not(:disabled)) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+:global(.uitw-stepper-arrow:disabled) {
+  opacity: 0.4;
+  cursor: default;
+}
+:global(.uitw-stepper-unit) {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+/* Segmented control — the product's selector-pill recipe, two options wide.
+ * Reused by the font-scope row (对话正文 / 整个界面); the active segment takes
+ * the business-blue fill with inverted text, exactly like the product's own
+ * navigation cells. */
+:global(.uitw-segmented) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 20px;
+  background: var(--dsw-alias-bg-module-platform);
+}
+:global(.uitw-segment) {
+  appearance: none;
+  border: none;
+  border-radius: 16px;
+  padding: 6px 14px;
+  font: var(--dsw-font-s-14, 14px/22px var(--dsw-font-family));
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--ds-transition-duration-fast) var(--ds-ease-in-out);
+}
+:global(.uitw-segment:hover:not(.uitw-segment-on)) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+:global(.uitw-segment-on) {
+  background: var(--dsw-alias-state-business-primary);
+  color: #fff;
+}
+
+/* Switch — the product's OWN Switch, declaration for declaration.
+ *
+ * Source: `@deepseek-ai/dsh-client-ui-primitives`' `Switch.module.css`, read out
+ * of the live CSSOM (probe-official-switch.mjs): the product's core CSS rides no
+ * `<style data-plugin>` tag, so it cannot be grepped out of the bundle. 36×20,
+ * `padding: 2px`, radius 999px, `corner-shape: round` (the one control where the
+ * product opts OUT of squircle), track `--dsw-alias-border-l3` → on
+ * `--dsw-alias-brand-primary`, and a 16×16 thumb that only SLIDES
+ * (`transition: transform .12s`; the track has no transition of its own) by
+ * `translate(16px)` = 36 − 2·2 − 16. Thumb fill is state-dependent:
+ * `--dsw-alias-label-primary-foreground` on, `--dsw-alias-switch-thumb` off —
+ * which in dark mode inverts to a near-black thumb on the near-white brand
+ * track, exactly as the product renders it. No shadow anywhere on the control.
+ *
+ * REPLACED 2026-09-30: this surface used to be inline styles on the component
+ * (36×22, radius 11, DeepSeek-blue fill when on, 16px thumb with a drop shadow
+ * sliding on `left`). Same report as dsh-widgets' switch — it read as a
+ * different control than the product's rows draw. Only the shared shell can
+ * express `corner-shape`, `:focus-visible` and `:disabled`, hence the move. */
+:global(.uitw-switch) {
+  box-sizing: border-box;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  padding: 2px;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--dsw-alias-border-l3);
+  cursor: pointer;
+}
+:global(.uitw-switch[aria-checked='true']) {
+  background: var(--dsw-alias-brand-primary);
+}
+:global(.uitw-switch:disabled) {
+  cursor: default;
+  opacity: 0.5;
+}
+:global(.uitw-switch:focus-visible) {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 2px;
+}
+:global(.uitw-switch-thumb) {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  corner-shape: round;
+  background: var(--dsw-alias-label-primary-foreground);
+  transition: transform 0.12s;
+}
+:global(.uitw-switch[aria-checked='false'] .uitw-switch-thumb) {
+  background: var(--dsw-alias-switch-thumb);
+}
+:global(.uitw-switch[aria-checked='true'] .uitw-switch-thumb) {
+  transform: translate(16px);
+}
+

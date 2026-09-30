@@ -1,0 +1,59 @@
+/* @dsh-split-header
+ * plugins/dsh-better-sidebar/toggle-buttons.module.css - Serves: dsh-better-sidebar's toggle buttons (`.nArs4W_toggleButton`) restyled as session-header capsules.
+ * Why here: the selectors are that plugin's hashed classes.
+ * Origin: src/client/enhancer.module.css L608-L652, byte-identical below; this header is the only addition.
+ */
+/* ── cross-plugin visual coordination ────────────────────────────────
+ * dsh-better-sidebar (third-party bundle) ships bare 28px circular icon
+ * toggles. Without touching its source we restyle them as session-header
+ * capsules (32px, 1px border-l2, transparent, hover fill); the panel frames
+ * themselves live in panel-chrome.module.css.
+ *
+ * Selectors: the ship hash is part of the class name, so every rule is
+ * :global() wrapped — otherwise CSS Modules rewrites it into
+ * <hash>_nArs4W_toggleButton (never matching). Anchors are suffix matches on
+ * the LOCAL name (`[class$='_toggleButton']`), which is what keeps buttons
+ * with a different local name out; a suffix match is all that is claimed — a
+ * foreign class that happens to end in `_toggleButton` would still match.
+ * Every rule carries a `body` prefix so its specificity beats
+ * better-sidebar's own same-class rules — that bundle loads after this one, so
+ * equal specificity would let it win.
+ *
+ * Version note vs the installed dsh-better-sidebar 0.24.1: only `_toggleButton`
+ * is targeted below. The floating `toggleCluster` seat this block used to
+ * reserve with a 90px right margin is gone, and the plugin no longer publishes
+ * `--dsh-sidebar-width`; `toggleCluster`, `panelHidden` and `panelResize` are
+ * absent from 0.24.1's CSS-module map (the `nArs4W_*` ship prefix is not). */
+
+body [class$='_toggleButton'] {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+}
+body [class$='_toggleButton']:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+/* Active state mirrors the widgets capsule (dsx-stats-capsule[aria-pressed=true]):
+ * brand fill + contrast glyph. The harness-ui-enhancer client half keeps
+ * aria-pressed in sync with the open state of each better-sidebar panel, so a
+ * pressed toggle reads exactly like the activated "组件" capsule. Glyph color
+ * is --dsw-alias-label-primary-inverted — the product primary-button text
+ * token (light: white, dark: bluish-800) — because brand-primary flips to a
+ * near-white fill in dark mode and a hardcoded #fff would vanish.
+ *
+ * Specificity, measured: the hover rule above is (0,3,1) — one `body` type
+ * plus `[class$]` + `:hover` + `:not(:disabled)`. A bare
+ * `.nArs4W_toggleButton[aria-pressed=true]:hover` is (0,3,0), so it LOSES and a
+ * pressed toggle drops its brand fill as soon as the pointer is over it. Both
+ * pressed selectors therefore carry the same `body` prefix, which makes them
+ * (0,3,1) and wins on source order. */
+body [class$='_toggleButton'][aria-pressed='true'],
+body [class$='_toggleButton'][aria-pressed='true']:hover {
+  background: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+  border-color: transparent;
+}

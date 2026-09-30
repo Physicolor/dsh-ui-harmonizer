@@ -1,0 +1,13 @@
+/* @dsh-split-header
+ * plugins/dsh-widgets/capsule-no-override-note.module.css - Serves: a comment only: dsh-widgets' `.dsx-stats-capsule[aria-pressed=true]` is deliberately left alone.
+ * Why here: it documents a dsh-widgets surface; kept as its own slice to preserve byte order.
+ * Origin: src/client/enhancer.module.css L653-L660, byte-identical below; this header is the only addition.
+ */
+/* harness-widgets capsule: its own rule already paints the pressed state as
+ * brand-blue fill + white glyphs (state-business-primary + #fff) in BOTH
+ * themes — correct as shipped. Earlier we overrode the color to
+ * --dsw-alias-label-primary-inverted, which resolves to a near-black in dark
+ * mode, turning the white glyphs black on the blue fill. Dropped: the capsule
+ * keeps its own (0,2,0) rule, which is exactly the blue-fill/white-glyph pair
+ * we want. */
+/* (no override: dsh-widgets .dsx-stats-capsule[aria-pressed='true'] stays) */

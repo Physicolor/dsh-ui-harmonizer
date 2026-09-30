@@ -1,0 +1,44 @@
+/* @dsh-split-header
+ * plugins/dsh-widgets/width-handle-squeeze.module.css - Serves: dsh-widgets' transcript rail (`body.dsx-stats-active`) - re-anchoring the product's width handles on the squeezed content box.
+ * Why here: the rail that shifts the content is dsh-widgets'.
+ * Origin: src/client/enhancer.module.css L60-L98, byte-identical below; this header is the only addition.
+ */
+/* The widgets rail squeezes the transcript by padding the scroll body
+ * (body.dsx-stats-active [data-conversation-scroll] { padding-right: … }), which
+ * moves the CONTENT left by half the rail while the handles stay anchored to the
+ * centre of their own containing block (.wSkVaW_body, which that padding never
+ * touches). The strips then sit half a rail to the right of the text they resize.
+ *
+ * Re-anchor them on the squeezed content box:
+ *   content box     = 100% - rail - scrollbar gutter - the scrollBody's 2px
+ *   content centre  = 50% - rail / 2
+ *   content width   = min(declared width, content box)
+ * and then mirror the product's own geometry around that centre: the product
+ * puts each strip 24px outside the content edge, so the left strip's `right`
+ * gains half the rail while the right strip's `left` loses it (adding it to both
+ * would move the left strip a whole rail the wrong way).
+ *
+ * Only the rail is compensated, not the scrollbar gutter / 2px margin: the
+ * product measures both strips against its own containing block, so it already
+ * ignores half of that gutter in the rail-less case, and folding it in here
+ * would shift the strips by 5px the moment the rail opened.
+ *
+ * Scoped to the rail-active body class: a rail-less setup keeps the product's
+ * own geometry, and the product's own `width` rule keeps its handle hit area. */
+:global(body.dsx-stats-active [data-width-handle]) {
+  --enhc-squeeze: calc(var(--dsx-rail-w, 0px) / 2);
+  --enhc-content: min(
+    var(--dsh-chat-content-width),
+    calc(100% - var(--dsx-rail-w, 0px) - var(--dsh-scrollbar-width, 0px) - 2px)
+  );
+  transition:
+    right var(--ds-transition-duration-slow) var(--ds-ease-in-out),
+    left var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+:global(body.dsx-stats-active [data-width-handle][data-side='left']) {
+  right: calc(50% + var(--enhc-content) / 2 + 24px + var(--enhc-squeeze));
+}
+:global(body.dsx-stats-active [data-width-handle][data-side='right']) {
+  left: calc(50% + var(--enhc-content) / 2 + 24px - var(--enhc-squeeze));
+}
+

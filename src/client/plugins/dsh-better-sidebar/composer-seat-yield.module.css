@@ -1,0 +1,24 @@
+/* @dsh-split-header
+ * plugins/dsh-better-sidebar/composer-seat-yield.module.css - Serves: the product's composer seat yielding `--dsh-sidebar-width`.
+ * Why here: the property value is better-sidebar's published variable.
+ * Origin: src/client/enhancer.module.css L933-L951, byte-identical below; this header is the only addition.
+ */
+/* The composer seat yields the sidebar width via margin-right ONLY — never
+   via `right`. The seat has TWO geometries owned by the product: the chat
+   (sticky, no composer overlay) seat, whose scrollBody reserves the 8px
+   scrollbar gutter via `scrollbar-gutter: stable`, and the trajectory overlay
+   seat, whose scrollBody drops the gutter (`scrollbar-gutter: auto`) and which
+   the product's own higher-specificity rule pins at `right: var(--dsh-
+   scrollbar-width)`. Both geometries already land the input's right edge on
+   the same line (box right - 8px). Adding a `right` here therefore breaks that
+   alignment two ways: it only pushes the chat seat (the trajectory seat's
+   `right` is out-specified, so it never squeezes), and on the chat seat it
+   stacks on top of the already-reserved gutter AND the margin-right,
+   over-squeezing chat. The result is the input visibly jumping right when
+   switching 对话 <-> 轨迹. `margin-right` is the one property that narrows both
+   seats symmetrically, so it alone keeps them aligned at every sidebar width. */
+:global(div[class$='_composerSeat']) {
+  margin-right: var(--dsh-sidebar-width, 0px);
+  transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
+}
+

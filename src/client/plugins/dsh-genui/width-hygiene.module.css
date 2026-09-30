@@ -1,0 +1,55 @@
+/* @dsh-split-header
+ * plugins/dsh-genui/width-hygiene.module.css - Serves: dsh-genui's render_ui panels and tool cards - width hygiene for panelToggle / banner / steps.
+ * Why here: the selectors are dsh-genui's `data-genui-*` contract and its hashed classes.
+ * Origin: src/client/enhancer.module.css L1204-L1253, byte-identical below; this header is the only addition.
+ */
+/* ────────────────────────────────────────────────────────────────
+   Cross-plugin width hygiene (dsh-genui render_ui panels & tool cards):
+   their flex children carry long nowrap titles/meta without min-width:0,
+   so the intrinsic (max-content) width inflates the row beyond the message
+   column. Give those children a shrink baseline so ellipsis engages and the
+   row stays inside its parent; selectors are hash-agnostic (suffix/substring)
+   so an upstream CSS-module rebuild cannot silently orphan the fix. */
+
+/* 同上宽度卫生修复的单条 :global() 形式（block syntax unsupported）。
+   升级为护栏版：genui 面板/内联块根用 inline-size containment 切断内容
+   对元素宽度的回传（flex 循环宽度解），面板体自身横向滚动兜底，
+   面板/工具折叠条标题补收缩基线。
+
+   WIDTH OWNERSHIP 归位（2026-09-18）：本规则原先用 !important 把面板宽度钉在
+   本插件私有的 --enhancer-content-width 上，而该变量只有本插件自己的滑杆会写；
+   产品官方的两条拖拽手柄写的是对话根上的 --dsh-chat-user-width。结果：官方拖宽时
+   正文/输入框/任务条全部跟随，唯独 genui 面板冻结在旧值（实测 1578px：748→1000
+   时 prose 748→1000、输入卡 780→1032，面板纹丝不动 748）。面板宽度已交还其自身
+   插件，按官方 dock 契约 --dsh-composer-card-max-width（= 正文 measure，与官方
+   任务卡 TodoPanel 同宽）解析，因此官方宽度通道的任何写者都能驱动它。
+   这里只保留 containment 与护栏。 */
+:global([data-genui-panel]) { display: block; min-width: 0 !important; box-sizing: border-box; contain: inline-size; }
+:global([data-genui]) { max-width: 100% !important; min-width: 0 !important; contain: inline-size; }
+:global([data-genui-tool]) { min-width: 0 !important; max-width: 100% !important; contain: inline-size; }
+:global([data-genui-panel-body]) { min-width: 0 !important; max-width: 100% !important; overflow-x: auto !important; }
+:global([data-genui-panel] svg),
+:global([data-genui] svg),
+:global([data-genui] pre),
+:global([data-genui] canvas),
+:global([data-genui] img),
+:global([data-genui-mermaid] svg) { max-width: 100% !important; height: auto; }
+:global([class*="panelToggle"]) { max-width: 100% !important; padding: 11px 16px !important; box-sizing: border-box; }
+:global([class*="panelToggle"] [class*="panelTitle"]) { flex: 1 1 0% !important; min-width: 0 !important; }
+:global([class*="panelToggle"] [class*="panelBadge"]),
+:global([class*="panelToggle"] [class*="panelChevron"]) { flex: none !important; margin-left: 8px; }
+:global([class*="toolFallback"]) { min-width: 0 !important; }
+:global([class*="toolFallbackMeta"]) { flex: 1 1 0% !important; min-width: 0 !important; }
+:global([class*="tlTime"]) { flex: none !important; min-width: 0 !important; }
+
+/* genui 横贯块左右间距规范：
+   - banner 复用与 panelToggle 相同的宽度格式：保持内容宽（不向外负 margin 扩盒）、
+     左右 16px 内缩，文本起点与折叠条标题一致；任何容器（面板体/内联/工具卡）
+     下都不再溢出到卡片外围；
+   - steps 在无容器 padding 的内联/工具卡内补 16px 左右。
+   块组件（callout/card/list）自带形态不动。 */
+:global([data-genui-panel-body] [class*='banner']),
+:global([data-genui-tool] [class*='banner']),
+:global([data-genui] [class*='banner']) { width: auto !important; max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; padding-left: 16px !important; padding-right: 16px !important; }
+:global([data-genui-tool] [class*='steps']),
+:global([data-genui] [class*='steps']) { padding-left: 16px !important; padding-right: 16px !important; }
