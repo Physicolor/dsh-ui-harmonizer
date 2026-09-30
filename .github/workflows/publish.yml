@@ -1,0 +1,62 @@
+# npm Trusted Publishing (OIDC) — publish WITHOUT an npm token.
+#
+# Trigger: pushing a `v*` tag (e.g. v0.9.0) to the default branch, or a manual
+# run from the Actions tab (`workflow_dispatch`), which is what you use after
+# enabling the trusted publisher on npmjs.com.
+#
+# How it works:
+#   1. The npm registry validates this workflow's OIDC identity against the
+#      "Trusted Publisher" configured on npmjs.com for the dsh-ui-harmonizer
+#      package (publisher, repo, and workflow FILENAME must match what you
+#      entered there — this file is `.github/workflows/publish.yml`).
+#   2. The npm CLI (>= 11.5.1) detects the OIDC environment and authenticates
+#      automatically; NO NPM_SECRET / NODE_AUTH_TOKEN is needed, and 2FA/OTP is
+#      bypassed by design (short-lived workflow-scoped tokens only).
+#
+# Requirements (see https://docs.npmjs.com/trusted-publishers/):
+#   - npm CLI >= 11.5.1 and Node >= 22.14.0 (ensured by the steps below).
+#   - On npmjs.com → dsh-ui-harmonizer → Settings → Trusted Publisher:
+#     GitHub Actions, org `Physicolor`, repo `dsh-ui-harmonizer`, workflow
+#     filename `publish.yml`, and explicitly ALLOW `npm publish` (the default
+#     only permits `npm stage publish`).
+#
+# Until that publisher exists the publish step fails with a 404/403 from the
+# registry — that is a CONFIGURATION gap on npm's side, not a broken build.
+
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  id-token: write # Required for OIDC trusted publishing
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # >= 22.14.0 required by trusted publishing
+          registry-url: https://registry.npmjs.org/
+
+      - name: Ensure up-to-date npm CLI
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: corepack enable && pnpm install --no-frozen-lockfile
+
+      - name: Build bundle and type declarations
+        run: pnpm run build
+
+      - name: Verify the compiled stylesheet baseline
+        run: node scripts/tools/css-baseline.mjs
+
+      - name: Publish to npm (OIDC trusted publishing)
+        run: npm publish --access public

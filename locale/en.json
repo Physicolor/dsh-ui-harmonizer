@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "DeepSeek Design Spec",
+    "description": "One interface language for the Harness, plus per-plugin reconciliation and a read-only compatibility audit."
+  }
+}

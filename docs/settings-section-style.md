@@ -43,27 +43,43 @@ Class-name convention: end your semantic class names with a **stable suffix** (`
 
 ## What this plugin normalizes automatically
 
-When this plugin (`dsh-ui-harmonizer`) is installed, these apply to **any** third-party `settings.section` page without you doing anything — build to the spec anyway so you don't depend on them:
+The header has exactly **one** implementation, in `src/client/settings-page.ts`:
+a React recipe (`SettingsPageHeader`, used by this plugin's own pages) and a DOM
+reconciler (`mountSettingsPageHeaders`, used on everyone else's). The reconciler
+never rewrites your mark-up — it only stamps your page's **real** heading and
+description with `enhc-page-title` / `enhc-page-intro` — the same two sibling
+nodes an official page ships, with no wrapper of ours anywhere — and injects an
+`<h2 class="enhc-page-title">` only when the page has a description and no title at
+all. The distance between them is not a stylesheet constant: the reconciler measures
+your container's gap and writes `margin-top = 12px − gap` on the description, so the
+official 12px renders identically on every page. Every stylesheet rule keys on those
+two class names, so a page that already follows the recipe is left as authored.
 
 | Problem | Auto-handling |
 | --- | --- |
-| Title font weight/size off | `[data-slot='settings.section'] h2[class$='_title']` / `h2[class$='_heading']` → 18/600 + `margin-bottom:-8px` |
-| Description font off | `p[class$='_intro']` → 13/20 tertiary + `padding-bottom:12px` + hairline |
+| Title font weight/size off | the real heading gets `enhc-page-title` → 18/26 600 + label-primary |
+| Description font off | the real description gets `enhc-page-intro` → 13/20 tertiary + `padding-bottom:12px` + hairline |
 | Icon in the title row | `[data-slot='settings.section'] [class$='_titleRow'] > svg { display:none }` |
-| Missing `<h2>` but a `p[class$='_intro']` present | Client injects `<h2 class="enhc-settings-title">` (18/600) labelled from the active settings-nav item (`aria-current="true"`); purely additive |
-| Title–description too cramped | Heading `gap` + title margin normalized to 4px |
-| Description missing hairline | Known third-party pages get `padding-bottom:12px` + `border-bottom:1px solid` |
+| Title→description distance differs from the official one | the reconciler measures your container's gap (`display: contents` is walked up to the box that really lays it out) and writes the difference onto the description's `margin-top`, so the rendered distance is the official **12px** on every page whatever your container uses (4 / 16 / none) |
+| Your container's `padding-top`/`border-top` pushes the title down | the title gets a matching negative `margin-top`, so the title lands on the same line on every page (measured: identical viewport y across all eight pages) |
+| Missing `<h2>` but a description present | injects `<h2 class="enhc-page-title">` (18/600) labelled from the active settings-nav item (`aria-current="true"`); purely additive |
 
-Boundaries: normalization only touches the **header** (visual). It does not reorder your content, does not remove functional icons (only a logo that sits directly in the title row), and does not fabricate description copy (if a title is missing and no nav label can be resolved, it skips rather than write wrong text).
+Boundaries: normalization only touches the **header** (visual). It does not reorder
+your content, never moves or wraps your nodes (a foreign React tree stays intact),
+does not remove functional icons (only a logo that sits directly in the title row),
+and does not fabricate description copy (if a title is missing and no nav label can
+be resolved, it skips rather than write wrong text).
 
 ## Known third-party pages
 
 | Page | Previously non-conforming | Normalized |
 | --- | --- | --- |
-| Notifications (`dsh-notification`, `dsh_notification_*`) | description had no hairline; title–description too tight (~-6px due to gap + negative margin) | heading `gap:4px`, title `margin-bottom:0`, subtitle hairline added |
+| Models / Agent Presets / Bundled plugins (official) | the official pages disagree with each other (models: 16/500 title, 14/22 intro) | real `h2` + `p` stamped → 18/26 600 + 13/20 tertiary + hairline |
+| Command Code (`cc-*`, hyphens, not underscores) | 16/24 500 title, no hairline — the old `_title` suffix rules never matched | matched **structurally** (first `h2`, first description paragraph), same recipe as every other page |
+| Notifications (`dsh-notification`, `dsh_notification_*`) | description had no hairline; title–description too tight (~-6px due to gap + negative margin) | its `dsh_notification_heading` is adopted as the header box (`gap:4px`) and the subtitle is stamped `enhc-page-intro` (hairline added) |
 | Plugin market (`dshmarket`, `eGUBIq_*`) | 22px logo beside the title | direct `titleRow` svg `display:none` |
-| Side cards (`dsh-better-sidebar`, `Pz1RTq_*`) | no `<h2>` at all, only a `p.intro` | injected `enhc-settings-title` labelled "侧边卡片" |
-| Widgets (`dsh-widgets`) | — (self-drawn inline div header, already conformant) | untouched |
+| Side cards (`dsh-better-sidebar`, `Pz1RTq_*`) | no `<h2>` at all, only a `p.intro` | injected `h2.enhc-page-title` labelled "侧边卡片" |
+| Widgets (`dsh-widgets`) | used an inline-styled `div` pair for its header: no semantic `h2`/`p` and no class name a rule or normalizer could match | fixed in the dsh-widgets source itself (2026-09-30): `h2.dsx-page-title` + `p.dsx-page-intro` carrying the official 18/26 600 + 13/20 tertiary + hairline, so the normalizer takes over and the page gets the same 12px / same coordinates as every other page |
 
 ## Recommendation for plugin authors
 

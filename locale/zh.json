@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "DeepSeek 设计规范",
+    "description": "统一 Harness 界面语言，并为社区插件做针对性适配，附只读兼容性审计。"
+  }
+}

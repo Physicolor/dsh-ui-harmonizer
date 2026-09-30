@@ -1,3 +1,7 @@
+---
+description: "One interface language for the Harness, plus per-plugin reconciliation and a read-only compatibility audit."
+---
+
 <p align="right"><b>English</b> · <a href="README.zh-CN.md">简体中文</a></p>
 
 <h1 align="center">DSH UI Harmonizer</h1>
@@ -63,11 +67,32 @@ The "UI Customization" block under Settings → General: chat width, markdown fo
 
 ## Architecture
 
+The plugin is organised by **target**, not by file type. It exists to harmonize two
+different things at once — (a) the DSH shell itself and (b) whichever community
+plugins happen to be installed next to it — so every source file belongs to exactly
+one of four layers:
+
+| Layer | Answers | Examples |
+| --- | --- | --- |
+| `core/` | infrastructure true regardless of DSH or any plugin | state model + persistence, the Harmony Contract, i18n, DOM/React helpers |
+| `harness/` | normalizations and repairs aimed at the **DSH shell** | official control-recipe mirrors, the settings-header reconciler, the chat-width channel, the frame's column-track transition, menu width, the stylesheet keeper, native-title tooltips, the rounded center card |
+| `plugins/<package>/` | adaptations written for **one** community plugin | `commandcode-provider` text normalisation, `dsh-widgets` rail squeeze + handle re-anchor, `dsh-better-sidebar` panels, `dsh-genui` width hygiene |
+| `self/` | the plugin's **own** UI | Settings → General rows, the font selector, the Harmony Doctor page |
+
+Stylesheets follow the same split: 23 `.module.css` fragments with a single entry
+(`src/client/styles/index.ts`) whose **import order is the cascade order**.
+
+The rest of the contract is unchanged:
+
 - **Zero model cost**: the host (node) half is a no-op; all changes happen in the browser half;
 - **Official design tokens**: all styles use the `--dsw-*` semantic tokens and follow light/dark themes automatically;
 - **Two injection channels**: static rules (CSS Modules) + dynamic `<style data-plugin>` tags;
-- **Reversible cleanup**: fiber-effect disposers manage every side effect — uninstalling restores everything;
-- **Slot integration**: `settings.general.item` / `settings.section` / `shell.overlay` (rounded-card overlay).
+- **Reversible cleanup**: every `ctx.effect` returns a disposer, so stopping the plugin leaves no residue — including DOM nodes it relocated and third-party strings it rewrote;
+- **Slot integration**: `settings.general.item` / `settings.section` / `shell.overlay`.
+
+Guards live in `scripts/`: `tools/css-baseline.mjs` (byte-invariant of the compiled
+stylesheet), `verify-frame-track.cjs` (column-track animation), `verify/settings-page.cjs`
+(Settings → General signals), `probes/harness/*` (selector and network triage).
 
 ---
 
@@ -120,6 +145,102 @@ pnpm run check      # typecheck + build
 
 ## Changelog
 
+### v0.9.0 — one interface language for the Harness, and a layout per target
+
+**Refactor — every source file now belongs to exactly one layer**
+
+- The plugin is organised by TARGET: `core/` (infrastructure true regardless of DSH or any plugin), `harness/` (normalizations aimed at the DSH shell), `plugins/<package>/` (adaptations written for one community plugin), `self/` (this plugin's own UI). `src/client/` now holds nothing but `index.ts` and `services.d.ts`.
+- The 1253-line stylesheet is split into 23 `.module.css` fragments behind ONE entry (`src/client/styles/index.ts`) whose **import order is the cascade order**; the split was proven byte-identical to the original, and `scripts/tools/css-baseline.mjs` now pins the compiled result.
+- `npx tsc --noEmit` went from **52 errors to 0**, and `build` runs `tsc` so `lib/types/` really exists (it was advertised in `files` but never emitted).
+
+**Fixed — dead and wrong selectors, found by an adversarial pass over the live DOM**
+
+- The dropdown-menu recipe had **never applied**: `[role='menu'] [class^='_list_']` is both a descendant and a prefix match, while the product puts `role` and the list class on the SAME element with the list class not first (`_surface… _list_4ub78_7 …`). Measured with a menu open — descendant 0, prefix 0, contains 1. Fixed to `[role='menu'][class*='_list_']`; list / item / icon / label rules now land (padding 4px, min-width 218px, item min-height 40px).
+- Sidebar rows that carry a modifier class (`_brand _wide`) silently stopped matching `[class$='_brand']`; the anchors now read "the class list CONTAINS a `_brand` item".
+- The brand wordmark is no longer resized at all — 0.2 renders it as TWO svgs (whale + HARNESS badge), so one `svg { width:182px }` stretched the whale 7.6×.
+- `menu-anchor` must not treat the shell's settings button (`aria-haspopup="dialog"`, `aria-expanded` true for as long as the dialog is open) as a menu trigger — it was force-sizing the product's own popups to a sidebar row.
+- The Doctor's `deadInThisView` was declared twice (a count and a row array), so its Markdown export printed `[object Object]`; a dead `market-hash` rule and a misattributed `data-dsh-*` coupling are gone.
+
+**Fixed — the frame's column track actually animates on DSH 0.2**
+
+- 0.2 moved the AppFrame's `transition: grid-template-columns` behind `[data-animating]`, which React sets in a layout effect on the same commit that writes the new track — the before-change style therefore carries no transition, so none ever ran and the conversation column SNAPPED. Measured: 1640px → 776px in one frame, no transition events, `data-animating` cleared by the component's own 600ms fallback timer.
+- The stylesheet now keeps the transition on the frame permanently (the product's own `[data-dragging]` / `[data-rightbar-instant]` rules still win), and `frame-track.ts` owns the one exclusion the product implements in JS — a window resize.
+
+**Fixed — lifecycle**
+
+- The two DOM relocations (session tabs, bottom-workbench toggle) put their nodes back on dispose; the center card's unconditional 1Hz `setInterval` is gone (ResizeObserver + resize + transition events already cover it); the settings-header fingerprint hashes TEXT instead of its length (equal-length rewrites used to freeze the title).
+
+### Unreleased (pending acceptance) — one settings-header skeleton, row popups, stylesheet keeper
+
+**Refactor — the settings page header is ONE skeleton with ONE geometry, on every page**
+
+- 🔍 Measured first (`scripts/probes/settings/probe-header-geometry.mjs`, all eight pages that have a header): the title's viewport position was already identical everywhere (`titleTopFromDialog = 54`), but the title→description distance was not — 4px on this plugin's own pages, 12px on the official ones, **0px** on Command Code (its container is block flow, so no gap at all and the description touched the title) and 16px on 侧边卡片. The official value, read with this plugin's stylesheets temporarily disabled: **12px on models / agent presets / bundled plugins** — the section container's own `gap`. The \"official 4px\" the older docs claimed was this plugin's own compression, and it is retracted.
+- ✅ `src/client/settings-page.ts` now produces exactly the skeleton a page needs and nothing more: `h2.enhc-page-title` + `p.enhc-page-intro` as siblings. This plugin's own pages render it through `SettingsPageHeader`, foreign pages get the pair stamped on their real nodes, and the head wrapper is gone — so a DevTools inspection shows the same two-node header shape on every page, official or third-party.
+- 📐 The spacing is no longer a stylesheet constant: the reconciler measures the container that actually lays the header out (walking up through `display: contents` slot outlets) and writes the correction onto the description (`margin-top = 12px − container gap`), plus a compensating negative `margin-top` on the title when a container contributes its own `padding-top`/`border-top`. After the fix every page reads **title y=134, intro y=172, gap=12px** while the containers still differ (4 / none / 12 / 16 / 2px).
+- 🔒 Nothing is moved or re-parented (a foreign React tree never sees a wrapper it did not render), a page that already conforms is left exactly as authored, and the reconciler's diff releases a node — and its inline spacing — the moment a page re-renders around it.
+
+**Fixed — the sidebar account popup was narrower than the row it hangs from**
+
+- 🐛 The account menu (设置 / 意见反馈 / 退出登录) painted at the product Menu's content width (218–360px) under a sidebar row that is the full 256px — a visible seam between the popup and its trigger.
+- ✅ `src/client/menu-anchor.ts` pins a portalled menu opened from the settings-launcher seat to its trigger row's width (`box-sizing: border-box`), scoped to that seat: the composer's model/permission pickers and every other menu keep their own recipe.
+
+**Fixed — a third-party settings page rendered completely unstyled (loader claim-pass bug)**
+
+- 🔍 Root cause found in the product's client-module loader, not in the plugins: `claimStyles(id)` runs after **every** module factory materializes and adopts **every untagged `<style>` in the document** for that plugin (`style:not([data-plugin])`), while `removeOwnedStyles(id)` deletes every `style[data-plugin=id]` when that adopter reloads, unloads or is pruned. A plugin that hand-injects its stylesheet once in `apply()` (dsh-notification: `#dsh-notification-style`) therefore loses it permanently for the session — measured live: the 通知 page rendered as a raw text dump (no cards, no badges, default buttons) and `#dsh-notification-style` was simply absent.
+- ✅ `src/client/style-keeper.ts` snapshots hand-injected stylesheets (`data-plugin-css` is the discriminator: bundler-emitted tags are the loader's own and stay untouched) and restores one that disappears, after a grace period that lets a legitimately hot-reloaded owner re-inject first. A restored sheet keeps its authored attributes — the thief's `data-plugin` claim is dropped.
+- 📊 Probe (live page, loader semantics reproduced): baseline 38 rules + card `1px/12px/flex` → after the theft no sheet and `0px/0px/block` → after the grace period 38 rules and the card styled again; 9/9 checks pass.
+
+**Cleanup**
+
+- 🧽 Repaired 48 mojibake characters in `enhancer.module.css` comments (an old PowerShell `Get-Content -Raw`/`Set-Content` round trip had re-encoded the file as GBK: `—` → `鈥?`, `×` → `脳`, one Chinese phrase destroyed). Comment-only damage — the build was never affected — rewritten as UTF-8 by a Node script, never through a shell.
+
+### v0.9.0 — repositioned: from CSS patch to UI contract layer + compatibility auditor
+
+**New — Harmony Contract (cross-plugin UI contract)**
+
+- 🧭 Publishes negotiation variables on `<html>` that any plugin or theme can read without depending on this one: `--enhc-contract` (revision), `--enhc-surface-solid`, `--enhc-glass-aware`, `--enhc-solid-fill`, `--enhc-content-width`, `--enhc-sidebar-scale`.
+- 🔌 Provides `ctx.get('uiHarmony')` using the product's own `ctx.reflect.provide` idiom (the same one behind `ctx.sidebarRight`): neighbours **declare** what they occupy with `registerSurface({ id, role, occupies, widthVariable, transition, tokens, opaque })` instead of being measured by guesswork. This plugin only arbitrates and reports; it declares its own two surfaces too (rounded card, settings rows).
+- 🪟 **Material awareness** derived from the semantic tokens themselves (alpha of `--dsw-alias-bg-base` / `-layer-1` / `--dsw-specific-sidebar-fill`), never from plugin identity. Under a glass theme `--enhc-solid-fill` becomes `transparent`, so the header/panels stop painting an unblurred opaque rectangle over the glass. **Measured by simulation** (no third-party theme installed): overriding `--dsw-alias-bg-base` to `rgba(255,255,255,0.45)` flips `--enhc-glass-aware` 0 to 1, `--enhc-surface-solid` 1 to 0, `--enhc-solid-fill` to `transparent`, and the session header `background-color` from `rgb(255,255,255)` to `rgba(0, 0, 0, 0)`; removing the override restores all four.
+
+**New — Harmony Doctor (local read-only compatibility audit)**
+
+- 🩺 Settings → **UI Compatibility**: one click runs four checks, zero network, zero model calls, exports a Markdown report.
+- 🕳️ **Dead-rule ledger**: every one of the plugin's own selectors is match-counted, and a selector counts as dead only when it matched nothing in **every view observed** — the ledger persists per view, so the verdict sharpens as the user moves around. Measured over six probe views (hero, settings, session, doctor, glass on, glass off): of 149 selectors, **64 match in at least one view and 85 match in none of the observed views**.
+- 🔗 **Foreign coupling health**: selectors that still read another plugin's private hashed class or undocumented `data-*` host, with live match counts (**39 couplings reported automatically**, a batch of them now matching 0 because better-sidebar 0.19.1 removed the classes).
+- ⚖️ **Conflict / redundancy verdicts**: inline self-check (what we wrote must read back) plus a redundancy test (temporarily disable all our sheets and re-read the computed value; unchanged means the rule achieves nothing).
+- 🗂️ **Surface inventory**: every `data-slot`, cross-plugin `data-*`, published contract variable and declared surface, with consumers and counts.
+
+**Fixed — the font setting never took effect**
+
+- 🔍 **Root cause**: the 12 `--dsw-font-markdown-*` tokens were written into a `<style>` tag at head index **4**, while the official theme's `gradient-shadow-text.css` (declaring the same tokens on `body{}`) sits at index **24**. Identical selector and specificity, so the later official rule wins — **all four font presets read back byte-identical token values**, and CDP reported `Segoe UI + Microsoft YaHei` for every one of them. The picker was never broken and the fonts were never missing (HarmonyOS Sans SC, Microsoft YaHei, Noto Sans SC, Georgia, SimSun, Consolas and Courier New all resolve on this machine).
+- ✅ **Fix**: the family is applied as **inline custom properties** on `<body>` / `<html>` (order-independent, removed exactly on dispose), and the token sizes now reference the product's own `--dsh-content-font-size` / `--dsh-content-font-delta` instead of hardcoded px.
+- 🎯 Measured after the fix: `serif` → token `Georgia...`, CDP renders `Georgia` (10 glyphs) + `SimSun` (4); `yahei` with scope **Whole UI** → UI elements render `Microsoft YaHei`; `default` → no override left at all.
+- 🧩 **Coverage closed**: the plugin now writes **all 12** `--dsw-font-markdown-*` tokens DSH 0.1.5 actually consumes, including the three the old code missed — `-table-head`, `-code-block-small`, `-code-font-family`. The other 90 declarations are never consumed; leaving them alone is free. Code blocks follow a monospace pick and stay on the product's code stack under a prose pick.
+- ➕ New **font scope** (chat prose / whole UI) and a **missing-font hint** (two-baseline canvas width-diff; `document.fonts.check` returns true for unknown families and is unusable here).
+
+**Removed / simplified (absorbed by DSH 0.1.5 or already dead)**
+
+- 🗑️ The **`html.enhc-panel-open` seat mechanism** and the whole better-sidebar toggle-cluster seat are gone. Measured: better-sidebar 0.19.1's 192-key CSS-module map has **no** `toggleCluster` / `panelHidden` / `panelResize`, and it no longer publishes `--dsh-sidebar-width` (it publishes `--dsh-title-bar-strip` / `--dsh-sidebar-height`). Keeping the code was worse than dead: `panelOpen` was permanently `true`, so the "compact floating seat" became the default shape — the design running backwards, silently.
+- 🗑️ Dropped the `[data-input-scroll]` and user-bubble font-size overrides: the product already sizes both from `--dsh-content-font-size`, and our overrides froze the official row on those two surfaces (measured line-height `21px` to `24px` after removal).
+- 🗑️ The content-size row itself is retired in favour of the product's `FontSizeRow` (12-17px, `ui-theme` namespace): this plugin now consumes that channel instead of racing it for the same tokens. **Kept** because the product has nothing equivalent: the chat-width row, and the font family + scope (the product's `--dsw-font-family` is a fixed `:root` value with no user setting).
+- 🧹 The rounded center-column card is now material-variable driven (`--enhc-solid-fill`) so glass themes keep their surface.
+
+**Reproduce**
+
+- Rendered-level probe: `node scripts/probes/plugin-eco/probe-harmony.mjs http://127.0.0.1:19387 out.json` (`scripts/lib/auth.mjs` mints a browser-session cookie from the persisted secret, so it passes the UI gate without the one-time launch token and without disturbing the running session).
+- Every number, method and caveat: `docs/MEASUREMENTS.md`.
+
+### v0.8.4 (unreleased, pending acceptance)
+
+**Compatibility — DSH 0.1.5 client-structure alignment:**
+
+- 🧭 Center-column lookup rewritten (the one hard break): 0.1.5 moved the conversation from the root child slot `conversation` to a keyed `main` entry declaring `main.conversation`, and both anchors render with `display:contents`, so the old `slot.parentElement` returned an unmeasurable wrapper. `findCenterColumn()` now accepts either anchor and resolves the real column with `closest('[class$="_centerCol"]')`; the parent walk stays as a fallback. The rounded-card CSS `:has()` guard accepts both spellings.
+- 🔌 Types and packaging follow the official layout: `@deepseek-ai/dsh-client-runtime` was retired in 0.1.5, so the client context type comes from `@deepseek-ai/cordis` and the package was dropped from peer/dev dependencies and the tsdown platform table.
+- 🔍 Audit conclusion (everything else survived, no code change): `conversation.session.header > header`, `_titleCluster` / `_headerActions` / `_tabs` / `_viewArea` / `_composerSeat`, the sidebar family, the settings quartet and the menu primitives all still exist; `_flowItem` / `_bubble` moved to the new `dsh-client-ui-chat` package with new hashes, which suffix selectors ignore.
+- ✅ Measured: in a 0.1.5-rc.2 isolated instance (own DSH_HOME, own profile, port 3081) the rounded-card overlay geometry is correct under `main.conversation` (`left=56px / width=694px`), with no uncaught exception and no slot error.
+- 🎛️ Top bar (2026-09-13): the conversation/trajectory tabs go back to the official underline style (the custom capsule overlay is deleted, and the `margin-top:10px` that made the tabs sit low inside the title row is zeroed); the header's right-side reserved band for a floating better-sidebar cluster is removed, because 0.19 registers its controls into the product's own header seat and no longer publishes that variable.
+- 📌 Known follow-ups: `_flowItem` hash changes are cosmetic only; the `.nArs4W_*` rules (better-sidebar 0.14 class names) were already dead under 0.19.1 and have since been removed in 0.9.0.
+
 ### v0.8.3 (unreleased, pending acceptance)
 
 **Perf — the sidebar squeeze keeps its smooth progressive glide at full frame rate (companion to dsh-widgets v1.2.3):**
@@ -127,7 +248,7 @@ pnpm run check      # typecheck + build
 - Root cause of the panel-toggle jank: the three squeezed surfaces (conversation `viewArea`, `composerSeat`, header) animate `margin-right: var(--dsh-sidebar-width)` over 0.3s — a per-frame reflow of the WHOLE conversation DOM — which on long sessions (thousands of nodes) dropped to 20–31% dropped frames and visibly desynced from the compositor-driven widget rail and panel slide.
 - Fix: keep the progressive margin animation exactly as-is (left edge pinned, right edge gliding, text reflowing progressively — no "jump to final width, then slide" compromise) and make each per-frame reflow cheap instead: every conversation turn/step (`*_flowItem`) now gets `content-visibility: auto` + `contain-intrinsic-size: auto 120px`, so off-screen items skip layout entirely and each animation frame reflows only the handful of visible items. `auto` lets the browser remember each item's last rendered height, so scrollbar height stays stable; browsers without support simply ignore the rule.
 - Measured (playwright + local Edge, widget rail open, heavy sessions, panel open/close window): dropped frames **20–31% → 11.5% (rail fix) → 0%**; viewArea LEFT edge drift during the animation: **0 px** (always aligned); rail↔conversation right-edge offset constant (std 0.01 px — perfect lockstep); scrollHeight after a jump-to-bottom: 0% shift (intrinsic sizes converge); once warm, the largest single-frame step is ~89 px — a mid-curve frame under headless software rendering, smaller on real GPUs. Known one-off: the FIRST panel open after a page load still has one large step (better-sidebar's first panel render long-task, unrelated to this change).
-- Self-contained verification: `scripts/verify-glide.cjs` (`npm i -D playwright-core && node scripts/verify-glide.cjs [session]`).
+- Self-contained verification: `scripts/archive/dead-probes/verify-glide.cjs` (`npm i -D playwright-core && node scripts/archive/dead-probes/verify-glide.cjs [session]`).
 
 ### v0.8.2 — released
 

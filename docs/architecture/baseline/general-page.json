@@ -1,0 +1,138 @@
+{
+ "labels": {
+  "通用设置": true,
+  "对话内容宽度": true,
+  "工作区字号": true,
+  "字体": true,
+  "字体作用范围": true,
+  "圆角卡片": true,
+  "UI 兼容性": true,
+  "运行检查": false
+ },
+ "enhcCount": 4,
+ "enhc": [
+  {
+   "tag": "div",
+   "cls": "enhc-center-card",
+   "box": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "text": ""
+  },
+  {
+   "tag": "div",
+   "cls": "enhc-tt-bubble",
+   "box": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "text": ""
+  },
+  {
+   "tag": "h2",
+   "cls": "enhc-page-title",
+   "box": [
+    772,
+    194,
+    564,
+    26
+   ],
+   "text": "通用设置",
+   "style": {
+    "fontSize": "18px",
+    "lineHeight": "26px",
+    "fontWeight": "600",
+    "color": "rgb(15, 17, 21)",
+    "marginTop": "0px"
+   }
+  },
+  {
+   "tag": "p",
+   "cls": "enhc-page-intro",
+   "box": [
+    772,
+    232,
+    564,
+    33
+   ],
+   "text": "管理语言、外观、界面与对话行为等基础偏好。",
+   "style": {
+    "fontSize": "13px",
+    "lineHeight": "20px",
+    "fontWeight": "400",
+    "color": "rgb(129, 133, 140)",
+    "marginTop": "12px"
+   }
+  }
+ ],
+ "switches": [
+  {
+   "cls": "enhc-center-card",
+   "box": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "cls": "enhc-tt-bubble",
+   "box": [
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "cls": "enhc-page-title",
+   "box": [
+    772,
+    194,
+    564,
+    26
+   ]
+  },
+  {
+   "cls": "enhc-page-intro",
+   "box": [
+    772,
+    232,
+    564,
+    33
+   ]
+  },
+  {
+   "cls": "_switch_1ik0f_5",
+   "box": [
+    1300,
+    751,
+    36,
+    20
+   ]
+  },
+  {
+   "cls": "uitw-switch",
+   "box": [
+    1300,
+    1401,
+    36,
+    20
+   ]
+  },
+  {
+   "cls": "_switch_1ik0f_5",
+   "box": [
+    1300,
+    1555,
+    36,
+    20
+   ]
+  }
+ ]
+}
