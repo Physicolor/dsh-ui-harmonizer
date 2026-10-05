@@ -153,6 +153,14 @@
 :global(html.enhc-panel-glide[data-enhc-opening] [data-sidebar-right-panel]:not([data-sidebar-right-panel='fullscreen']) [data-dockkit-host='dock']) {
   animation: enhc-panel-glide-in var(--ds-transition-duration-slow) var(--ds-ease-in-out) both;
 }
+/* The animation NAME is a contract between this sheet and `instant-track.ts`
+ * (`OPENING_ANIMATION`), so it must not be localized. It is kept literal by the
+ * CSS Modules `pattern` in tsdown.config.ts rather than by `:global()` here:
+ * lightningcss rejects `:global()` in an `animation` VALUE (`Unexpected token
+ * Colon`), and a global definition with a localized reference would not match
+ * either. Found the hard way — the publish job's stylesheet baseline failed on
+ * this sheet alone (same byte count, different hash, no local class in the
+ * file), because the hash is derived from the file path. */
 @keyframes enhc-panel-glide-in {
   from {
     /* The product's own offset, with its own fallback: it sets

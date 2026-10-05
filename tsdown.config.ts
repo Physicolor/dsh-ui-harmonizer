@@ -97,7 +97,16 @@ const clientConfig: UserConfig = {
         const { code, exports: cssExports } = transform({
           filename: fileId,
           code: source,
-          cssModules: { pattern: '[hash]_[local]' },
+          /* NO HASH. These sheets exist to patch the PRODUCT's DOM, so their
+           * selectors are `:global(...)` — the only localized symbol in the
+           * whole plugin is one `@keyframes` name, and that name is a contract
+           * with `instant-track.ts` (`OPENING_ANIMATION`). A `[hash]` prefix is
+           * derived from the file path, so it (a) never matches the constant in
+           * the JS and (b) makes the compiled CSS differ between Windows and
+           * Linux for the same commit — which is how this was found: the publish
+           * job's stylesheet baseline failed on that one sheet, same byte count,
+           * different hash, no local class in the file. */
+          cssModules: { pattern: '[local]' },
           minify: true,
         })
         const classMap: Record<string, string> = {}
