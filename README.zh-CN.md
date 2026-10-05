@@ -4,11 +4,15 @@ description: "统一 Harness 界面语言，并为社区插件做针对性适配
 
 <p align="right"><a href="README.md">English</a> · <b>简体中文</b></p>
 
+<p align="center">
+  <img src="docs/icon/app-icon-dark.svg" alt="dsh-ui-harmonizer" width="104" height="104">
+</p>
+
 <h1 align="center">DSH UI Harmonizer</h1>
 
 <p align="center">
-  <strong>DeepSeek Harness 打造的界面规范化与协调层/strong><br>
-  规范化官方界· 协调每个插件 · 设置页自动规范器 · 界面定制（含圆角卡片</p>
+  <strong>DeepSeek Harness 打造的界面规范化与协调层</strong><br>
+  规范化官方界面 · 协调每个插件 · 设置页自动规范器 · 界面定制（宽度、字体、侧栏开合平顺）</p>
 
 <p align="center">
   <img src="https://img.shields.io/npm/v/dsh-ui-harmonizer?style=flat&label=latest%20release&color=4D6BFE" alt="Latest release">
@@ -19,6 +23,11 @@ description: "统一 Harness 界面语言，并为社区插件做针对性适配
 </p>
 
 ---
+
+<p align="center">
+  <sub>属于 <b>DSH Design System</b> —— 本仓库是运行时的那一半。<br>
+  它执行的规范在 <a href="https://physicolor.github.io/dsh-design-resources/">Physicolor/dsh-design-resources</a>。</sub>
+</p>
 
 > **一句话* 你装了一DSH 插件，界面却风格割裂？DSH UI Harmonizer 用*CSS 覆盖 + 运行DOM 协调**」把它们拉回官方设计语言—*不破坏任何插件源码、卸载即还原、零模型开销**
 DSH UI Harmonizer 是一*纯浏览器端（client-only*DSH bundle 插件。它不新增模型工具、不改写会话日志，只通过官方 `settings.section` / `settings.general.item` 槽位`--dsw-*` 语义令牌体系调整界面
@@ -41,6 +50,7 @@ DSH UI Harmonizer 是一*纯浏览器端（client-only*DSH bundle 插件。它�
 | --- | --- |
 | `dsh-better-sidebar` | toggle 按钮胶囊化、面板背景统一、布局协调、平滑过渡动|
 | `dsh-widgets` | 统计胶囊同族、header utilities 对齐 |
+| `dsh-context` | 其「上下文」视图会隐藏输入框座位，而组件栏正挂在这个座位里，整个组件区域随之消失；组件栏开启时把座位恢复为裁切 + 零高度，仪表盘保住整列、组件栏照常绘制。其「上下文洞察」仪表盘（`shell.overlay`）把框架层级交还回来：遮罩打开期间把该出口的 z-20 层叠上下文抬到 z-21 页眉之上（此前遮罩在页眉和挂在 body 上的组件放大层面前失效），彩色 `ContextIcon` 在两个 chrome 位置统一解析为 `currentColor`，仪表盘内的激活药丸不再使用深色主题的近白主色填充。仪表盘本身随后改穿**设置窗口**的外壳：`--dsw-radius-panel` 圆角、`bg-layer-2` 底色、`--dsw-elevation-prominent` 投影且不再描边，标题行采用对话框配方（顶部 22px / 两侧 24px 内边距、16px/24px 500 标题、28px 圆形关闭位），内容列自窗口顶端下移 54px、四周 24px 内边距，内部卡片统一到官方卡片 recipe（20px 圆角、12px 14px 内边距、10px 卡片列表间距）—— 见 `docs/dialog-window-style.md` |
 | `@omdsh-dev/dsh-genui` | `render_ui` 面板与工具卡片：宽度跟随「对话列最大宽度」（`--enhancer-content-width`，如 840px）而非冒泡到整列；修复折叠flex-nowrap 长标题撑宽根因并统一 11px/16px 内边距；`banner`/`steps` 等横贯块16px 左右间距规范（不向外扩盒）；svg/pre/canvas/img/mermaid 全部限宽护栏 |
 | 第三方设置页 | 自动补标题、删多余图标、统一间距格式 |
 
@@ -56,7 +66,8 @@ DSH UI Harmonizer 是一*纯浏览器端（client-only*DSH bundle 插件。它�
 
 ### 🎛界面定制
 
-设置 通用设置中的"界面定制"块：对话宽度、markdown 字号、工作区字号、UI 字体、圆角卡片均可实时调节。「圆角卡片」把对话区域显示为左上圆角的卡片并附投影，高度跟随侧栏宽详情列自动伸缩
+设置 → 通用设置中的"界面定制"块：对话宽度、markdown 字号、工作区字号、UI 字体、侧栏开合平顺均可实时调节。「侧栏开合平顺」（默认开）让右侧栏开合不再逐帧重排整个界面：轨道一步到位，位移改由正文列与输入框胶囊上的 cover 承担，两者都不触发强制布局；关闭后恢复官方原始缓动。
+
 ---
 
 ## 工作原理
@@ -70,7 +81,7 @@ DSH UI Harmonizer 是一*纯浏览器端（client-only*DSH bundle 插件。它�
 | `plugins/<包名>/` | 只服务于**某一个**社区插件 | `commandcode-provider` 文本归一、`dsh-widgets` 组件栏让位与手柄重锚、`dsh-better-sidebar` 面板、`dsh-genui` 宽度卫生 |
 | `self/` | 插件**自己**画的界面 | 设置 → 通用 的五行、字体选择器、Harmony Doctor 页 |
 
-样式表按同一划分拆成 23 个 `.module.css` 分片，入口只有一个（`src/client/styles/index.ts`），**它的 import 顺序就是层叠顺序**。
+样式表按同一划分拆成 29 个 `.module.css` 分片，入口只有一个（`src/client/styles/index.ts`），**它的 import 顺序就是层叠顺序**。
 
 其余约束不变：
 
@@ -80,7 +91,7 @@ DSH UI Harmonizer 是一*纯浏览器端（client-only*DSH bundle 插件。它�
 - **可逆清理**：每个 `ctx.effect` 都返回 disposer，卸载后不留残留 —— 包括被搬迁过的 DOM 节点和被改写的第三方文案；
 - **Slot 接入**：`settings.general.item` / `settings.section` / `shell.overlay`。
 
-护栏都在 `scripts/`：`tools/css-baseline.mjs`（编译后样式表的字节不变式）、`verify-frame-track.cjs`（列轨道动画）、`verify/settings-page.cjs`（设置页信号）、`probes/harness/*`（选择器与网络体检）。
+护栏都在 `scripts/`：`tools/css-baseline.mjs`（编译后样式表的字节不变式）、`verify-frame-track.cjs`（列轨道动画 + 侧栏平顺）、`verify-rapid-toggle.cjs`（联按回归：连续点击后不得残留内联样式、不得遗留 cover、轨道不得漂移）、`verify/settings-page.cjs`（设置页信号）、`probes/harness/*`（选择器与网络体检）。
 ---
 
 ## 安装
@@ -110,25 +121,59 @@ pnpm run check      # 类型检+ 构建
 ## 兼容
 - DeepSeek Harness `0.1.0-rc.6` 及兼容的后续 `0.1.x`
 - 通过官方 slot 接入，与 better-sidebar、dsh-widgets、dshmarket 等插件按 slot 顺序共处
-- 已知协调对象：`dsh-better-sidebar`、`dsh-widgets`、`dsh-notification`、`dshmarket`
+- 已知协调对象：`dsh-better-sidebar`、`dsh-widgets`、`dsh-context`、`dsh-notification`、`dshmarket`
 - 卸载/禁用后页面完全恢复默认，无残留
 ---
 
 ## 路线
-- **阶段一 · 官方 UI 规范*（进行中）：继续修复官方界面中未完善的部分；
-- **阶段· 插件兼容协调*（进行中）：检测并修复插件间的布局/样式冲突
-- **阶段· 统一视觉风格**（进行中）：可选的视觉风格层——已落地「圆角卡片」（包裹 header 模型）与 title 悬浮提示统一，待续：间距密度、更多圆动效统一  - *液态玻璃（探索：规范化的终点是降低认知成本——统一的标题与提示消除的是「风格切的微疲劳；材质层统一更进一步：用一致的物理隐喻暗示层级与可交互性，让整个页面形成单一心理模型，减少视觉与认知负担。边界：只在语义 token / CSS 层实验——设置开关可选、大面积 backdrop 表面至多两处（控GPU 开销）、尊重减弱透明动效偏好、不支持时回退到现行实底样式、绝不触碰插件源码，且以可读性不降为底线
-- **阶段· 生态共*：沉淀为可扩展的规则注册机制
+- **阶段一 · 官方 UI 规范化**（进行中）：继续修复官方界面中未完善的部分；
+- **阶段二 · 插件兼容协调**（进行中）：检测并修复插件间的布局/样式冲突；
+- **阶段三 · 统一视觉风格**（进行中）：可选的视觉风格层——已落地 title 悬浮提示统一，待续：间距密度、更多圆角与动效统一；
+  - *液态玻璃探索*：规范化的终点是降低认知成本——统一的标题与提示消除的是「风格切换」的微疲劳；材质层统一更进一步：用一致的物理隐喻暗示层级与可交互性，让整个页面形成单一心理模型，减少视觉与认知负担。边界：只在语义 token / CSS 层实验——设置开关可选、大面积 backdrop 表面至多两处（控制 GPU 开销）、尊重减弱透明动效偏好、不支持时回退到现行实底样式、绝不触碰插件源码，且以可读性不降为底线；
+- **阶段四 · 生态共建**：沉淀为可扩展的规则注册机制。
 ---
 
 ## 变更日志
+
+### v0.9.1 — 侧栏开合平顺、顶栏徽章让位、设置页表头收成一套骨架；删除圆角卡片
+
+按车主决定以 **patch** 发布：这一版带新行为，严格按语义化应为 minor。它同时删掉了 0.9.0 里的一个可选视觉层，所以那一条写成"删除"，而不是让它悄悄消失。
+
+**新增 —— 右侧栏开合不再逐帧重排整个界面（「侧栏开合平顺」，默认开）**
+
+- 🔍 先量后改：产品在 `_frame` 上用缓动过渡 `grid-template-columns`，而它是**布局**属性——中栏轨道 300ms 内从 1427px 走到 659px，每一帧都重排整个框架（产品自己的 `ResizeObserver` 被唤醒 27 次，左侧栏开合只有 10 次），而合成器与 GPU 线程全程空闲。逐帧采集还抓到别的元凶：`_scrollBody` 的 `padding-right` 也在 300ms 里缓动，`_widthHandle` 的 `left`/`right` 同样是。正文列由 `scrollBody 宽度 − padding-right` 居中，于是轨道到位而内边距没跟上时，列会瞬移出去——实测关闭方向过冲 +261px。
+- ✅ `harness/chrome/instant-track.ts` 在捕获阶段接住右栏按钮的点击：它把 `_frame` 与 `_scrollBody` 钉成 1ms 过渡，然后在产品自己写轨道的那次变更的微任务里**结束**这些过渡，于是轨道一帧到位，而 `transitionrun`/`transitionstart`/`transitionend` 仍然照常触发。位移改由**不触发强制布局**的 cover 承担（正文列用 `transform`、输入框胶囊用 `left`），cover 只**跟随**布局不**预测**布局。
+- 🚫 绝对不给输入框胶囊或它的任何祖先加 `transform`：`dsh-widgets` 在那棵子树里放着三个 `position: fixed` 节点，加 `transform` 会改写它们的包含块，把导轨拖进视口（实测 1247 → 412.4）。用 `left` 则每档导轨漂移 0.0px。
+- 🔁 联按不留残留：每次点击发一个 generation token，旧的 `step` 一失效就退出；修复前三组联按会把 `translateX(-230px)` 永久留在页面上。
+- 🧪 门禁：`scripts/verify-frame-track.cjs`（12 项）与 `scripts/verify-rapid-toggle.cjs`（28 项）。
+
+**新增 —— 顶栏跟着面板一起动，徽章在标题被压扁之前先让位**
+
+- 🔍 先量后改：正文列在滑，而顶栏在点击的同一个 commit 里**瞬跳**。顶栏不能像列那样被 cover——它的左边缘钉在左栏、右边缘属于面板，几何是**宽度**而不是偏移量，相对偏移拉不开标题列。实测把 `header.style.width` 写回关闭时的值就能完整复现关闭态顶栏。
+- ✅ `instant-track.ts` 在 `left`/`transform` 之外长了第三种模式 `width`，共用同一条驱动/重坐/释放路径。实测（1707×1067、三个徽章）开启方向 **12 个不同的绘制宽度，1427 → 659**，关闭方向 22 个，第一帧就是关闭宽度；内部所有东西（标题、徽章、页签条、右侧按钮）自动跟随，**不给任何顶栏节点加 `transform`**。
+- 🐛 报告的另一半是换行，而徽章不是原因：页签条被搬进 30px 的标题行，带着产品的 `flex: 0 1 auto` + `min-width: auto`，于是被压到胶囊标签换行——页签条 26 → 58px、顶栏 50 → 78px。一条 `flex: none` 让它保持内容宽度，缺口全部落到产品本来就写了 `min-width: 0; overflow: hidden` 的 `_crumbs` 上。实测十种宽度组合下都是 `139x26` + 50px 顶栏，两次实时开合的**每一帧**都是。
+- ✅ `harness/header-fit.ts` 按车主要的顺序让徽章退场——标准模式 → 智能体团队 → 子智能体，退回 100 宽度后原样恢复。
+- 🧪 门禁：`scripts/verify-header-fit.cjs`（14 项）。
+
+**重构 —— 设置页表头是一套骨架、一套几何，每个页面都一样**
+
+**修复 —— 侧栏账号浮层比它挂靠的那一行更窄**
+
+**修复 —— 某个第三方设置页完全没上样式（loader 认领通道的 bug）**
+
+**清理 —— 死选择器、重复的 1Hz 定时器、按长度而非文本做的表头指纹**
+
+**删除 —— 中栏圆角卡片**
+
+- 🗑️ 「圆角卡片」（设置 → 通用设置 → 界面定制）连同它的 `shell.overlay` 覆盖层、样式表与状态字段一并删除。理由：它是**视觉主张**而不是规范化——给产品加了一圈它本来没有的圆角与投影，并且在中栏里又占了一块别的插件必须绕开的表面。这一块里留下的是**消除缺陷**而不是**增加外观**的那部分：对话宽度、字体栈、侧栏开合平顺。删除本身零残留：根类不再写入，`disposeDynamicStyle` 仍会清掉 `enhc-center-card-on`，所以热更新时还在跑旧构建的页面不会留下一张没人绘制的卡片；读取状态时丢弃持久化的 `card` 键，老配置不会带着一个没人认领的字段。
+- 🧭 因此 Doctor 的表面清单从两个降为一个。下面的历史条目仍会提到圆角卡片——它们记录的是对应版本当时的样子，保持原样。
 
 ### v0.9.0 — 一套 Harness 界面语言，以及按目标分层的代码布局
 
 **重构 —— 每个源文件只属于一层**
 
 - 插件按**作用对象**分层：`core/`（与 DSH、与任何插件都无关的基础设施）、`harness/`（针对 DSH 本体的规范化）、`plugins/<包名>/`（只服务于某一个社区插件）、`self/`（本插件自己画的界面）。`src/client/` 顶层现在只剩 `index.ts` 与 `services.d.ts`。
-- 1253 行的样式表拆成 **23 个 `.module.css` 分片**，入口只有一个（`src/client/styles/index.ts`），**它的 import 顺序就是层叠顺序**；拆分已证明与原文件逐字节相同，`scripts/tools/css-baseline.mjs` 现在守住编译后的结果。
+- 1253 行的样式表拆成若干 `.module.css` 分片（今天是 29 个 —— 拆分之后又追加了 dsh-widgets / dsh-context 的协调分片，含它的设置窗口外壳），入口只有一个（`src/client/styles/index.ts`），**它的 import 顺序就是层叠顺序**；拆分本身已证明与原文件逐字节相同，`scripts/tools/css-baseline.mjs` 现在守住编译后的结果。
 - `npx tsc --noEmit` 从 **52 个错误降到 0**；`build` 现在会跑 `tsc`，`lib/types/` 这才真的存在（此前 `files` 里声明了它却从未生成）。
 
 **修复 —— 对真实 DOM 做对抗性复核后找出的失效与错配选择器**
@@ -148,7 +193,50 @@ pnpm run check      # 类型检+ 构建
 
 - 两处 DOM 搬迁（会话 tabs、底部工作台开关）在 dispose 时把节点搬回原位；圆角卡片那条无条件的 1Hz `setInterval` 已删除（ResizeObserver + resize + transition 事件早已覆盖同一路径）；设置页表头的指纹改为对**文本内容**做哈希，而不是长度（等长改写会让标题冻结）。
 
-### 未发布（待验收）：设置页表头统一骨架 · 行内弹层宽度 · 第三方样式表守卫
+### 未发布（待验收）：侧栏开合平顺 · 设置页表头统一骨架 · 行内弹层宽度 · 第三方样式表守卫
+
+**新功能 —— 右侧栏开合不再逐帧重排整个界面（「侧栏开合平顺」，默认开）**
+
+- 🔍 先量后改：官方在 `_frame` 上缓动 `grid-template-columns`，而这是**布局属性**——中列轨道在 300ms 里从 1427px 走到 659px，每一帧都让整个 frame 重新布局（官方自己的 `ResizeObserver` 因此被唤醒 27 次，而左侧栏开合只有 10 次），同时合成器与 GPU 线程几乎空转。逐帧录得的元凶不止一条：轨道之外，`_scrollBody` 的 `padding-right` 缓 300ms、`_widthHandle` 的 `left`/`right` 也缓 300ms，而正文列按 `scrollBody width − padding-right` 居中，轨已到位、padding 未到时正文列会瞬态飞出去（实测关栏方向过冲 +261px；只压轨道不压 padding 仍残留 +54px）。
+- ✅ `src/client/harness/chrome/instant-track.ts` 在 capture 阶段接管右栏按钮的点击：给 `<html>` 写 `data-enhc-instant`，把 `_frame` 与 `_scrollBody` 的过渡压到 1ms，再在产品写轨道那个 mutation 微任务里对所有由 gate 产生的过渡调 `finish()`——轨道一步到位，同时 `transitionrun`/`transitionstart`/`transitionend` 三个事件照常触发。用属性而非 class，是因为主题观察器盯着 `<html>` 的 `class`，每次写 class 都要重建主题材质（实测约 7ms，见 handoff）；`transition-duration: none` 与真 `0s` 同样是错的——从未启动的过渡根本不产生事件，而 dsh-widgets 的轨道让步靠的正是这个事件。
+- 🧷 动效以**不触发重排**的 cover 补回——正文列用 `transform`、输入框胶囊用 `left`。cover 不能**预测**布局，只能**跟踪**布局：关键帧的 `from` 取的是**武装那一帧**读到的位移，运行期间 `ResizeObserver` 在布局后、绘制前把它重定位（固定关键帧只要 `from` 取自瞬态就必然过冲——关栏方向第一个可读的种子是 +358px，而廊道只有 304px）。四臂实测**没有任何一帧画到 `[312, 616]` 廊道之外**，且从不回退到起点——这正是「先闪烁后平移」的判据。
+- 🚫 绝不给输入框或其祖先加 `transform`：`dsh-widgets` 的 `dsx-stats-drawer`/`-zoom`/`-rail` 三个 `position: fixed` 节点就挂在那些祖先里，`transform` 会改写它们的包含块并把导轨拖进视口（实测导轨 1247 → 412.4）。`left` 是布局属性、不建立包含块，所以导轨漂移在每一档读数里都是 **0px**。
+- 🔁 联按守恒：驱动为每次点击发一个 generation 令牌，旧的 `step` 认出自己已过期就退出。修之前 9 次 130ms 连击会留下 `transform: translateX(-230px)` 与 `left: -230px` 永久残留（孤儿 cover 把后一次点击写入的内联样式当成「原值」又「还原」了一次）；修之后三档风暴（9×130ms / 15×60ms / 5×400ms）全部检查通过、零残留。
+- 🔒 gate 只在「确实没有东西还在动」时才摘（dock 的 `getAnimations()` 加每条 cover 自己的 `busy()`），硬上限 `HOLD_MS + 400ms`。按点击时钟摘 gate 会把开栏滑动切在 `currentTime 254.7/300`（全程没有 `animationend`），dock 从 `translateX(10.35px)` 直跳 `none`；现在摘除时刻与面板自己的 `animationend` 相差约 **10ms**。
+- 📊 代价与收益（同一份已构建产物，唯一变量是 `<html>` 上的 `enhc-panel-glide`，各 9 次开关）：长任务阻塞 **285.2ms → 205.7ms（−28%）**、长任务条数 58 → 43；代价是每次开关约 +8ms 布局与 +23 次 `LayoutCount`，`TaskDuration`/`ScriptDuration` 基本不变。**这组数字只作方向性参考**：后来同一 build 内 15 次那一对的两臂自相矛盾，所以因果只采用隔离机制测量（`<html>` 上写 class vs 写属性；在轨道 `transitionrun` 里调 `getComputedStyle`）。
+- 🎛️ 设置 → 通用 → 界面定制里的「侧栏开合平顺」开关实时生效、默认开、卸载零残留（`apply.ts` 负责增删根类，`disposeDynamicStyle` 一并摘掉 `data-enhc-instant`）。
+- 🧪 护栏：`scripts/verify-frame-track.cjs`（12 项，含开/关栏 snap、三个过渡事件、cover 落在正文列、导轨零漂移、窗口改尺寸不缓动且 `enhc-window-resizing` 及时出现与释放）与 `scripts/verify-rapid-toggle.cjs`（28 项，含上面的联按 re-entrancy 契约与「两个 gate 都必须已释放」）。联按护栏还会分辨导轨漂移**是谁的账**：若漂移时导轨的 `right` 仍停在 anchor 表达式，那是 `dsh-widgets` 自己的 swallowed-rail race（本插件 inert 时 30 次风暴复现 2 次、live 时 60 次复现 1 次），只有这个签名才放行；若导轨已 claim `0px` 却仍漂移，才算我们的残留、判定失败。
+
+**新功能 —— 顶栏跟着面板一起平滑，空间不够时先花徽标、不再压标题**
+
+- 🔍 先量后改：正文列在缓动，而**顶栏在点击那一次 commit 里直接跳到位**。逐帧采样一次开合：snap 之后
+  `_headerUtilities` 与 tab strip 的 `left` **一次都没变**，而正文列在缓动 `509.1 → 312`。顶栏没法照抄
+  正文列的 cover —— 它的左边缘钉在左列、**右**边缘是面板的，所以它的几何是**宽度**而不是位移，而相对位移
+  托不住标题列的宽度（先试的方案：给所有没有 `position: fixed` 后代的宿主各加一条位移 cover，结果是标题照样
+  瞬跳截断）。决定性实测：开栏状态下把 `header.style.width` 写回关闭值，关闭态被**逐项复现** ——
+  `280,1427,50`、标题列 212px、strip `867.5,139,26`；对照开态 `280,659,78` / 41.5px / `697,87,58`。
+- ✅ `instant-track.ts` 在 `left`、`transform` 之外新增 `width` 模式，三者共用同一条 driver、reseat 与
+  release 路径；capture 阶段读一次顶栏宽度就武装。三徽标参考会话（1707×1067）实测：开栏
+  **12 个不同绘制宽度 `1427 → 659`**（首轮 18 个）、关栏 22 个，首帧即关闭宽度。里面的一切都免费跟着走 ——
+  标题、徽标、tab strip、右侧按钮 —— 所以既不需要每个宿主各来一条 cover，也**没有给任何顶栏节点加 `transform`**。
+- 🐛 反馈的另一半是换行，而且不是徽标挤的：tab strip 被搬进 30px 的 title row，带的是产品的
+  `flex: 0 1 auto` + `min-width: auto`，于是 cluster 的收缩先压 strip，strip 内部再压胶囊标签 ——
+  strip `26 → 58`、顶栏 `50 → 78`。修复只有一条 `flex: none`：把 strip 摁在内容宽度上，
+  亏空全部落到 `_crumbs`（产品本来就给了 `min-width: 0; overflow: hidden`）。实测
+  **十臂**（1707/1440/1280/1152/1024 × 开/关）strip 恒 `139x26`、顶栏恒 50px，且两次真实开合的
+  **每一帧**（57 / 69 帧）都成立。
+- ✅ `harness/header-fit.ts` 按车主指定的顺序花徽标 —— 标准模式 → 智能体团队 → 子智能体，
+  叫不出名字的徽标排最后 —— 直到 `_crumbs` 达到 160px 的可读地板，外加 24px 迟滞防止边界抖动。
+  参考会话开栏实测：标题 **0px → 165px**，3 个徽标隐 2 个；开栏过程中 rung 单调不减（56 对帧零回退），
+  关栏恢复全部 3 个与标题满宽 212px。
+- 🧷 徽标身份**只按属性**、绝不按文案：可见字符串是运行时 locale 查表（整个 asar 里中文字面量 0 处，
+  原文与转义都没有），模块类名带构建哈希 ⇒ 子智能体用 `aria-haspopup="tree"`、智能体团队用
+  `data-team-action`、标准模式是 seat 里唯一的 `span`。判据是「先应用候选档、再读 `_crumbs.clientWidth`」
+  而不是拿徽标宽度做算术 —— 那些宽度不是常量：产品自己的 `@container` 会在 row ≤540px 时把
+  「标准模式」标签清零、≤480px 清零「智能体团队」标签，后台任务计数还随任务数变宽。
+- 🧪 护栏：`scripts/verify-header-fit.cjs`（14 项 —— 关闭基线与阶梯徽标集合、开栏的不同宽度数与首帧值、
+  **整段真实开合零换行帧**、rung 单调、落定态前缀 + 地板、关栏全恢复、四个宽度两种面板态的尺寸、
+  无残留属性、无 page error）。
 
 **重构 —— 设置页表头只剩一套骨架、一套几何，所有页面一致**
 
@@ -176,7 +264,7 @@ pnpm run check      # 类型检+ 构建
 **新功能（Harmony Contract 跨插UI 契约*
 
 - 🧭 `<html>` 上发布协商变量，任何插件或主题都能读，不需要互相依赖：`--enhc-contract`（契约版本）、`--enhc-surface-solid`、`--enhc-glass-aware`、`--enhc-solid-fill`、`--enhc-content-width`、`--enhc-sidebar-scale`
-- 🔌 提供 `ctx.get('uiHarmony')` 服务（与官方 `ctx.sidebarRight` 同一`ctx.reflect.provide` 约定）：别的插件`registerSurface({ id, role, occupies, widthVariable, transition, tokens, opaque })` **申报**自己占了哪块表面、用哪个 token、动画多长。本插件只做仲裁与告警，不再靠猜别人DOM。本插件自身也申报了两个表面（圆角卡片、设置页行）
+- 🔌 提供 `ctx.get('uiHarmony')` 服务（与官方 `ctx.sidebarRight` 同一 `ctx.reflect.provide` 约定）：别的插件用 `registerSurface({ id, role, occupies, widthVariable, transition, tokens, opaque })` **申报**自己占了哪块表面、用哪个 token、动画多长。本插件只做仲裁与告警，不再靠猜别人的 DOM。本插件自身也申报了一个表面（通用设置里的行，以及 UI 兼容性页）。
 - 🪟 **材质感知**：从语义 token 本身判断界面是实体还是半透明（`--dsw-alias-bg-base` / `-layer-1` / `--dsw-specific-sidebar-fill` alpha），不做插件身份判断。检测到玻璃主题`--enhc-solid-fill` 变为 `transparent`，会header / 面板不再往玻璃上糊一块不透明矩形（此前是「玻璃上一个没有模糊的洞」）。尊`isTranslucent()` 的解析规则（`rgba`/8 hex/`transparent`；`var()`、`color-mix()` 视为实体，不猜）*实测（模拟玻璃，不装第三方主题）**：把 `--dsw-alias-bg-base` 就地改成 `rgba(255,255,255,0.45)` 后，`--enhc-glass-aware` 0、`--enhc-surface-solid` 1、`--enhc-solid-fill` `transparent`、会header `background-color` `rgb(255,255,255)` 变为 `rgba(0,0,0,0)`；移除该覆盖后四项全部回滚
 **新功能（Harmony Doctor 本机只读兼容性审计）**
 

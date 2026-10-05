@@ -4,11 +4,15 @@ description: "One interface language for the Harness, plus per-plugin reconcilia
 
 <p align="right"><b>English</b> · <a href="README.zh-CN.md">简体中文</a></p>
 
+<p align="center">
+  <img src="docs/icon/app-icon-dark.svg" alt="dsh-ui-harmonizer" width="104" height="104">
+</p>
+
 <h1 align="center">DSH UI Harmonizer</h1>
 
 <p align="center">
   <strong>UI harmonizer for DeepSeek Harness.</strong><br>
-  Normalizes the official UI · reconciles every plugin · settings auto-normalizer · UI customization (incl. rounded card)
+  Normalizes the official UI · reconciles every plugin · settings auto-normalizer · UI customization (width, fonts, panel glide)
 </p>
 
 <p align="center">
@@ -20,6 +24,10 @@ description: "One interface language for the Harness, plus per-plugin reconcilia
 </p>
 
 ---
+<p align="center">
+  <sub>Part of <b>DSH Design System</b> — this repository is the runtime half.<br>
+  The spec it enforces lives at <a href="https://physicolor.github.io/dsh-design-resources/">Physicolor/dsh-design-resources</a>.</sub>
+</p>
 
 > **TL;DR:** You installed a bunch of DSH plugins but the UI looks inconsistent? DSH UI Harmonizer uses **CSS overrides + runtime DOM coordination** to bring them back to the official design language — **non-destructive, fully reversible, zero model cost**.
 
@@ -45,6 +53,7 @@ DSH UI Harmonizer is a **client-only DSH bundle plugin**. It adds no model tools
 | --- | --- |
 | `dsh-better-sidebar` | Capsule-ize toggle buttons, unify panel backgrounds, coordinate layout, smooth transitions |
 | `dsh-widgets` | Matching stat capsule family, header utilities alignment |
+| `dsh-context` | Keep the 组件 rail alive under its 上下文 dashboard: the composer seat dsh-context hides is the seat the rail is mounted in, so the seat is restored clipped and zero-height while the rail is on. Its 上下文洞察 dashboard (`shell.overlay`) gets the frame back: the outlet's z-20 stacking context is raised above the z-21 header while the backdrop is up (the mask used to leave the header, and the widgets' body-portaled hover magnifier, painting over the modal), the polychrome `ContextIcon` resolves to `currentColor` in both chrome seats, and the active pills stop painting the dark theme's near-white primary fill inside the dashboard. The dashboard then wears the Settings window itself: `--dsw-radius-panel` corners, `bg-layer-2` fill, `--dsw-elevation-prominent` shadow and no border, the dialog title row (`22px` top / `24px` side inset, `16px/24px 500` title, 28px round close seat), the content column starting `54px` down at a `24px` inset, and the official card recipe (`20px` radius, `12px 14px` padding, `10px` card-list gap) on its tiles — see `docs/dialog-window-style.md` |
 | `@omdsh-dev/dsh-genui` | `render_ui` panels & tool cards: width follows the conversation content width (`--enhancer-content-width`, e.g. 840px) instead of inflating across the whole seat; fold bar long-title shrink fix with unified 11px/16px padding; 16px side-padding standard for full-width blocks (`banner`/`steps`, no box expansion); width guardrails for svg/pre/canvas/img/mermaid |
 | Third-party settings pages | Auto-fill headings, drop redundant icons, normalize spacing |
 
@@ -61,7 +70,7 @@ When any third-party plugin adds a page to `settings.section` that doesn't follo
 
 ### 🎛️ UI Customization
 
-The "UI Customization" block under Settings → General: chat width, markdown font size, workspace scale, UI font stack, and rounded card all adjust live. The "rounded card" renders the conversation area as a card with a rounded top-left corner and a drop shadow, auto-resizing with the sidebar width / details column.
+The "UI Customization" block under Settings → General: chat width, markdown font size, workspace scale, UI font stack and smooth panel toggle all adjust live. "Smooth panel toggle" (default on) makes the right sidebar's open/close stop re-laying out the whole frame every frame: the center track snaps to its final value and the motion is re-added as covers on the transcript column and the composer capsule, which do not force layout. Turning it off restores the original eased track.
 
 ---
 
@@ -79,7 +88,7 @@ one of four layers:
 | `plugins/<package>/` | adaptations written for **one** community plugin | `commandcode-provider` text normalisation, `dsh-widgets` rail squeeze + handle re-anchor, `dsh-better-sidebar` panels, `dsh-genui` width hygiene |
 | `self/` | the plugin's **own** UI | Settings → General rows, the font selector, the Harmony Doctor page |
 
-Stylesheets follow the same split: 23 `.module.css` fragments with a single entry
+Stylesheets follow the same split: 29 `.module.css` fragments with a single entry
 (`src/client/styles/index.ts`) whose **import order is the cascade order**.
 
 The rest of the contract is unchanged:
@@ -91,7 +100,9 @@ The rest of the contract is unchanged:
 - **Slot integration**: `settings.general.item` / `settings.section` / `shell.overlay`.
 
 Guards live in `scripts/`: `tools/css-baseline.mjs` (byte-invariant of the compiled
-stylesheet), `verify-frame-track.cjs` (column-track animation), `verify/settings-page.cjs`
+stylesheet), `verify-frame-track.cjs` (column-track animation + panel glide),
+`verify-rapid-toggle.cjs` (the glide's re-entrancy: overlapping toggles must leave
+no inline style, no running cover and no rail drift), `verify/settings-page.cjs`
 (Settings → General signals), `probes/harness/*` (selector and network triage).
 
 ---
@@ -128,7 +139,7 @@ pnpm run check      # typecheck + build
 
 - DeepSeek Harness `0.1.0-rc.6` and compatible later `0.1.x`;
 - Integrates via official slots, coexisting with better-sidebar, dsh-widgets, dshmarket, etc. by slot order;
-- Known reconciliation targets: `dsh-better-sidebar`, `dsh-widgets`, `dsh-notification`, `dshmarket`;
+- Known reconciliation targets: `dsh-better-sidebar`, `dsh-widgets`, `dsh-context`, `dsh-notification`, `dshmarket`;
 - The page fully restores to defaults after uninstall/disable — no residue.
 
 ---
@@ -150,7 +161,7 @@ pnpm run check      # typecheck + build
 **Refactor — every source file now belongs to exactly one layer**
 
 - The plugin is organised by TARGET: `core/` (infrastructure true regardless of DSH or any plugin), `harness/` (normalizations aimed at the DSH shell), `plugins/<package>/` (adaptations written for one community plugin), `self/` (this plugin's own UI). `src/client/` now holds nothing but `index.ts` and `services.d.ts`.
-- The 1253-line stylesheet is split into 23 `.module.css` fragments behind ONE entry (`src/client/styles/index.ts`) whose **import order is the cascade order**; the split was proven byte-identical to the original, and `scripts/tools/css-baseline.mjs` now pins the compiled result.
+- The 1253-line stylesheet is split into `.module.css` fragments (29 today — the plugin-reconciliation sheets for dsh-widgets / dsh-context, including its Settings-window shell, were appended after the split) behind ONE entry (`src/client/styles/index.ts`) whose **import order is the cascade order**; the split itself was proven byte-identical to the original, and `scripts/tools/css-baseline.mjs` now pins the compiled result.
 - `npx tsc --noEmit` went from **52 errors to 0**, and `build` runs `tsc` so `lib/types/` really exists (it was advertised in `files` but never emitted).
 
 **Fixed — dead and wrong selectors, found by an adversarial pass over the live DOM**
@@ -170,7 +181,37 @@ pnpm run check      # typecheck + build
 
 - The two DOM relocations (session tabs, bottom-workbench toggle) put their nodes back on dispose; the center card's unconditional 1Hz `setInterval` is gone (ResizeObserver + resize + transition events already cover it); the settings-header fingerprint hashes TEXT instead of its length (equal-length rewrites used to freeze the title).
 
-### Unreleased (pending acceptance) — one settings-header skeleton, row popups, stylesheet keeper
+### v0.9.1 — smooth panel toggle, header badge fit, one settings-header skeleton; the rounded card removed
+
+Published as a **patch at the owner's call**: it carries new behaviour, which semver would normally
+file as a minor. It also removes an optional visual layer that 0.9.0 shipped, so the changelog entry for
+it is written as a removal rather than as a silent disappearance.
+
+**Removed — the center-column rounded card**
+
+- 🗑️ The "Rounded Card" switch (Settings → General → UI Customization) is gone, with its `shell.overlay` cover, its stylesheet and its state field. Reason: it was a *visual* opinion rather than a normalization — it added a corner radius and a shadow the product does not have, and it owned a second surface inside the center column that every other co-tenant had to route around. What remains in that block is the part that removes a defect instead of adding a look: chat width, font stack and panel glide. The removal is residue-free by construction — the root class is no longer written, and `disposeDynamicStyle` still clears `enhc-center-card-on` so a page running an older build of the plugin during a hot update cannot keep a card that nothing paints. The persisted `card` key is dropped when state is read, so a profile that had it on does not carry a field nothing owns.
+- 🧭 The Doctor's surface inventory consequently lists one declared surface instead of two. Historical changelog entries below still mention the card; they describe the releases they belong to and are left as written.
+
+**New — the right sidebar's open/close stops re-laying out the whole frame ("Smooth Panel Toggle", default on)**
+
+- 🔍 Measured first: the product eases `grid-template-columns` on `_frame`, and that is a **layout** property — the center track travels 1427px → 659px over 300ms, re-laying out the entire frame on every frame of it (the product's own `ResizeObserver` wakes 27 times, against 10 for a left-panel toggle) while the compositor and GPU threads idle. Per-frame capture named more than one offender: besides the track, `_scrollBody`'s `padding-right` eases over 300ms and `_widthHandle`'s `left`/`right` ease over 300ms too. The transcript column is centered by `scrollBody width − padding-right`, so when the track has arrived and the padding has not, the column transiently flies out — measured +261px of overshoot on close, and +54px still left when only the track is pinned.
+- ✅ `src/client/harness/chrome/instant-track.ts` takes the right-panel button's click in the capture phase: it writes `data-enhc-instant` on `<html>`, pins `_frame` and `_scrollBody` to a 1ms transition, then **finishes** every transition the gate created from the mutation microtask of the product's own track write — so the track lands in one frame while `transitionrun`/`transitionstart`/`transitionend` all still fire. It is an attribute rather than a class because the theme observer watches `<html>`'s `class` and rebuilding the material costs ~7ms per write (measurement in the handoff); `transition-duration: none` is wrong for the same reason `0s` is — a transition that never starts emits no events at all, and dsh-widgets' rail yield reads that beat.
+- 🧷 The motion is re-added as covers that do **not** force layout — `transform` on the transcript column and `left` on the composer capsule. A cover must **track** the layout, never **predict** it: the keyframe's `from` is the displacement read in the same frame the cover is armed, and a `ResizeObserver` re-seats it after layout and before paint while it runs (a fixed keyframe overshoots by construction whenever its `from` comes from a transient — the close direction's first readable seed is +358px against a 304px corridor). Measured on four arms, **no frame paints outside the `[312, 616]` corridor** and neither endpoint is ever returned to, which is the "flash then translate" report.
+- 🚫 Nothing transforms the composer or any of its ancestors: `dsh-widgets` keeps three `position: fixed` nodes (`dsx-stats-drawer`/`-zoom`/`-rail`) inside those ancestors, and a `transform` rewrites their containing block and drags the rail into the viewport (measured: rail 1247 → 412.4). `left` is a layout property that creates no containing block, so the rail's drift reads **0px** in every sample.
+- 🔁 Re-entrancy is conserved: the driver gives every click a generation token and an older `step` bails as soon as it is stale. Before the fix, 9 clicks at 130ms left `transform: translateX(-230px)` and `left: -230px` behind permanently (the orphan cover adopted the newer click's inline style as the "original" and then "restored" it); after the fix three storms (9×130ms / 15×60ms / 5×400ms) pass every check with no residue.
+- 🔒 The gate is released only when nothing is still moving (`getAnimations()` on the dock plus each cover's own `busy()`), capped at `HOLD_MS + 400ms`. Releasing on the click's clock cut the open slide at `currentTime 254.7/300` with no `animationend` at all, snapping the dock from `translateX(10.35px)` to `none` — the residual difference between the release and the panel's own `animationend` is now ≈10ms.
+- 📊 Cost and gain (one built artifact, the only variable being `enhc-panel-glide` on `<html>`, 9 toggles each): long-task blocking **285.2ms → 205.7ms (−28%)**, long tasks 58 → 43; the price is about +8ms of layout and +23 `LayoutCount` per toggle, with `TaskDuration`/`ScriptDuration` essentially unchanged. Treat these as directional only: the later 15-toggle pair on one build disagreed between its own two arms, so only the isolated mechanism measurements (a class write vs an attribute write on `<html>`; `getComputedStyle` inside the track's `transitionrun`) are used as causal evidence.
+- 🎛️ The Setting → General → UI Customization row "Smooth Panel Toggle" applies live, defaults on, and leaves no residue (`apply.ts` owns the root class, `disposeDynamicStyle` also drops `data-enhc-instant`).
+- 🧪 Guards: `scripts/verify-frame-track.cjs` (12 checks: snap on open and close, the three transition events, a cover on the transcript column, zero rail drift, and a viewport change that neither eases nor misses `enhc-window-resizing`) plus `scripts/verify-rapid-toggle.cjs` (28 checks: the re-entrancy contract above, plus both gates must have been released). The rapid-toggle guard also tells **whose** rail drift it is: a drift with the rail's `right` still at the anchor is the swallowed-rail race in `dsh-widgets` itself (2/30 storms with this plugin inert, 1/60 with it live), so the check passes only on that signature and fails on a drift with the rail already claiming `0px` — which would be our residue.
+
+**New — the top bar glides with the panel, and its badges retire before the title is crushed**
+
+- 🔍 Measured first: the transcript column glided while the header **snapped in the click's own commit**. Per-frame sampling of a toggle showed `_headerUtilities` and the tab strip never moving at all after the snap, against the transcript's 509.1 → 312 ease. The header cannot be covered the way the column is — its left edge is pinned to the left column and its **right** edge is the panel's, so its geometry is a *width*, not an offset, and a relative offset cannot stretch the title column (covering the hosts that have no `position: fixed` descendant left the title truncating instantly). Measured: setting `header.style.width` back to its closed value while the panel is open reproduces the closed header exactly — `280,1427,50`, title column 212px, strip `867.5,139,26`, against the open state's `280,659,78` / 41.5px / `697,87,58`.
+- ✅ `instant-track.ts` grew a `width` mode next to `left` and `transform`, sharing one driver, reseat and release path, and arms it on the header from a width read in the same capture-phase click. Measured on the three-badge reference session (1707×1067): **12 distinct painted widths, 1427 → 659** on open (18 in the first run) and 22 on close, first frame at the closed width. Everything inside follows for free — title, badges, tab strip, right-hand buttons — so no per-host covers and **no `transform`** on any header node.
+- 🐛 The other half of the report was wrapping, and the badges were not the cause: the strip is relocated into the 30px title row and arrives with the product's `flex: 0 1 auto` + `min-width: auto`, so the cluster's shrink squeezed the strip until its capsule labels wrapped — strip 26 → 58px and the header 50 → 78px. One declaration, `flex: none`, holds the strip at its content width and moves the whole deficit onto `_crumbs`, which the product already ships with `min-width: 0; overflow: hidden`. Measured `139x26` and a 50px header in **all ten arms** (1707/1440/1280/1152/1024 × open/closed) and on **every frame of two live toggles** (57 and 69 sampled frames).
+- ✅ `harness/header-fit.ts` spends the badges in the order asked for — 标准模式 → 智能体团队 → 子智能体, any badge it cannot name last — until `_crumbs` clears a 160px legibility floor, with 24px of hysteresis so a threshold cannot flip-flop. Measured on the reference session with the panel open: title **0px → 165px** with two of three badges retired; the rung is monotone through the open (0 of 56 frame pairs went backwards) and closing restores all three plus the title's full 212px.
+- 🧷 Badge identity is attribute-based, never text: the visible strings are runtime locale lookups (∅ occurrences in the app archive, escaped or not) and the module classes are build-hashed — `aria-haspopup="tree"` for the subagent catalog, `data-team-action` for the team action, a bare `span` for the preset label. The fit reads `_crumbs.clientWidth` after applying a candidate rung rather than computing from badge widths, because those widths are not constants: the product's own `@container` rules zero the 标准模式 label below a 540px row and the 智能体团队 label below 480px, and the background counter's width follows the job count.
+- 🧪 Guard: `scripts/verify-header-fit.cjs` (14 checks — the closed baseline and the ladder's badge set, the glide's distinct widths and its starting value, **zero wrapping frames through a live toggle**, a monotone rung, the settled prefix + floor, full restore on close, size at four widths in both panel states, no residue attribute, no page errors).
 
 **Refactor — the settings page header is ONE skeleton with ONE geometry, on every page**
 
@@ -199,7 +240,7 @@ pnpm run check      # typecheck + build
 **New — Harmony Contract (cross-plugin UI contract)**
 
 - 🧭 Publishes negotiation variables on `<html>` that any plugin or theme can read without depending on this one: `--enhc-contract` (revision), `--enhc-surface-solid`, `--enhc-glass-aware`, `--enhc-solid-fill`, `--enhc-content-width`, `--enhc-sidebar-scale`.
-- 🔌 Provides `ctx.get('uiHarmony')` using the product's own `ctx.reflect.provide` idiom (the same one behind `ctx.sidebarRight`): neighbours **declare** what they occupy with `registerSurface({ id, role, occupies, widthVariable, transition, tokens, opaque })` instead of being measured by guesswork. This plugin only arbitrates and reports; it declares its own two surfaces too (rounded card, settings rows).
+- 🔌 Provides `ctx.get('uiHarmony')` using the product's own `ctx.reflect.provide` idiom (the same one behind `ctx.sidebarRight`): neighbours **declare** what they occupy with `registerSurface({ id, role, occupies, widthVariable, transition, tokens, opaque })` instead of being measured by guesswork. This plugin only arbitrates and reports; it declares its own surface too (the Settings → General rows and the UI Compatibility page).
 - 🪟 **Material awareness** derived from the semantic tokens themselves (alpha of `--dsw-alias-bg-base` / `-layer-1` / `--dsw-specific-sidebar-fill`), never from plugin identity. Under a glass theme `--enhc-solid-fill` becomes `transparent`, so the header/panels stop painting an unblurred opaque rectangle over the glass. **Measured by simulation** (no third-party theme installed): overriding `--dsw-alias-bg-base` to `rgba(255,255,255,0.45)` flips `--enhc-glass-aware` 0 to 1, `--enhc-surface-solid` 1 to 0, `--enhc-solid-fill` to `transparent`, and the session header `background-color` from `rgb(255,255,255)` to `rgba(0, 0, 0, 0)`; removing the override restores all four.
 
 **New — Harmony Doctor (local read-only compatibility audit)**
