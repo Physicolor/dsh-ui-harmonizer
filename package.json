@@ -1,10 +1,11 @@
 {
     "name": "dsh-ui-harmonizer",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "description": "DeepSeek 设计规范：统一 Harness 界面语言，并为社区插件做针对性适配，附只读兼容性审计。",
     "type": "module",
     "main": "lib/index.js",
     "types": "lib/types/index.d.ts",
+    "icon": "./icon.svg",
     "exports": {
         ".": {
             "types": "./lib/types/index.d.ts",
@@ -23,9 +24,11 @@
         "lib/client.js",
         "lib/client.js.map",
         "cordis.patch.yml",
+        "icon.svg",
         "locale/*.json",
         "README.md",
         "README.zh-CN.md",
+        "docs/icon/*.svg",
         "docs/settings-section-style.md",
         "docs/screenshot-overview.png",
         "docs/screenshot-better-sidebar.png",
@@ -72,6 +75,7 @@
     "dependencies": {},
     "peerDependencies": {
         "@deepseek-ai/cordis": "^4.0.1",
+        "@deepseek-ai/dsh-client-ui-primitives": "^0.1.0-rc.6 || ^0.2.0-rc.1",
         "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6 || ^0.2.0-rc.1"
     },
     "devDependencies": {
