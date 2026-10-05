@@ -5,3 +5,6 @@ node_modules/
 scripts/pw-tmp/
 scripts/diag-phase.cjs
 scripts/diag-railright.cjs
+# Probe OUTPUT, not probe source: `verify-rapid-toggle.cjs` writes its storm
+# traces here, and the traces are measurements, not something to version.
+.probe-rapid-toggle/

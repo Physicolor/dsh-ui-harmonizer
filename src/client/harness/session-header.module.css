@@ -117,10 +117,53 @@
   gap: 24px;
   align-self: center;
   align-items: center;
+  /* ANCHOR — the one declaration that stops the header from WRAPPING.
+   *
+   * The strip arrives with the product's `flex: 0 1 auto` and `min-width: auto`
+   * inside `_titleCluster` (`flex: 1 1 0%`, `min-width: 0`) on a 30px row. The
+   * cluster is therefore free to shrink the strip below its content, and the
+   * strip is a nested flex line — so a narrow header squeezes the two/three tab
+   * capsules until their LABELS wrap, which doubles the strip's height (26 ->
+   * 58) and with it the header's (50 -> 78). That is the whole of the reported
+   * "空间不足会导致挤压文字换行". Measured at 1707x1067 on a three-badge session,
+   * panel open: row 611px, cluster 484px, strip squeezed to 87px and wrapped to
+   * 58px tall. `flex: none` holds the strip at its content width instead, and
+   * the deficit then lands on `_crumbs`, which the product already ships with
+   * `min-width: 0` + `overflow: hidden` for exactly that job. Measured with the
+   * rule at 1707/1440/1280/1152/1024 px and both panel states: strip is
+   * 139x26 in all ten arms and the header is 50px tall in all ten.
+   *
+   * Hiding badges (header-fit.ts) is NOT an alternative to this: the badges and
+   * this strip are independent flex items, so dropping one only widens the
+   * crumbs — measured n=1 (标准模式 hidden) left the strip wrapped at 58px.
+   * The two rules work together: this one makes wrapping impossible, the fit
+   * decides how much of the row the badges may keep. */
+  flex: none;
 }
 :global([class$='_titleCluster'] > [class$='_tabs'] [class*='_tab']) {
   /* Product padding is 0 0 9px (blank space reserved under the label for the
    * underline indicator). Symmetric 5px keeps the indicator visible while the
    * label stays optically centred against the 32px header row. */
   padding: 5px 0;
+}
+/* Progressive header-badge hiding — the removal side of the rule above.
+ *
+ * Once the strip is unshrinkable, the only flexible thing left in the row is
+ * `_crumbs`, so a narrow header squeezes the session title to nothing before
+ * anything else gives: measured on the three-badge reference session at
+ * 1707x1067 with the panel open, the title column reads 0px wide (its content
+ * is 212px) and 5 of the header's 611px go unused by the title at all. The user
+ * asked for the badges to yield instead, in the order 标准模式 -> 智能体团队 ->
+ * 子智能体.
+ *
+ * `header-fit.ts` owns the decision and marks the badges it wants gone with
+ * this attribute; the rule below is only the rendering side. `display: none`
+ * (not width/opacity) is what actually returns the space: the badge wrappers
+ * are flex items of `_headerActions`, so removing one shortens the seat and
+ * hands the rows it occupied back to `_crumbs`.
+ *
+ * Scoped to `_titleRow` so the attribute can never match anything outside this
+ * header even if a third party happens to use the same name. */
+:global([class$='_titleRow'] [data-enhc-header-hidden]) {
+  display: none !important;
 }

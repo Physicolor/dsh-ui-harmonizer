@@ -1,0 +1,52 @@
+/* @dsh-split-header
+ * plugins/dsh-context/overview-modal-layer.module.css - Serves: dsh-context's 上下文洞察 dashboard (`shell.overlay`).
+ * Why here: the panel is dsh-context's surface; the layer it is trapped inside is the product's.
+ * Origin: NEW (2026-10-02) — not a slice of the pre-split enhancer.module.css.
+ */
+/* ── the dashboard modal is trapped under the frame chrome ─────────────
+ *
+ * dsh-context registers 上下文洞察 into the frame-wide `shell.overlay` slot and
+ * draws it as a real modal: `.lc-ov-backdrop` is `position: fixed; inset: 0;
+ * z-index: 200`. Measured chain (2026-10-02, DSH 0.2.0-rc.2, live desktop
+ * session, panel open):
+ *
+ *   .lc-ov-backdrop (fixed, z 200) > [data-slot='shell.overlay']
+ *   (display: contents) > div.BynINW_overlayLayer (absolute, z 20)
+ *   > div.BynINW_frame > body
+ *
+ * The product's own session header is `div.Dc7zOa_header` at `z-index: 21`,
+ * a SIBLING of that overlay layer inside `.BynINW_frame`. A stacking context
+ * caps everything inside it, so the backdrop's own z 200 is meaningless here:
+ * the header wins the 20-vs-21 comparison and paints OVER the mask — measured
+ * on a 24px elementFromPoint grid over the 1560×960 viewport, 106 samples
+ * resolved to the header as the top-most element while the modal was open, and
+ * the header keeps its own fill in dark chrome (a white strip above a dark
+ * dashboard). The widgets rail (`.dsx-stats-rail`, inside the composer seat's
+ * z-7 context) loses to the mask correctly — only the header escapes.
+ *
+ * dsh-widgets' hover magnifier escapes too, from the other direction:
+ * `.dsx-magnify-layer` is PORTALED to `<body>` (chain: magnify-layer >
+ * body.dsx-stats-active), `position: fixed`, `z-index: 26`, `opacity: 0` until
+ * the pointer reaches the rail. In the root stacking context 26 beats the
+ * trapped 20, so hovering the 组件 area painted magnified widget cards over the
+ * dashboard card (measured: 468 of 2600 grid points had rail descendants above
+ * `.lc-ov-card` while hovering, none before). A modal mask must not be
+ * crossable by hover, so the magnifier yields while a dsh-context backdrop is
+ * up instead of being re-z-indexed — the rail under an open modal is inert
+ * anyway, and `display: none` on a `pointer-events: none` paint layer cannot
+ * change the modal's own hit-testing (verified in
+ * scripts/probes/views/verify-context-overview-harmony.mjs).
+ *
+ * The gate is the backdrop's own presence, so the whole frame keeps its normal
+ * z order the moment the panel closes. `div:has(> [data-slot='shell.overlay'])`
+ * is the hash-independent anchor for that outlet.
+ *
+ * SELECTOR SHAPE: one `:global()` around the WHOLE selector, because this repo
+ * compiles CSS Modules with `pattern: '[hash]_[local]'` and every class here is
+ * foreign (caught the hard way in rail-vs-context-view.module.css). */
+:global(body:has(.lc-ov-backdrop) div:has(> [data-slot='shell.overlay'])) {
+  z-index: 300;
+}
+:global(body:has(.lc-ov-backdrop) .dsx-magnify-layer) {
+  display: none;
+}

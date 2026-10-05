@@ -1,18 +1,17 @@
 /**
  * Harness UI Harmonizer — browser half entry (assembly root).
  *
- * Four slots are registered (all through `ctx.slots.inject`, so each one is
+ * Three slots are registered (all through `ctx.slots.inject`, so each one is
  * unregistered with the fiber):
  *
  *   1. `settings.general.item` id `ui-enhancer-header`, order -100 — GeneralHeader
  *   2. `settings.general.item` id `ui-enhancer`,        order  30 — SettingsGeneralRow
- *   3. `shell.overlay`         id `enhancer-center-card`, order 30 — CenterColCard
- *   4. `settings.section`      id `ui-harmony`,         order  40 — DoctorView
+ *   3. `settings.section`      id `ui-harmony`,         order  40 — DoctorView
  *
  * One shared EnhancerState lives in the apply closure; the two settings rows
  * receive it plus an onApply callback that mutates it and pushes CSS.
  *
- * ELEVEN effects are installed, in this order — the order is a LAYOUT CONTRACT,
+ * THIRTEEN effects are installed, in this order — the order is a LAYOUT CONTRACT,
  * not a detail: the mounters below assume the earlier ones already published
  * their CSS variables and declared their surfaces, and the two DOM moves run
  * before the header reconciler so it sees the final header row.
@@ -26,8 +25,12 @@
  *   7. row popup width       — pin a portalled menu to its launcher row
  *   8. stylesheet keeper     — restore a hand-injected sheet the loader stole
  *   9. frame track animation — keep the column-track transition, minus resize
- *  10. native-title tooltips — replace the OS tooltip with the product's bubble
- *  11. third-party text      — normalize foreign provider strings (text only)
+ *  10. instant track         — snap the track on a right-panel toggle, glide the
+ *                             content with covers (after 9: it wraps our tween)
+ *  11. header badge fit      — retire header badges as the row narrows (after 10,
+ *                             and after the two DOM moves: it measures that row)
+ *  12. native-title tooltips — replace the OS tooltip with the product's bubble
+ *  13. third-party text      — normalize foreign provider strings (text only)
  *
  * The four slots are registered AFTER those effects, so the surfaces they render
  * always find the styles and root classes already in place. The fiber's effect
@@ -48,7 +51,6 @@ import { applyState, disposeDynamicStyle } from './core/apply.ts'
 import { loadState } from './core/state-store.ts'
 import type { EnhancerState } from './core/state-model.ts'
 import { FONT_PRESETS } from './self/font-presets.ts'
-import { CenterColCard } from './harness/center-card.tsx'
 import { mountTitleTooltips } from './harness/chrome/title-tooltip.ts'
 import { mountTextAdapters } from './core/text-adapters.ts'
 import { COMMANDCODE_TEXT_ADAPTERS } from './plugins/commandcode-provider/adapters.ts'
@@ -59,6 +61,8 @@ import { mountSettingsPageHeaders } from './harness/settings-header/reconciler.t
 import { mountMenuAnchorWidth } from './harness/chrome/menu-anchor.ts'
 import { mountStyleKeeper } from './harness/chrome/style-keeper.ts'
 import { mountFrameTrackTransition } from './harness/chrome/frame-track.ts'
+import { mountInstantTrack } from './harness/chrome/instant-track.ts'
+import { mountHeaderFit } from './harness/header-fit.ts'
 
 /**
  * Plugin id stamped on every style tag we own, and the label on every
@@ -90,23 +94,16 @@ export function apply(ctx: ClientContext): void {
   )
   ctx.effect(() => () => harmony.dispose(), `${PLUGIN_ID}: harmony contract`)
 
-  // Declare our own surfaces so the Doctor's inventory is not empty and any
-  // co-tenant can avoid them by reading the contract rather than our CSS.
+  // Declare our own surface so the Doctor's inventory is not empty and any
+  // co-tenant can avoid it by reading the contract rather than our CSS.
   ctx.effect(() => {
     const disposers = [
-      harmony.service.registerSurface({
-        id: 'dsh-ui-harmonizer:center-card',
-        role: 'frame-overlay',
-        tokens: ['--dsw-alias-border-l2', '--dsw-shadow-lv3', '--enhc-solid-fill'],
-        opaque: false,
-        note: 'transparent shadow/border caster over the center column; paints no fill of its own',
-      }),
       harmony.service.registerSurface({
         id: 'dsh-ui-harmonizer:settings-rows',
         role: 'settings-page',
         tokens: ['--dsw-alias-border-l2', '--dsw-alias-state-business-primary'],
         opaque: false,
-        note: 'five rows in Settings → General, plus the UI Compatibility page',
+        note: 'the rows in Settings → General, plus the UI Compatibility page',
       }),
     ]
     return () => { for (const dispose of disposers) dispose() }
@@ -265,12 +262,35 @@ export function apply(ctx: ClientContext): void {
   // which React sets in a layout effect on the SAME commit that writes the new
   // track, so the before-change style carries no transition and none ever runs:
   // the conversation column snaps to its new width instead of gliding, and
-  // every consumer of that clock (this plugin's center-card overlay, the
-  // viewArea/composerSeat squeeze above, dsh-widgets' rail yield) loses its
-  // animation with it. The stylesheet keeps the transition on the frame
-  // permanently; this module owns the one exclusion the product implements in
-  // JS rather than CSS — a window resize.
+  // every consumer of that clock (the viewArea/composerSeat squeeze above,
+  // dsh-widgets' rail yield) loses its animation with it. The stylesheet keeps
+  // the transition on the frame permanently; this module owns the one exclusion
+  // the product implements in JS rather than CSS — a window resize.
   ctx.effect(() => mountFrameTrackTransition(), `${PLUGIN_ID}: frame track animation`)
+
+  // Right-panel toggles need the OPPOSITE treatment from the rest of the
+  // frame. The track transition above is right for the left panel, whose track
+  // change costs one relayout; a right-panel toggle rewrites the same LAYOUT
+  // property while the center track travels 1427px -> 659px, so every frame of
+  // the 300ms ease re-lays out the whole frame (the product's own
+  // ResizeObserver wakes 27 times against 10, and the main thread spends the
+  // window in UpdateLayoutTree). This mounter collapses that tween to a single
+  // frame on a right-panel click — capture phase, so the class is in place
+  // before the product writes the new track — and re-adds the motion as a
+  // `transform` cover on the transcript column plus a `left` cover on the
+  // composer capsule, both of which glide without re-laying out. Registered
+  // after the track mounter because it tunes the tween that one installs; the
+  // `enhc-panel-glide` root class applyState writes is what arms it, so with
+  // the Settings switch off this effect is inert.
+  ctx.effect(() => mountInstantTrack(), `${PLUGIN_ID}: instant track + panel glide`)
+
+  // Header badge fit (header-fit.ts). The stylesheet makes the tab strip
+  // unshrinkable, which moves the whole cost of a narrowing header onto the
+  // session title; this decides how much of the row the badges may keep, in the
+  // order the user asked for (标准模式 -> 智能体团队 -> 子智能体), and gives them
+  // back when the row grows. Registered after the two DOM moves above, because
+  // it measures the row they build.
+  ctx.effect(() => mountHeaderFit(), `${PLUGIN_ID}: header badge fit`)
 
   // Tooltip harmonizer: elements that only carry the raw HTML `title`
   // attribute (model selector trigger, various product controls) pop the
@@ -311,14 +331,6 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('settings.general.item', () => ctx.slots.register(
     { name: 'settings.general.item', id: 'ui-enhancer', order: 30 },
     () => React.createElement(SettingsGeneralRow, surfaceProps),
-  ))
-
-  // Passive rounded-card chrome over the center column. Always mounted (cheap
-  // geometry tracking); its paint is toggled by the enhc-center-card-on root
-  // class, which applyState flips from the Settings switch — no re-render.
-  ctx.slots.inject('shell.overlay', () => ctx.slots.register(
-    { name: 'shell.overlay', id: 'enhancer-center-card', order: 30 },
-    () => React.createElement(CenterColCard),
   ))
 
   // Harmony Doctor page: a local, read-only compatibility audit. It renders in

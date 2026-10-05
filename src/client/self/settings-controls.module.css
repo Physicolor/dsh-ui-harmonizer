@@ -1,7 +1,7 @@
 /* @dsh-split-header
- * self/settings-controls.module.css - Serves: this plugin's own settings-row controls: `.uitw-stepper*`, `.uitw-segmented*`, `.uitw-switch*`.
+ * self/settings-controls.module.css - Serves: this plugin's own settings-row controls: `.uitw-stepper*`, `.uitw-select*`, `.uitw-switch*`.
  * Why here: `.uitw-*` is this plugin's control namespace (components.tsx renders it).
- * Origin: src/client/enhancer.module.css L327-L485, byte-identical below; this header is the only addition.
+ * Origin: src/client/enhancer.module.css L327-L485; the segmented block has since been replaced by the official Select (see below).
  */
 /* Product stepper control — the official theme's FontSizeRow recipe, reused so
  * every numeric row in this block speaks the product's own vocabulary instead
@@ -15,7 +15,9 @@
 }
 :global(.uitw-stepper) {
   background: var(--dsw-alias-bg-module-platform);
-  border-radius: 18px;
+  /* Re-measured 2026-10-01 on the product's own numeric row (字号大小): the pill
+   * is radius var(--dsw-radius-md) 12 — it used to be 18 here. */
+  border-radius: var(--dsw-radius-md, 12px);
   justify-content: center;
   align-items: center;
   min-width: 72px;
@@ -51,7 +53,8 @@
   color: var(--dsw-alias-label-primary);
   cursor: pointer;
   border: none;
-  border-radius: 3px;
+  /* Measured on the product's row: 4px, not 3. */
+  border-radius: 4px;
   justify-content: center;
   align-items: center;
   padding: 0;
@@ -70,37 +73,66 @@
   line-height: 22px;
 }
 
-/* Segmented control — the product's selector-pill recipe, two options wide.
- * Reused by the font-scope row (对话正文 / 整个界面); the active segment takes
- * the business-blue fill with inverted text, exactly like the product's own
- * navigation cells. */
-:global(.uitw-segmented) {
+/* Select — the product's OWN settings Select, declaration for declaration.
+ *
+ * Source: the live CSSOM and computed geometry, read by
+ * `scripts/probes/settings/probe-official-select.mjs --clean` (that flag
+ * disables our own sheets first, so these are the product's numbers and not a
+ * copy of our own previous override). Trigger: 36px tall, radius
+ * var(--dsw-radius-md), `--dsw-alias-bg-module-platform`, no border, padding
+ * 0 14, gap 12, 14px/22px, chevron 14px STROKE glyph, hover
+ * `--dsw-alias-interactive-bg-hover`. Menu: radius var(--dsw-radius-lg), padding
+ * 4, width 144..360, `--dsw-elevation-prominent`, and a translucent MATERIAL
+ * layer behind the rows — `--dsw-menu-surface-fill` over
+ * `backdrop-filter: var(--dsw-menu-backdrop-filter)` — which is where the
+ * half-transparent look comes from. Rows: 13px/20px, min-height 34, padding 6 8,
+ * radius var(--dsw-radius-md), gap 6, hover interactive-bg-hover.
+ *
+ * REPLACED 2026-09-30: this block used to be `.uitw-segmented*`, the product's
+ * selector-PILL recipe. The pill is the product's view switcher (内置插件/市场),
+ * not how a settings VALUE is picked — the product uses this Select even for
+ * two-option values (语言). The font-scope row now uses it too. */
+:global(.uitw-select-wrap) {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+}
+:global(.uitw-select) {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 20px;
+  gap: 12px;
+  height: 36px;
+  max-width: 100%;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--dsw-radius-md, 12px);
   background: var(--dsw-alias-bg-module-platform);
-}
-:global(.uitw-segment) {
-  appearance: none;
-  border: none;
-  border-radius: 16px;
-  padding: 6px 14px;
-  font: var(--dsw-font-s-14, 14px/22px var(--dsw-font-family));
   color: var(--dsw-alias-label-primary);
-  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background var(--ds-transition-duration-fast) var(--ds-ease-in-out);
 }
-:global(.uitw-segment:hover:not(.uitw-segment-on)) {
+:global(.uitw-select:hover:not(:disabled)) {
   background: var(--dsw-alias-interactive-bg-hover);
 }
-:global(.uitw-segment-on) {
-  background: var(--dsw-alias-state-business-primary);
-  color: #fff;
+:global(.uitw-select:disabled) {
+  cursor: default;
 }
+:global(.uitw-select-label) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+:global(.uitw-select-chevron) {
+  flex: none;
+}
+/* (no surface/row rules here any more: the popup is the product's own Menu —
+ * `harness/controls/select-control.tsx` renders `primitives.Menu`, whose
+ * Menu.module.css / MenuSurface.module.css ship with the product. Hand-written
+ * surface, material, row and check rules were deleted on 2026-09-30.) */
 
 /* Switch — the product's OWN Switch, declaration for declaration.
  *

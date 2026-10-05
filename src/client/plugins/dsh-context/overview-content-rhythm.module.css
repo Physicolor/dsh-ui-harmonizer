@@ -1,0 +1,39 @@
+/* @dsh-split-header
+ * plugins/dsh-context/overview-content-rhythm.module.css - Serves: the cards and card grids inside dsh-context's 上下文洞察 dashboard.
+ * Why here: the tiles are dsh-context's; the card recipe they have to match is the product's settings cards.
+ * Origin: NEW (2026-10-03) — not a slice of the pre-split enhancer.module.css.
+ */
+/* ── inner cards take the official card recipe ─────────────────────────
+ *
+ * The dashboard's tiles (`.lc-card` inside `.lc-ov-card`) carried dsh-context's
+ * own card shape: `border-radius: 10px`, `padding: 14px 16px`, `margin-bottom:
+ * 14px`. The product's settings surfaces use ONE card recipe, measured live on
+ * the Plugins / Models pages of the settings window (2026-10-03, DSH 0.2.0-rc.2):
+ *
+ *   .RotMhW_card      { border-radius: 20px; border: 1px solid <border-l2> }
+ *   ._3nPmjq_rowCard  { border-radius: 20px; padding: 12px 14px; gap: 12px }
+ *   .pbvGtq_cards     { gap: 10px }      ← the card list's own gap
+ *
+ * and the section container's rhythm is 12px (`settings.section`, see
+ * docs/settings-section-style.md), with 10px inside card lists and 8px inside a
+ * sub-group.
+ *
+ * The reconciliation is deliberately the CARD only (radius, padding) plus the
+ * one gap that was off the official series: the KPI band is a card list, so its
+ * 8px becomes the official 10px. Every other container inside the dashboard
+ * already sits on 10px (stats / body / left column / session grid) and is left
+ * untouched — changing them would be taste, not reconciliation.
+ *
+ * The window behind these cards is `bg-layer-2` (overview-window-shell), while
+ * the cards keep dsh-context's `bg-layer-1`, so the nesting reads light-on-dark
+ * exactly as the official pages do in dark chrome.
+ *
+ * SELECTOR SHAPE: whole selector inside one `:global()` (see
+ * rail-vs-context-view.module.css for why). */
+:global(.lc-ov-card .lc-card) {
+  border-radius: 20px;
+  padding: 12px 14px;
+}
+:global(.lc-ov-card .lc-ov-kpis) {
+  gap: 10px;
+}

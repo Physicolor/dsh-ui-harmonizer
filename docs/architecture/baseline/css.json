@@ -1,5 +1,5 @@
 {
- "__combined": "e8ab2a0f8d154f4b0882c146a46b3db0fe029a8c3babaede40c686714d536d52",
+ "__combined": "ca953bd5d7e8c4e87c9edd6d3643449fb75a20488ffdd93bd18d618d925aa96e",
  "sheets": {
   "dsh-ui-harmonizer/sheet-tokens.module.css": {
    "sha256": "fc1802bb3f57cdb8f80d9cb1320e700492f81544411cac9a83bcce9e2bbfc276",
@@ -14,8 +14,8 @@
    "bytes": 609
   },
   "dsh-ui-harmonizer/composer-and-menu.module.css": {
-   "sha256": "9b066cd5c923312e932d2dc53e59ec4d6fcc78915f425e8d40ea7c2a3917eb42",
-   "bytes": 1590
+   "sha256": "934db1d0a14fd2b40d4a4ff06a29b8e09911b8d7fef5f1c9bbfb7c2887932c7c",
+   "bytes": 978
   },
   "dsh-ui-harmonizer/sidebar-chrome.module.css": {
    "sha256": "b92508cd4b0195af04df46ac89a3cba0e6b157d4ad284fe6420ace18d3761c30",
@@ -30,8 +30,8 @@
    "bytes": 676
   },
   "dsh-ui-harmonizer/settings-controls.module.css": {
-   "sha256": "4b7d299c7a1696ce9cee4cefd1356823cdfa23df15cab153e45e489a653462a4",
-   "bytes": 2660
+   "sha256": "f4ad51b0dcf855e0fa343ce93591db64ea055c0ea8c9ca09184d51dfa2fe5203",
+   "bytes": 2697
   },
   "dsh-ui-harmonizer/genui-switch.module.css": {
    "sha256": "eb0e448ade2f34b7f1a90ddfb9e1a080d026d854b8be7f9c07c80548feffc6a2",
@@ -54,8 +54,8 @@
    "bytes": 359
   },
   "dsh-ui-harmonizer/session-header.module.css": {
-   "sha256": "f6e2fd4b02b3a40e355a42606290193523838acdaa657b1c4fdcaf2b4b3980be",
-   "bytes": 828
+   "sha256": "2ca258fab9b29fd29a392a075ced8a9aa527c6e922f9208923b5a4d60a16f803",
+   "bytes": 906
   },
   "dsh-ui-harmonizer/panel-tabs.module.css": {
    "sha256": "ea064378265c6982642eed26e8c64f7bc4b6d47b27b0107dc6fc850dc25b71a3",
@@ -74,16 +74,36 @@
    "bytes": 149
   },
   "dsh-ui-harmonizer/frame-column-transition.module.css": {
-   "sha256": "cdd18bfcb710718cb4211e6631e7e984ea2a892754e77f9a247b3a7558b37eff",
-   "bytes": 169
+   "sha256": "e9ed032845fb5d4878ec26ca38229b8c3542c74bf586d6542b00de5a2df1c5c2",
+   "bytes": 669
   },
   "dsh-ui-harmonizer/rail-overlay-squeeze.module.css": {
    "sha256": "31514124ed7783ab2bb6310da58d054d0e37acb08e078e8c71e6de000ed673fc",
    "bytes": 183
   },
-  "dsh-ui-harmonizer/center-card-overlay.module.css": {
-   "sha256": "7c93297bf337c08784c3889e85f76894b149a154e5375c94838ace174dabf2c2",
-   "bytes": 804
+  "dsh-ui-harmonizer/rail-vs-context-view.module.css": {
+   "sha256": "f40377dfdd15fe13b9a50203a07a39b5b5eacb1319e5f5de64be3c71894d5663",
+   "bytes": 228
+  },
+  "dsh-ui-harmonizer/overview-modal-layer.module.css": {
+   "sha256": "d6e0a586c4134357bda6153c089463a8fc234adf9a092c26e5dff0cf0160898b",
+   "bytes": 133
+  },
+  "dsh-ui-harmonizer/overview-window-shell.module.css": {
+   "sha256": "b379d629f8c9ea1eeb60efa79517e527eefc31836c0d04dc4193a9353fb09837",
+   "bytes": 562
+  },
+  "dsh-ui-harmonizer/overview-content-rhythm.module.css": {
+   "sha256": "88044eaa93fe190ab568dd0c7213e8853995a72819d8fde62bd0f26b0baa7e23",
+   "bytes": 91
+  },
+  "dsh-ui-harmonizer/entry-icon-monochrome.module.css": {
+   "sha256": "b1d10eeba1f6ab01fa7e73d1d63ca7ec38afbd610ae5bdd68dd1266919d236b0",
+   "bytes": 57
+  },
+  "dsh-ui-harmonizer/dark-active-pill.module.css": {
+   "sha256": "4c94b4ffd83407a4be2293aad04e35472e67db2f313a25733508f6eb494961ba",
+   "bytes": 300
   },
   "dsh-ui-harmonizer/doctor-page.module.css": {
    "sha256": "aabd0955bfeb4a317411b83fa3fd82a751c6b331682405c7f1494c523b85f85e",

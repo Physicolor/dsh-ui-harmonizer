@@ -95,11 +95,14 @@ export function getFontMissingLabel(): string {
   return isZh() ? '未安装' : 'not installed'
 }
 
-export function getRowCardTitle(): string {
-  return isZh() ? '圆角卡片' : 'Rounded Card'
+/** Right-panel toggle: snap the frame track, glide the content on the compositor. */
+export function getRowPanelGlideTitle(): string {
+  return isZh() ? '侧栏开合平顺' : 'Smooth Panel Toggle'
 }
-export function getRowCardDesc(): string {
-  return isZh() ? '将对话区域显示为左上圆角的卡片，附投影' : 'Display the chat area as a rounded card with shadow'
+export function getRowPanelGlideDesc(): string {
+  return isZh()
+    ? '右侧栏展开/收起时不再逐帧重排整个界面：轨道一步到位，正文与输入框改由合成层平移'
+    : 'Stop the right panel toggle from re-laying out the whole frame each frame: the grid track snaps and the transcript and composer glide on the compositor'
 }
 
 /* ------------------------------------------------------------------ */

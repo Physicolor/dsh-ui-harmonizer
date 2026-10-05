@@ -1,0 +1,37 @@
+/* @dsh-split-header
+ * plugins/dsh-context/entry-icon-monochrome.module.css - Serves: dsh-context's ContextIcon where the product chrome draws it.
+ * Why here: the emblem is dsh-context's; the icon language it has to join is the product's.
+ * Origin: NEW (2026-10-02) — not a slice of the pre-split enhancer.module.css.
+ */
+/* ── the polychrome sheet in a monochrome icon row ─────────────────────
+ *
+ * dsh-context ships one emblem (`ContextIcon`, an inlined `icon.svg` of ten
+ * paths with FIXED hex fills — `#4A5699`, `#C45FA0`, `#6277BA`, `#E5594F`,
+ * `#F0D043`, `#F39A2B`; its own source comment states the sheet is
+ * "deliberately polychrome … Fixed fills, never currentColor") and paints it in
+ * two chrome seats:
+ *
+ *   - `.lc-ov-entry-icon`  — the 16px glyph of the `sidebar.footer.action` entry
+ *     上下文洞察, next to 用量中心 / 远程控制 / 设置;
+ *   - `.lc-ov-head-icon`   — the same glyph at the dashboard's title row.
+ *
+ * Both rows are otherwise single-colour: measured on the live page (identity
+ * icons on the same foot bar), 用量中心 is a 16×16 `fill="none"`/`currentColor`
+ * glyph and 远程控制 is the product's 16×16 lucide outline (`stroke="currentColor"`,
+ * `stroke-width="1.5"`), i.e. the row's language is one colour inherited from
+ * the label. The 1024-unit sheet is the only multicolour mark in it, and it
+ * does not follow the label colour at all (fixed hexes), so it reads as a
+ * foreign badge in both themes.
+ *
+ * The reconciliation is the paint only: every shape resolves to `currentColor`,
+ * so the sheet becomes a document glyph in the label's colour and follows the
+ * theme with zero coupling to dsh-context's internals. CSS declarations beat
+ * SVG presentation attributes, so the `fill="…"` attributes lose without any
+ * markup change (the plugin keeps rendering its own file untouched).
+ *
+ * SELECTOR SHAPE: whole selector inside one `:global()` (see
+ * rail-vs-context-view.module.css for why). */
+:global(.lc-ov-entry-icon *),
+:global(.lc-ov-head-icon *) {
+  fill: currentColor;
+}

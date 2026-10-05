@@ -33,7 +33,6 @@ const SNAP = label => `(() => {
   const R = el => { const r = el.getBoundingClientRect(); return { x: +r.x.toFixed(1), y: +r.y.toFixed(1), w: +r.width.toFixed(1), h: +r.height.toFixed(1) } }
   const header = document.querySelector("[data-slot='conversation.header'] > header")
   const scr = document.querySelector('[data-conversation-scroll]')
-  const card = document.querySelector('.enhc-center-card')
   const tabs = document.querySelector("[class*='_tabs']")
   return {
     label: ${JSON.stringify(label)},
@@ -41,7 +40,6 @@ const SNAP = label => `(() => {
     header: header === null ? null : { cls: String(header.className), rect: R(header), pad: getComputedStyle(header).padding, minH: getComputedStyle(header).minHeight, border: getComputedStyle(header).borderBottom },
     scroll: scr === null ? null : { cls: String(scr.className).slice(0, 40), rect: R(scr), padTop: getComputedStyle(scr).paddingTop },
     tabs: tabs === null ? null : { rect: R(tabs), parent: String(tabs.parentElement.className).slice(0, 40) },
-    card: card === null ? null : { cls: String(card.className), rect: R(card), display: getComputedStyle(card).display },
     titleCluster: (() => { const el = document.querySelector("[class*='_titleCluster']"); return el === null ? null : { rect: R(el) } })(),
   }
 })()`
@@ -74,32 +72,5 @@ await page.evaluate(() => {
 })
 await page.waitForTimeout(3000)
 await snap('blank')
-
-/* 3) rounded center card ON: wrapped mode must be restored by the new anchor */
-await page.evaluate(() => {
-  const raw = localStorage.getItem('harness-ui-enhancer.state')
-  const state = raw === null ? {} : JSON.parse(raw)
-  state.card = true
-  localStorage.setItem('harness-ui-enhancer.state', JSON.stringify(state))
-})
-await page.reload({ waitUntil: 'domcontentloaded' })
-await page.waitForTimeout(5000)
-await page.evaluate(t => {
-  const rows = [...document.querySelectorAll("[data-slot='sidebar.workspaces'] [class*='_sessionRow']")]
-  const row = rows.find(r => (r.textContent ?? '').includes(t))
-  if (row !== undefined) row.click()
-}, TITLE)
-await page.waitForTimeout(3500)
-await snap('card-on')
-await page.screenshot({ path: `${OUT}/card-on-full.png` })
 writeFileSync(`${OUT}/states.json`, JSON.stringify(shots, null, 2), 'utf8')
-
-/* restore the probe profile's own state so reruns start clean */
-await page.evaluate(() => {
-  const raw = localStorage.getItem('harness-ui-enhancer.state')
-  if (raw === null) return
-  const state = JSON.parse(raw)
-  state.card = false
-  localStorage.setItem('harness-ui-enhancer.state', JSON.stringify(state))
-})
 await context.close()

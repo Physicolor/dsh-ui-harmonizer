@@ -28,8 +28,9 @@ export declare function getScopeContentLabel(): string;
 export declare function getScopeUiLabel(): string;
 /** Suffix on a preset the machine does not have installed. */
 export declare function getFontMissingLabel(): string;
-export declare function getRowCardTitle(): string;
-export declare function getRowCardDesc(): string;
+/** Right-panel toggle: snap the frame track, glide the content on the compositor. */
+export declare function getRowPanelGlideTitle(): string;
+export declare function getRowPanelGlideDesc(): string;
 export declare function getFontLabel(id: string): string;
 export declare function getDoctorSectionLabel(): string;
 export declare function getDoctorTitle(): string;

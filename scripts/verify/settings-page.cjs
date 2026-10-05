@@ -49,7 +49,7 @@ const READ_PAGE = () => {
   const box = (el) => { const r = el.getBoundingClientRect(); return [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)] }
   const cs = (el, p) => getComputedStyle(el).getPropertyValue(p).trim()
   const text = document.body.innerText
-  const labels = ['通用设置', '对话内容宽度', '工作区字号', '字体', '字体作用范围', '圆角卡片', 'UI 兼容性', '运行检查']
+  const labels = ['通用设置', '对话内容宽度', '工作区字号', '字体', '字体作用范围', '侧栏开合平顺', 'UI 兼容性', '运行检查']
   const enhc = [...document.querySelectorAll("[class*='enhc-']")]
   return {
     labels: Object.fromEntries(labels.map((l) => [l, text.includes(l)])),
@@ -86,6 +86,14 @@ const READ_PAGE = () => {
 
   const general = page.getByText('通用', { exact: true }).first()
   if (await general.count()) { await general.click({ timeout: 6000 }).catch(() => {}); await page.waitForTimeout(1500) }
+
+  // Our block sits below the product's own rows, so the default screenshot would
+  // not show it at all. Bring the last of our rows into view before recording.
+  const lastRow = page.getByText('侧栏开合平顺', { exact: true }).first()
+  if (await lastRow.count()) {
+    await lastRow.scrollIntoViewIfNeeded({ timeout: 4000 }).catch(() => {})
+    await page.waitForTimeout(600)
+  }
 
   const page1 = await page.evaluate(READ_PAGE)
   fs.mkdirSync(path.dirname(OUT), { recursive: true })

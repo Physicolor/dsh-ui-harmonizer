@@ -1,18 +1,17 @@
 /**
  * Harness UI Harmonizer — browser half entry (assembly root).
  *
- * Four slots are registered (all through `ctx.slots.inject`, so each one is
+ * Three slots are registered (all through `ctx.slots.inject`, so each one is
  * unregistered with the fiber):
  *
  *   1. `settings.general.item` id `ui-enhancer-header`, order -100 — GeneralHeader
  *   2. `settings.general.item` id `ui-enhancer`,        order  30 — SettingsGeneralRow
- *   3. `shell.overlay`         id `enhancer-center-card`, order 30 — CenterColCard
- *   4. `settings.section`      id `ui-harmony`,         order  40 — DoctorView
+ *   3. `settings.section`      id `ui-harmony`,         order  40 — DoctorView
  *
  * One shared EnhancerState lives in the apply closure; the two settings rows
  * receive it plus an onApply callback that mutates it and pushes CSS.
  *
- * ELEVEN effects are installed, in this order — the order is a LAYOUT CONTRACT,
+ * THIRTEEN effects are installed, in this order — the order is a LAYOUT CONTRACT,
  * not a detail: the mounters below assume the earlier ones already published
  * their CSS variables and declared their surfaces, and the two DOM moves run
  * before the header reconciler so it sees the final header row.
@@ -26,8 +25,12 @@
  *   7. row popup width       — pin a portalled menu to its launcher row
  *   8. stylesheet keeper     — restore a hand-injected sheet the loader stole
  *   9. frame track animation — keep the column-track transition, minus resize
- *  10. native-title tooltips — replace the OS tooltip with the product's bubble
- *  11. third-party text      — normalize foreign provider strings (text only)
+ *  10. instant track         — snap the track on a right-panel toggle, glide the
+ *                             content with covers (after 9: it wraps our tween)
+ *  11. header badge fit      — retire header badges as the row narrows (after 10,
+ *                             and after the two DOM moves: it measures that row)
+ *  12. native-title tooltips — replace the OS tooltip with the product's bubble
+ *  13. third-party text      — normalize foreign provider strings (text only)
  *
  * The four slots are registered AFTER those effects, so the surfaces they render
  * always find the styles and root classes already in place. The fiber's effect

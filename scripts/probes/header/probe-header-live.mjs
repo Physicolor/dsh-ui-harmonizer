@@ -64,7 +64,6 @@ const REPORT = () => {
   }
   /* Is the whole header class chain the same prefix on every node? */
   const roots = [...document.querySelectorAll("[class*='_header']")].map(el => `${el.tagName.toLowerCase()}.${String(el.className)} ${JSON.stringify(R(el))} pad=${getComputedStyle(el).padding} minH=${getComputedStyle(el).minHeight} display=${getComputedStyle(el).display}`)
-  const card = document.querySelector('.enhc-center-card')
   const rail = document.querySelector('[class*="dsx-stats-rail"], [class*="dsx-rail"]')
   const railInfo = {
     var: getComputedStyle(document.documentElement).getPropertyValue('--dsx-rail-top').trim(),
@@ -85,7 +84,6 @@ const REPORT = () => {
     rowGap: cs.rowGap, borderBottom: `${cs.borderBottomWidth}/${cs.borderBottomStyle}/${cs.borderBottomColor}`,
     after: { content: pa.content, height: pa.height, bottom: pa.bottom, bg: pa.backgroundColor, width: pa.width, left: pa.left, right: pa.right, display: pa.display, position: pa.position },
     before: { content: pb.content, height: pb.height, bg: pb.backgroundColor },
-    card: card === null ? null : { cls: String(card.className), rect: R(card), display: getComputedStyle(card).display, borderTop: getComputedStyle(card).borderTop, boxShadow: getComputedStyle(card).boxShadow.slice(0, 90) },
     rail: railInfo,
     matchedHeaderRules: htmlRules,
     kids, inner, tabsInfo, roots,

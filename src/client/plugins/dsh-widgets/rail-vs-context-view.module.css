@@ -1,0 +1,69 @@
+/* @dsh-split-header
+ * plugins/dsh-widgets/rail-vs-context-view.module.css - Serves: dsh-widgets' right rail while dsh-context's dashboard view hides the composer.
+ * Why here: the rail is dsh-widgets' surface; the hide it has to survive is dsh-context's.
+ * Origin: NEW (2026-10-02) — not a slice of the pre-split enhancer.module.css.
+ */
+/* ── the 组件 rail dies with the composer seat ───────────────────────
+ *
+ * dsh-widgets hosts its rail in the product's `conversation.input.overlay`
+ * seat, which sits INSIDE the composer seat. Measured chain (2026-10-02,
+ * DSH 0.2.0-rc.2, live desktop session):
+ *
+ *   dsx-stats-rail > dsx-surface > dsx-stats-drawer-zoom > dsx-stats-drawer >
+ *   [data-slot='conversation.input.overlay'] > …_overlayAnchor > …_card
+ *   [data-composer-card] > …_composerStack > [data-composer-seat]
+ *
+ * dsh-context hides that seat outright while its dashboard view is up
+ * (`dsh-context/base.css`):
+ *
+ *   [data-conversation-scroll]:has(.lc-root) > [data-composer-seat]:not(:has(
+ *     [data-approval-key], [data-question-key], [data-plan-review-key])) {
+ *     display: none }
+ *
+ * and `display: none` removes the whole subtree from the box tree — a
+ * `position: fixed` descendant included. Effect, measured 对话 → 上下文 with the
+ * rail on: every rail box (`.dsx-stats-rail`, `.dsx-stats-drawer`,
+ * `.dsx-wave-deck`) collapsed to 0×0 and all 14 `.dsx-stats-card-slot`s carried
+ * `dsx-slot-cut` — the entire 组件 area was gone, and it came back the moment
+ * the view switched to 对话 / 轨迹. That is the report this rule answers.
+ *
+ * dsh-context's hide is RIGHT (its dashboard owns the column and spends the
+ * full height), so the seat is not simply re-shown. It is put back into the box
+ * tree with ZERO layout footprint and clipped instead:
+ *
+ *   - `height: 0` + `min-height: 0` + `padding/margin: 0` → the dashboard keeps
+ *     its whole column (measured: `.lc-root` 2092.9px tall, unchanged by this
+ *     rule), and the seat adds no scroll length;
+ *   - `overflow: hidden` → the composer card is clipped away, so the input that
+ *     dsh-context removed stays invisible (measured `visibleArea: 0` even when
+ *     the seat is dragged to the viewport edge by its sticky bottom: 0);
+ *   - the rail still PAINTS because `position: fixed` escapes an ancestor's
+ *     `overflow: hidden` unless that ancestor is its containing block, and this
+ *     seat has `transform: none; filter: none; contain: none` (checked in the
+ *     same probe). Measured after the rule: rail 430×916 at (1130, 44) — the
+ *     same box as on 对话 — and five `elementFromPoint` samples inside it all
+ *     resolve to rail descendants, so it is hit-testable, not just painted.
+ *
+ * Gated on `body.dsx-stats-active` — dsh-widgets' own rail-active contract, the
+ * same gate `rail-overlay-squeeze.module.css` reads. With the rail off the seat
+ * stays hidden exactly as dsh-context shipped it, so a rail-less setup keeps the
+ * composer-less dashboard unchanged.
+ *
+ * The `:not(:has(…))` tail is dsh-context's own, mirrored verbatim: an open
+ * approval, question or plan-review keeps the full seat it is drawn in.
+ *
+ * SELECTOR SHAPE: one `:global()` around the WHOLE selector. Every class here
+ * is foreign (`dsx-stats-active` is dsh-widgets', `lc-root` is dsh-context's),
+ * and this repo compiles CSS Modules with `pattern: '[hash]_[local]'` — without
+ * the wrapper the build rewrote them to `._6JQQa_dsx-stats-active` /
+ * `._6JQQa_lc-root` and the rule matched nothing (caught by
+ * scripts/probes/views/verify-rail-under-context-view.mjs: the sheet was on the
+ * page, the rail still measured 0×0). */
+:global(body.dsx-stats-active [data-conversation-scroll]:has(.lc-root) > [data-composer-seat]:not(:has([data-approval-key], [data-question-key], [data-plan-review-key]))) {
+  display: flex;
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}

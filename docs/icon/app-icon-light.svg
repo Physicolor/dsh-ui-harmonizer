@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="dsh-ui-harmonizer">
+  <title>dsh-ui-harmonizer - light</title>
+  <defs>
+    <linearGradient id="rail" x1="279" y1="100" x2="233" y2="412" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8FC2FF"/>
+      <stop offset="1" stop-color="#145AF3"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="118" fill="#FFFFFF"/>
+  <rect x="88" y="128.5" width="86" height="106" rx="32" fill="#7CB7FF"/>
+  <rect x="88" y="277.5" width="118" height="106" rx="32" fill="#45D9E7"/>
+  <rect x="233" y="100" width="46" height="312" rx="23" fill="url(#rail)"/>
+  <rect x="316" y="128.5" width="104" height="106" rx="32" fill="#4A8CF7"/>
+  <rect x="316" y="277.5" width="104" height="106" rx="32" fill="url(#rail)"/>
+</svg>

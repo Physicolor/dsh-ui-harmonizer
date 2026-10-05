@@ -23,8 +23,8 @@ import type { EnhancerState } from './state-model.ts';
  */
 export declare function applyState(state: EnhancerState): void;
 /**
- * Dispose everything this module wrote: the inline font properties, the root
- * custom properties and the card class. Called from the plugin fiber's effect
- * disposer so stopping/updating the plugin leaves zero residue.
+ * Dispose everything this module wrote: the inline font properties and the root
+ * custom properties. Called from the plugin fiber's effect disposer so
+ * stopping/updating the plugin leaves zero residue.
  */
 export declare function disposeDynamicStyle(): void;

@@ -17,10 +17,8 @@
  *   - `data-animating` stayed on for 600ms and was then cleared by the
  *     component's own fallback timer (the transitionend path never ran).
  * The conversation therefore SNAPS to its new width instead of gliding, and
- * every consumer of that clock loses it with the animation: this plugin's
- * center-card overlay (card-overlay.tsx, which waits for transitionrun before
- * switching to its free ResizeObserver path), dsh-widgets' rail yield (whose
- * `--dsx-rail-right` pin is read on the track's first frame) and the
+ * every consumer of that clock loses it with the animation: dsh-widgets' rail
+ * yield (whose `--dsx-rail-right` pin is read on the track's first frame) and the
  * viewArea/composerSeat margin squeeze declared above — which is why the panel
  * sweep read as "the column jumped left, then the width grew".
  *
@@ -39,5 +37,133 @@
 }
 :global(html.enhc-window-resizing [class$='_frame']) {
   transition: none;
+}
+/* ---- …but on a RIGHT-PANEL toggle the ease is the wrong trade ------------
+ *
+ * A right-panel toggle rewrites `grid-template-columns`, i.e. a LAYOUT
+ * property on the AppFrame: every frame of the 300ms ease re-lays out the whole
+ * frame (measured: center column 1640px -> 776px, scrollHeight 10857 -> 10929
+ * every frame, the product's own ResizeObserver waking per frame — 27 callbacks
+ * vs 10 on a left-panel toggle), and the main thread spends that window in
+ * UpdateLayoutTree instead of painting. The visible result is the conversation
+ * area arriving in lurches at 3-4 frames while everything else is smooth.
+ *
+ * `html[data-enhc-instant]` (added by instant-track.ts for the duration of a
+ * right-panel toggle, capture-phase, so it is in place BEFORE the product
+ * writes the new track) collapses the tween to a single frame. It is an
+ * attribute, not a class, because the theme observer on `<html>`'s `class`
+ * triggers a material rebuild (measured 6.74ms per class write, 0.02ms per
+ * attribute write); see `INSTANT_ATTR` in instant-track.ts. The track still
+ * fires transitionrun/start/end — dsh-widgets' rail yield reads that beat — and
+ * the product's own panel slide (`transform` on its dock, 300ms) still runs on
+ * the compositor. The motion the ease was providing is restored by
+ * instant-track.ts as a compositor `transform` cover on the transcript column
+ * plus a `left` cover on the composer capsule, which glide without re-laying
+ * out the frame.
+ *
+ * A window resize still wins: the resize rule above is evaluated first for
+ * equality — but the duration here is `!important`, so the two must agree on
+ * what "instant" means, and they do (0.001s vs the resize rule's `none`).
+ *
+ * The duration stays NON-ZERO, and that is load-bearing for SYNC. A transition
+ * with a non-zero duration does not move the computed value in the style recalc
+ * that starts it — the computed track is still the OLD one for that whole
+ * rendering step, so the frame only re-lays out on the NEXT one (measured in
+ * isolation on a 700px->200px width with `transition: width 0.001s`: the frame
+ * that starts it reads 700px, the one after reads 200px). The right panel's own
+ * slide has no such delay, so a toggle would paint the panel already moving
+ * while the transcript was still where it was — the residual "the panel arrives
+ * first, the column then catches up". `0s` would remove the delay but it also
+ * removes the transition itself, and the product's own ResizeObserver is not the
+ * only consumer of that beat: dsh-widgets' rail yield reads the frame's
+ * `transitionrun` for `grid-template-columns` (measure.ts:161-167) and falls
+ * back to 240/520ms polling without it.
+ *
+ * `instant-track.ts` therefore keeps the transition and finishes it: in the
+ * mutation microtask of the product's own track write it calls `finish()` on
+ * every ~0ms CSS transition the gate created, which settles the computed value
+ * in the SAME task and leaves `transitionrun`/`transitionstart`/`transitionend`
+ * intact. The cover is then armed in that same task, so it and the panel's
+ * slide share one start frame instead of being one or more frames apart.
+ *
+ * `_scrollBody` is collapsed by the SAME rule as a SAFETY NET, not because it
+ * was caught easing. The reasoning that put it here: if the viewport's
+ * `padding-right` were ever eased over the same 300ms while the track snapped,
+ * the two halves would disagree — the track would be instantly 1427px wide
+ * while the padding was still 0px, so the content box would momentarily be the
+ * full 1425px and the column would centre at x=647 instead of 386, a +261px
+ * overshoot (measured per frame on an earlier build: 312 -> 647 -> 325 -> 368
+ * -> 384 -> 386; the OFF arm was monotone 312 -> 336 -> 364 -> 383 -> 386
+ * because there the track eased in step with the padding). On the 22 arms
+ * captured for the handoff that case did NOT occur: `padding-right` on
+ * `scrollBody` read `0px` in every sample, there was never a
+ * `padding-right@scrollBody` transition event, and `scrollBody.getAnimations()`
+ * was empty in the settle microtask. The selector therefore costs nothing today
+ * and is kept for the case where the product starts easing that padding. The
+ * one part of the old reasoning that is NOT explained by the current evidence is
+ * the +261px overshoot itself: it was measured per frame on an earlier build,
+ * and with `padding-right` constant it cannot have come from that padding, so
+ * its cause is still open (the `pin`/`hold` cover that build carried is the
+ * prime suspect — it re-pinned the painted edge to a stale `before`).
+ *
+ * The gate also carries `enhc-panel-glide`, the class core/apply.ts flips from
+ * the "Panel glide" switch, so turning the option off leaves the eased track
+ * exactly as it was before this file grew the rule. */
+:global(html.enhc-panel-glide[data-enhc-instant] [class$='_frame']),
+:global(html.enhc-panel-glide[data-enhc-instant] [class$='_scrollBody']) {
+  transition-duration: 0.001s !important;
+}
+/* ---- …and the OPEN direction is missing its slide entirely ----------------
+ *
+ * The product's occupant owns two rules (module `OUqwTW`):
+ *
+ *   [data-dockkit-host=dock]                        { transform: translateX(var(--dsh-sidebar-width));
+ *                                                     visibility: hidden;
+ *                                                     transition: transform .3s, visibility 0s linear .3s }
+ *   [data-sidebar-right-open] [data-dockkit-host=dock] { transform: none; visibility: visible;
+ *                                                     transition: transform .3s }
+ *
+ * so the slide is written for BOTH directions — but it only ever RUNS on the
+ * close. `SidebarPanel` renders `DockLayout` while expanded, i.e. React mounts
+ * the dock IN THE SAME COMMIT that sets `data-sidebar-right-open`; a newly
+ * created element has no before-change style for `visibility` or `transform`,
+ * so no transition starts and the dock is inserted directly at its resting
+ * rect. Measured, four open arms, long conversation: no `transform` or
+ * `visibility` transition on the dock, and a single `dock-add` mutation whose
+ * rect is already the final `l=939 w=768` (`visibility: visible`, `transform:
+ * none`). On close the same element already exists with the closed computed
+ * style, the transition runs (measured `transform` `elapsedTime 0.3`), and the
+ * panel slides out normally.
+ *
+ * The visible result is the report this rule answers: "expanding the right
+ * sidebar flashes, then translates — the sidebar appears first and the center
+ * column starts moving a few ms later". The product's own documented invariant
+ * is that the occupant and the track share one curve ("an occupant that used its
+ * own would detach the panel's edge from the conversation's while squeezing"),
+ * so an occupant that does not move at all detaches it just as badly.
+ *
+ * A keyframe animation restores the missing half: unlike a transition it needs
+ * no before-change style, so it starts from `translateX(100%)` on the very
+ * element React just inserted. Nothing is added on close (`data-enhc-opening` is
+ * only present during an OPEN), the fullscreen presentation is excluded (it is
+ * an instant switch, not a squeeze, and `--dsh-sidebar-width` is `100vw` there),
+ * and instant/drag paths are excluded by instant-track.ts, which does not add
+ * the class for them. `--dsh-sidebar-width` is set inline on the panel and
+ * inherits into the dock, so the offset is the product's own. */
+:global(html.enhc-panel-glide[data-enhc-opening] [data-sidebar-right-panel]:not([data-sidebar-right-panel='fullscreen']) [data-dockkit-host='dock']) {
+  animation: enhc-panel-glide-in var(--ds-transition-duration-slow) var(--ds-ease-in-out) both;
+}
+@keyframes enhc-panel-glide-in {
+  from {
+    /* The product's own offset, with its own fallback: it sets
+     * `--dsh-sidebar-width` inline on the panel (so the dock inherits it), but
+     * an unset or empty custom property would make this declaration invalid and
+     * silently turn the slide into a no-op. The dock's own width IS the panel
+     * width (measured 768px == 768px), so `100%` is the same distance. */
+    transform: translateX(var(--dsh-sidebar-width, 100%));
+  }
+  to {
+    transform: none;
+  }
 }
 

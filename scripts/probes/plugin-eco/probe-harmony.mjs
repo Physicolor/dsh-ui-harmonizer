@@ -135,7 +135,6 @@ function collect() {
       const count = (sel) => document.querySelectorAll(sel).length
       return {
         enhcPanelOpen: document.documentElement.classList.contains('enhc-panel-open'),
-        centerCardOn: document.documentElement.classList.contains('enhc-center-card-on'),
         panelNodes: count('.nArs4W_panel'),
         bottomPanelNodes: count('.nArs4W_bottomPanel'),
         toggleButtons: count('.nArs4W_toggleButton'),

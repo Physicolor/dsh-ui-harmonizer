@@ -27,12 +27,16 @@ export interface EnhancerState {
   fontId: string
   /** Whether the font stack applies to chat prose only or the whole UI. */
   fontScope: FontScope
-  /** Center-column rounded-card overlay (top-left corner + top edge + shadow). */
-  card: boolean
+  /**
+   * Snap the AppFrame's column track on a right-panel toggle and re-add the
+   * motion as compositor covers. On by default: the eased track re-lays out the
+   * whole frame every frame (`harness/chrome/instant-track.ts` has the numbers).
+   */
+  panelGlide: boolean
 }
 
 /** Product defaults; the plugin applies these on boot and treats them as the neutral baseline. */
-export const DEFAULT_STATE: EnhancerState = { width: 748, sidebarSize: 14, fontId: 'default', fontScope: 'content', card: false }
+export const DEFAULT_STATE: EnhancerState = { width: 748, sidebarSize: 14, fontId: 'default', fontScope: 'content', panelGlide: true }
 
 /** localStorage key holding the persisted enhancer state. */
 export const STORAGE_KEY = 'harness-ui-enhancer.state'

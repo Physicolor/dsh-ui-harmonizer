@@ -1,0 +1,92 @@
+/* @dsh-split-header
+ * plugins/dsh-context/overview-window-shell.module.css - Serves: dsh-context's 上下文洞察 dashboard card (`.lc-ov-card`) and its title row.
+ * Why here: the card is dsh-context's surface; the window language it has to speak is the product's (Settings window / dialog header).
+ * Origin: NEW (2026-10-03) — not a slice of the pre-split enhancer.module.css.
+ */
+/* ── the dashboard wears the Settings window, not its own card ─────────
+ *
+ * dsh-context draws its dashboard as `.lc-ov-backdrop > .lc-ov-card`: a
+ * 12px-radius, 1px-bordered box with `padding: 16px 18px 18px`, `background:
+ * var(--dsw-alias-bg-layer-1)`, `box-shadow: var(--dsw-shadow-lv3)` and a
+ * 15px/600 title. The product's own Settings window is a different recipe —
+ * measured live (2026-10-03, DSH 0.2.0-rc.2) and read off its shipped CSS
+ * (`dsh-client-ui-settings-general`, `.VOzbGW_panel`):
+ *
+ *   .VOzbGW_panel {
+ *     width: 800px; height: min(800px, calc(100vh - 2 * max(24px, …)));
+ *     border-radius: var(--dsw-radius-panel);          → 28px, measured
+ *     background: var(--dsw-alias-bg-layer-2);          → #fff light / #2c2c2e dark
+ *     box-shadow: var(--dsw-elevation-prominent);       → 0 0 0 .5px <stroke>, 0 3px 8px,
+ *                                                         0 0 20px  (no CSS border at all)
+ *     max-width: calc(100vw - 48px);
+ *   }
+ *
+ * and its title row follows the shipped dialog pattern
+ * (`dsh-client-ui-shortcuts`, `.nhfO0a_header/.nhfO0a_title/.nhfO0a_close`, the
+ * same numbers the account-confirmation panel uses):
+ *
+ *   header { flex: 0 0 46px; padding: 22px 54px 0 24px }   title { 16px/24px, 500 }
+ *   close  { width/height 28px; border-radius: 28px; top: 20px }
+ *
+ * so title ink, a 28px round close seat and a 22px top / 24px side inset are the
+ * window language. Measured on the settings window in the same run: the content
+ * column starts 54px below the window's top edge (options 134 vs panel 80).
+ *
+ * This sheet moves the dashboard onto exactly those numbers — shell only (the
+ * inner rhythm lives in overview-content-rhythm.module.css). Sizes are left
+ * alone: the product documents a size range, not one size, and this panel
+ * carries far more content than Settings.
+ *
+ * Everything is a semantic token (`--dsw-radius-panel`, `--dsw-elevation-prominent`,
+ * `--dsw-alias-bg-layer-2`), so both themes follow the product by construction —
+ * in dark the window becomes `bg-layer-2` (#2c2c2e) over the mask while the
+ * inner cards keep `bg-layer-1` (#232324), which is the official layer order.
+ *
+ * SELECTOR SHAPE: whole selector inside one `:global()`, prefixed with `body`.
+ * dsh-context injects its own `<style>` into `document.head` AFTER this plugin's
+ * sheets, so an equal-specificity rule of ours loses the cascade (measured on the
+ * first build of this sheet: radius stayed 12px, the title stayed 15px/600 and
+ * the scroller kept `padding-right: 8px` while the `(0,2,0)` rules of
+ * overview-content-rhythm.module.css all landed). The `body` prefix lifts every
+ * rule here to `(0,1,1)` — the same idiom rail-vs-context-view.module.css uses
+ * with `body.dsx-stats-active`. */
+:global(body .lc-ov-card) {
+  border: 0;
+  border-radius: var(--dsw-radius-panel);
+  background: var(--dsw-alias-bg-layer-2);
+  box-shadow: var(--dsw-elevation-prominent);
+  /* The window's own inset replaces this: 22px top on the title row, 24px sides
+   * and bottom on the content scroller. */
+  padding: 0;
+}
+:global(body .lc-ov-head) {
+  padding: 22px 24px 0;
+  /* Measured: title row 22px below the window edge, content 54px below it. The
+   * tallest head resident is the 28px close seat, so 22 + 28 + 4 = 54. */
+  margin-bottom: 4px;
+}
+:global(body .lc-ov-title) {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+/* The window's close seat: a 28px round hit area, not a glyph-sized box. */
+:global(.lc-ov-head .lc-modal-close) {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border-radius: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+:global(.lc-ov-head .lc-modal-close:hover) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+/* Content inset, same as the settings window's options column (`padding: 0 24px
+ * 24px`) — `scrollbar-gutter: stable` is dsh-context's own and stays, so the
+ * 24px is measured to the text, not to the scrollbar. */
+:global(body .lc-ov-scroll) {
+  padding: 0 24px 24px;
+}

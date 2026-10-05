@@ -21,6 +21,7 @@ import { VARS } from './harmony/contract.ts'
 import { saveState } from './state-store.ts'
 import { clampChatWidth, writeChatWidth } from '../harness/chat-width.ts'
 import { applyFont, clearFontProps } from '../harness/fonts.ts'
+import { PANEL_GLIDE_CLASS } from '../harness/chrome/instant-track.ts'
 
 /* ------------------------------------------------------------------ */
 /*  Root properties + apply/dispose                                    */
@@ -58,18 +59,32 @@ export function applyState(state: EnhancerState): void {
   root.style.setProperty(VARS.sidebarScale, scale)
   root.style.setProperty('--enhancer-content-width', `${width}px`)
   root.style.setProperty('--enhancer-sidebar-scale', scale)
-  root.classList.toggle('enhc-center-card-on', state.card)
+  // Read by harness/chrome/instant-track.ts (behaviour) and by
+  // harness/frame-column-transition.module.css (both the snap gate and the
+  // opening slide only apply while this class is present), so one switch turns
+  // off both halves. This stays a CLASS: it is written once per settings change,
+  // where the theme observer's rebuild is paid once, not twice per toggle.
+  root.classList.toggle(PANEL_GLIDE_CLASS, state.panelGlide)
   applyFont(state)
 }
 
 /**
- * Dispose everything this module wrote: the inline font properties, the root
- * custom properties and the card class. Called from the plugin fiber's effect
- * disposer so stopping/updating the plugin leaves zero residue.
+ * Dispose everything this module wrote: the inline font properties and the root
+ * custom properties. Called from the plugin fiber's effect disposer so
+ * stopping/updating the plugin leaves zero residue.
  */
 export function disposeDynamicStyle(): void {
   clearFontProps()
   const root = document.documentElement
   for (const property of ROOT_PROPERTIES) root.style.removeProperty(property)
+  root.classList.remove(PANEL_GLIDE_CLASS)
+  /* Removed in 0.10.0: the center-column rounded card. A page that is still
+   * running an older build of this plugin (a hot update, an open tab) can have
+   * the class on `<html>`; dropping it here is what keeps the removal
+   * residue-free rather than merely unwritten. */
   root.classList.remove('enhc-center-card-on')
+  // instant-track.ts writes these on its own capture-phase click and clears them
+  // on release, but a plugin removed mid-toggle would leave them behind.
+  root.removeAttribute('data-enhc-instant')
+  root.removeAttribute('data-enhc-opening')
 }

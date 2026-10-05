@@ -1,0 +1,49 @@
+/* @dsh-split-header
+ * plugins/dsh-context/dark-active-pill.module.css - Serves: dsh-context's active toggle pills inside the 上下文洞察 dashboard, dark chrome only.
+ * Why here: the pills are dsh-context's; the fill recipe is reconciled with the product's dark surface palette.
+ * Origin: NEW (2026-10-02) — not a slice of the pre-split enhancer.module.css.
+ */
+/* ── near-white pills on a dark dashboard ──────────────────────────────
+ *
+ * dsh-context's small toggles paint their ON state with the product's primary
+ * button fill:
+ *
+ *   .lc-gran-on, .lc-gran-on:hover  { background: var(--dsw-alias-button-primary-fill);
+ *                                     color: var(--dsw-alias-label-primary-foreground) }
+ *   .lc-ov-chip-on, …:hover         { background: var(--dsw-alias-button-primary-fill);
+ *                                     color: var(--dsw-alias-label-primary-foreground) }
+ *
+ * That is correct in light chrome — measured there, `--dsw-alias-button-primary-fill`
+ * resolves to `#0f1115` with `#fff` text, a black pill, which is exactly how the
+ * product draws a primary surface in light. In DARK chrome the same tokens flip
+ * to `#f9fafb` fill + `#0f1115` text (measured on `body[data-ds-dark-theme]`,
+ * both `--dsw-alias-brand-primary` and `--dsw-alias-button-primary-fill`), so
+ * every active pill becomes an opaque NEAR-WHITE chip on a `#232324` card.
+ * A whole-document dark sweep found four near-white opaque fills on the page
+ * and all four were these pills ("近 30 天", "步数", "最近更新", "全部114"); no
+ * product element on the shell uses that fill, and the product's own active
+ * chip in dark chrome is a transparent chip with tinted text. Reported as
+ * "部分元素未进入深色模式".
+ *
+ * The reconciliation keeps the semantic (this pill is ON) but swaps the recipe
+ * for the theme-aware one: the shared interactive fill plus the primary label
+ * colour. In dark that is `#ffffff14` over the `#2c2c2e` toggle track — the same
+ * subtle "selected" weight dsh-context itself already uses for its other active
+ * states (`color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent)`),
+ * so the panel stays internally consistent and the text keeps AA contrast.
+ *
+ * Scoped to the dashboard card, not to `.lc-gran-on` at large: the CONTEXT view
+ * paints semantic pills (success / warn / brand tints) with the same class, and
+ * those already follow the theme correctly. Gated on `body[data-ds-dark-theme]`,
+ * the product's own dark token scope — light chrome keeps the shipped black
+ * pill untouched.
+ *
+ * SELECTOR SHAPE: whole selector inside one `:global()` (see
+ * rail-vs-context-view.module.css for why). */
+:global(body[data-ds-dark-theme] .lc-ov-card .lc-gran-on),
+:global(body[data-ds-dark-theme] .lc-ov-card .lc-gran-on:hover),
+:global(body[data-ds-dark-theme] .lc-ov-card .lc-ov-chip-on),
+:global(body[data-ds-dark-theme] .lc-ov-card .lc-ov-chip-on:hover) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}

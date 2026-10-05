@@ -30,13 +30,17 @@ export function loadState(): EnhancerState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw === null) return withSharedWidth({ ...DEFAULT_STATE })
-    const parsed = JSON.parse(raw) as Partial<EnhancerState>
+    const parsed = JSON.parse(raw) as Partial<EnhancerState> & { card?: unknown }
+    /* Removed in 0.10.0: the center-column rounded card. A profile that had it
+     * on still carries the key in localStorage; drop it here so nothing reads a
+     * field the plugin no longer owns. */
+    delete parsed.card
     const state: EnhancerState = { ...DEFAULT_STATE, ...parsed }
     if (!Number.isFinite(state.width) || state.width < CHAT_WIDTH_MIN || state.width > CHAT_WIDTH_MAX) state.width = DEFAULT_STATE.width
     if (!Number.isFinite(state.sidebarSize) || state.sidebarSize < 12 || state.sidebarSize > 20) state.sidebarSize = DEFAULT_STATE.sidebarSize
     if (typeof state.fontId !== 'string' || !FONT_PRESETS.some(p => p.id === state.fontId)) state.fontId = DEFAULT_STATE.fontId
     if (state.fontScope !== 'content' && state.fontScope !== 'ui') state.fontScope = DEFAULT_STATE.fontScope
-    if (typeof state.card !== 'boolean') state.card = DEFAULT_STATE.card
+    if (typeof state.panelGlide !== 'boolean') state.panelGlide = DEFAULT_STATE.panelGlide
     return withSharedWidth(state)
   } catch {
     return withSharedWidth({ ...DEFAULT_STATE })
