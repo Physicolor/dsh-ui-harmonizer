@@ -1,6 +1,6 @@
 {
     "name": "dsh-ui-harmonizer",
-    "version": "0.9.1",
+    "version": "0.9.2",
     "description": "DeepSeek 设计规范：统一 Harness 界面语言，并为社区插件做针对性适配，附只读兼容性审计。",
     "type": "module",
     "main": "lib/index.js",
@@ -71,6 +71,9 @@
         "client": {
             "platform": "web"
         }
+    },
+    "engines": {
+        "dsh": ">=0.1.0-rc.6 <0.3.0-0"
     },
     "dependencies": {},
     "peerDependencies": {
