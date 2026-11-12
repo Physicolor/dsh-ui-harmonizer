@@ -97,11 +97,10 @@
   content: none;
 }
 /* Session tabs (对话/轨迹) — relocated into the title row by the client half
- * (inserted right after the header actions) and restyled as two standalone
- * capsules that reuse the harness-widgets component-button recipe
- * (dsx-stats-capsule), mutually exclusive: the active tab fills the DeepSeek
- * brand blue (state-business-primary) with white glyphs, the idle one is a
- * transparent bordered capsule.
+ * (inserted right after the header actions) so the header is one line. The
+ * product's own tab look is kept: blue label + a 2px underline under the active
+ * one. The two rules at the bottom of this sheet are what makes that look
+ * survive the move — see the ANCHOR there.
  * NOTE on selectors: the tab classes carry a build hash prefix (wSkVaW_) and
  * the active one adds a second "_tabActive" class, so ends-with "_tab" fails
  * on the two-class active node and starts-with fails on the hash prefix —
@@ -139,12 +138,60 @@
    * The two rules work together: this one makes wrapping impossible, the fit
    * decides how much of the row the badges may keep. */
   flex: none;
+  /* ANCHOR — the product ships this strip as a FULL-WIDTH GRID ROW of the header
+   * grid (`.an3WzG_tabs { grid-column: 1 / -1; width: 100%; ... margin-top: 10px }`),
+   * sized for the two-row header. Once the client half relocates it into
+   * `_titleCluster` (a flex row), `grid-column` is inert but `width: 100%` is
+   * not: it resolves against the cluster and the strip takes the WHOLE row —
+   * measured 2026-11-06 at 1707x1067, cluster 1188px, strip 1188px, `_crumbs`
+   * 0px and `_headerActions` 0px. The title disappears, and header-fit.ts then
+   * reads a 0px title and spends every badge it can (the 创造模式 preset), so the
+   * whole top bar reads as empty. `width: auto` lets the strip size to its two
+   * capsules (~106px) and hands the row back to the title. */
+  width: auto;
+  flex-wrap: nowrap;
 }
-:global([class$='_titleCluster'] > [class$='_tabs'] [class*='_tab']) {
-  /* Product padding is 0 0 9px (blank space reserved under the label for the
-   * underline indicator). Symmetric 5px keeps the indicator visible while the
-   * label stays optically centred against the 32px header row. */
-  padding: 5px 0;
+/* ANCHOR — the underline is the product's `::after` on the BUTTON, and it spans
+ * the label only while the button keeps the product's own horizontal padding:
+ *
+ *   `.tab::after { left: 10px; right: 10px; bottom: -1px; height: 2px }`
+ *
+ * so `left/right: 10px` is not an inset — it is "the button minus the 20px the
+ * label is padded by". The rule that used to live here wrote `padding: 5px 0`
+ * on `[class*='_tab']`, and it cost both halves of the look at once:
+ *
+ *   1. it dropped those 20px, so the underline resolved to 26 − 20 = 6px under a
+ *      26px label (the owner's 「底部蓝条长度…错位」, 2026-11-12);
+ *   2. `_tabLabel` CONTAINS "_tab", so the same rule also padded the label span,
+ *      and the label carried the button's 5px plus its own 5px: glyphs measured
+ *      11–28 against the mode badge's 17–33 — the whole text sat 6px high
+ *      (「文字高度…错位」, same report).
+ *
+ * Numbers below are that same 1707x1067 measurement, at rest:
+ *   label padding 0 + button `0 10px 3px` + `height: auto` + `align-self: center`
+ *   → underline 26px, glyphs 16.5–33.5 against the badge's 17–33.
+ * `top: 2px` takes out the last 2px, which is the difference between the tab's
+ * 13px line box and the badge pill's — measured before the nudge, not guessed.
+ *
+ * `margin: 0 -10px` — the product's `-10px` top margin cancelled the strip's own
+ * `margin-top: 10px`, which the rule above removes; left alone it lifted the
+ * whole row 10px out of line. The horizontal half stays: it buys back exactly
+ * the padding this rule restores, so the label keeps its old x position.
+ *
+ * `height: auto` + `align-self: center` — the product stretches the tab to the
+ * strip's 35px box, which would put the underline 8px under the text instead of
+ * 4px; the tab then sizes to its line + the 3px the bar needs. */
+:global([class$='_titleCluster'] > [class$='_tabs'] [class$='_tabLabel']) {
+  padding: 0;
+}
+:global([class$='_titleCluster'] > [class$='_tabs'] [class$='_viewTabs'] > button[class*='_tab']) {
+  padding: 0 10px 3px;
+  margin: 0 -10px;
+  height: auto;
+  min-height: 0;
+  align-self: center;
+  position: relative;
+  top: 2px;
 }
 /* Progressive header-badge hiding — the removal side of the rule above.
  *
