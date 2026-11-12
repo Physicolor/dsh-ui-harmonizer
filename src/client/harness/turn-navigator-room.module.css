@@ -1,0 +1,71 @@
+/* @dsh-split-header
+ * harness/turn-navigator-room.module.css - Serves: the product's own turn
+ * navigator (轮次导航) against a conversation that third parties have narrowed.
+ * Why here: the rule only comes alive for the product's navigation slot, and the
+ * decision behind it is this plugin's cross-plugin measurement.
+ * Origin: NEW (2026-10-10) — not a slice of the pre-split enhancer.module.css.
+ */
+/* ── the navigator is hidden by a width, not by an occlusion ─────────────
+ *
+ * The product ships ONE switch for the turn navigator, in its own
+ * `TurnNavigator.module.css`:
+ *
+ *   @container (width <= 900px) { .frame { display: none } }
+ *
+ * and the queried container is the navigator's own slot
+ * (`container-type: inline-size`), whose inline size is
+ * `[data-conversation-scroll]`'s content width minus the slot's own
+ * `padding-inline: calc(var(--dsh-composer-side-clearance) + 16px)` — measured
+ * on DSH 0.2.0-rc.2, 2026-10-10: slot clientWidth 853 ⇒ the container resolves
+ * to 789 at a 1600px viewport, i.e. exactly the 32px-per-side padding.
+ *
+ * Therefore ANY third party that writes `padding-right` on
+ * `[data-conversation-scroll]` shrinks that container 1:1 and flips the
+ * navigator off, however much room the transcript actually has left over. Two
+ * plugins do exactly that today: dsh-widgets reserves `--dsx-rail-w` (460px
+ * measured) and dsh-pinned-summary reserves `--dps-right-space` on the same
+ * box. The navigator is not occluded and not squeezed — it is `display: none`.
+ *
+ * Measured flip point (1600x1000, rail on, sidebar closed): container 789 ⇒
+ * hidden; the same conversation with the rail off keeps the container above 900
+ * ⇒ visible. With the right sidebar open as well the scroll box itself drops to
+ * ~598px, so the container falls to ~534 and the navigator is gone again — even
+ * though the transcript then has 35px of strip on each side.
+ *
+ * ## What this rule does
+ *
+ * It replaces that width proxy with the condition the navigator actually needs:
+ * room BESIDE the transcript.
+ *
+ *   - the navigator is 28px wide at `right: 12px` inside the slot's padding box,
+ *     whose inner right edge is the transcript's right edge plus any right-side
+ *     rail's reservation — the product's own `2 x (28 + 12) = 80px` of centering
+ *     slack is what makes 900px its safe width, and a 16px clearance keeps that
+ *     contract's spirit;
+ *   - `nav-room.ts` measures the free width on each side of the transcript and
+ *     publishes `data-nav-room='1'` only when it is at least
+ *     `28 + 12 + 16 = 56px` on both. `--enhc-nav-free` carries the number, so the
+ *     value is readable in a probe and a bug report.
+ *
+ * The container query is deliberately NOT mirrored here. Re-typing the slot's own
+ * container cannot invalidate the product's query — a query container is resolved
+ * on the element itself, and the queried box stays the slot's inline size — so a
+ * mirrored `@container` only re-imposes the width proxy this rule exists to
+ * replace. Measured 2026-10-10: with `container-type: size` forced on the slot
+ * the product's `(width <= 900px)` block still hides the frame.
+ *
+ * With no measurement there is no attribute, so the product's own behaviour is
+ * untouched — an unloaded plugin, a page without a conversation, or a build
+ * where the measurement failed all keep the navigator exactly as shipped.
+ *
+ * SELECTOR SHAPE: no hashed class name is referenced. The slot is addressed as
+ * `[class$='_slot']` and the frame as its `nav` child (`:has(> nav)`
+ * distinguishes this slot from the product's other `_slot` elements), so a
+ * product rebuild that rehashes its CSS Modules cannot silently kill the rule.
+ * `!important` is required: the product injects its own sheet later in the
+ * document, so an equal-specificity declaration of ours loses on order. The
+ * `nav` carries both the slot's sibling styles and the `display: none`, so the
+ * override is written on it. */
+html[data-nav-room='1'] [data-conversation-scroll] [class$='_slot']:has(> nav) > nav {
+  display: block !important;
+}

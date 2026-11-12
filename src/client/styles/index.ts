@@ -16,7 +16,6 @@ import '../plugins/dsh-better-sidebar/panel-chrome.module.css'
 import '../harness/session-header.module.css'
 import '../plugins/dsh-better-sidebar/panel-tabs.module.css'
 import '../plugins/dsh-better-sidebar/root-squeeze.module.css'
-import '../harness/flow-item-rendering.module.css'
 import '../plugins/dsh-better-sidebar/composer-seat-yield.module.css'
 import '../harness/frame-column-transition.module.css'
 import '../plugins/dsh-widgets/rail-overlay-squeeze.module.css'
@@ -28,3 +27,8 @@ import '../plugins/dsh-context/entry-icon-monochrome.module.css'
 import '../plugins/dsh-context/dark-active-pill.module.css'
 import '../self/doctor-page.module.css'
 import '../plugins/dsh-genui/width-hygiene.module.css'
+/* LAST: the turn navigator's reveal. It must out-cascade the product's own
+ * `@container (width <= 900px) { .frame { display: none } }`, whose sheet is
+ * injected later in the document, so it is kept at the end of the cascade order
+ * and carries `!important`. */
+import '../harness/turn-navigator-room.module.css'

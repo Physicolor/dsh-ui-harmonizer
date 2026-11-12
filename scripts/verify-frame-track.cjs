@@ -102,9 +102,15 @@ function authCookie() {
  * One toggle, sampled every frame; the click happens inside the page.
  *
  * `covers` collects a label per frame for every animation running on the two
- * cover hosts, so a cover that starts and ends inside the trace is still seen.
- * `railX` tracks the dsh-widgets rail's left edge: the covers must never move
- * it (that is the whole reason the composer cover uses `left`, not `transform`).
+ * hosts a cover used to drive, so a cover that starts and ends inside the trace
+ * is still seen — the module does not arm one any more, and this observes that
+ * from the outside rather than trusting the setting.
+ * `cols` is the transcript column's painted box per frame: the conversation must
+ * land in the commit frame, i.e. the only two values may be the pre-toggle one
+ * and the resting one, with nothing in between (an eased cover would fill the
+ * corridor between them, which is the defect this suite now pins down: a box
+ * held at its old edge paints outside the shrunken viewport clip).
+ * `railX` tracks the dsh-widgets rail's left edge, which nothing may move.
  */
 const IN_PAGE_TRACE = (ms) => new Promise((resolve) => {
   const frame = () => document.querySelector('[class$="_frame"]')
@@ -121,6 +127,7 @@ const IN_PAGE_TRACE = (ms) => new Promise((resolve) => {
   const rails = []
   const times = []
   const tds = []
+  const cols = []
   let clicked = false
   let frames = 0
   const tick = () => {
@@ -137,6 +144,11 @@ const IN_PAGE_TRACE = (ms) => new Promise((resolve) => {
     }
     const rail = document.querySelector('.dsx-stats-rail')
     if (rail !== null && rail.getBoundingClientRect().width > 0) rails.push(rail.getBoundingClientRect().left)
+    const col = document.querySelector('[class$="_column"]')
+    if (col !== null) {
+      const r = col.getBoundingClientRect()
+      if (r.width > 0) cols.push([Math.round(r.left), Math.round(r.width)])
+    }
     for (const a of document.getAnimations()) {
       const el = a.effect === null || a.effect === undefined ? null : a.effect.target
       if (el === null || el === undefined || !(el instanceof Element)) continue
@@ -146,7 +158,7 @@ const IN_PAGE_TRACE = (ms) => new Promise((resolve) => {
     }
     times.push(performance.now() - t0)
     frames += 1
-    if (performance.now() - t0 > ms) resolve({ grids, events, covers, rails, times, tds })
+    if (performance.now() - t0 > ms) resolve({ grids, events, covers, rails, times, tds, cols })
     else requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
@@ -170,6 +182,18 @@ const midTracks = (grids) => {
 const railDrift = (rails) => {
   if (rails.length === 0) return null
   return Math.max(...rails) - Math.min(...rails)
+}
+
+/**
+ * How many painted column boxes the carry produced, i.e. did it actually glide?
+ *
+ * Reported only — `verify-panel-motion.cjs` is the suite that asserts the motion
+ * contract (own start, no cut, exact landing), because that needs the clip's edge
+ * sampled in the same frame as the box. Here it is context for the track checks.
+ */
+const carriedLefts = (cols) => {
+  if (cols === undefined) return 0
+  return [...new Set(cols.map((c) => c[0]))].length
 }
 
 /** Longest gap between two sampled frames, in ms (0 when fewer than 2 frames). */
@@ -211,6 +235,25 @@ const STARVED_GAP_MS = 200
   const optionOn = await page.evaluate(() => document.documentElement.classList.contains('enhc-panel-glide'))
   console.log(`# panel glide option: ${optionOn ? 'ON' : 'OFF (checks 1-5 will assert the eased track)'}`)
 
+  // This suite measures the SNAP path. A right-side reservation switches the
+  // plugin to the one-clock squeeze instead (asserted by verify-panel-squeeze),
+  // so pin it to 0 here — otherwise the toggle legitimately eases the track and
+  // every "it snaps" check fails on a page that has the pinned summary open.
+  const reservation = await page.evaluate(() => {
+    const el = document.querySelector('[data-conversation-scroll]')
+    return el === null ? 0 : Number.parseFloat(getComputedStyle(el).paddingRight) || 0
+  })
+  if (reservation > 0.5) {
+    console.log(`# reservation ${reservation}px -> pinned to 0 for the snap path`)
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--dps-right-space', '0px')
+      document.documentElement.style.setProperty('--dsx-rail-w', '0px')
+      const el = document.querySelector('[data-conversation-scroll]')
+      if (el !== null) el.style.setProperty('padding-right', '0px', 'important')
+    })
+    await page.waitForTimeout(400)
+  }
+
   // ---- open ---------------------------------------------------------------
   const open = await page.evaluate(IN_PAGE_TRACE, 1200)
   const openMid = midTracks(open.grids)
@@ -223,9 +266,14 @@ const STARVED_GAP_MS = 200
   check('the frame fires transitionrun/start/end for grid-template-columns', openEvents, JSON.stringify(open.events))
 
   if (optionOn) {
-    check('a cover runs on the transcript column', open.covers.includes('column'), JSON.stringify([...new Set(open.covers)]))
+    // The track snaps AND the payload is carried: the carry is what keeps the
+    // conversation's own motion, and `verify-panel-motion.cjs` owns the question
+    // of whether that motion stays inside the clip. Here it only has to exist and
+    // to leave the rail alone.
+    check('a carry runs on the transcript column', open.covers.includes('column'),
+      `${JSON.stringify([...new Set(open.covers)])}, ${carriedLefts(open.cols)} painted lefts`)
     const drift = railDrift(open.rails)
-    check('the covers do not move the rail', drift === null || drift < 2, drift === null ? 'rail not present in this session' : `rail drift ${drift.toFixed(1)}px`)
+    check('the toggle does not move the rail', drift === null || drift < 2, drift === null ? 'rail not present in this session' : `rail drift ${drift.toFixed(1)}px`)
   }
 
   await page.waitForTimeout(600)
@@ -235,9 +283,10 @@ const STARVED_GAP_MS = 200
   const closeMid = midTracks(close.grids)
   if (optionOn) {
     check('closing snaps the same way', closeMid.steps <= 2, `${closeMid.steps} distinct widths: ${JSON.stringify(closeMid.distinct)}`)
-    check('a cover runs on the transcript column on close too', close.covers.includes('column'), JSON.stringify([...new Set(close.covers)]))
+    check('a carry runs on the transcript column on close too', close.covers.includes('column'),
+      JSON.stringify([...new Set(close.covers)]))
     const drift = railDrift(close.rails)
-    check('the close cover does not move the rail either', drift === null || drift < 2, drift === null ? 'rail not present in this session' : `rail drift ${drift.toFixed(1)}px`)
+    check('the close does not move the rail either', drift === null || drift < 2, drift === null ? 'rail not present in this session' : `rail drift ${drift.toFixed(1)}px`)
   } else {
     check('closing eases the same way', closeMid.steps >= 5, `${closeMid.steps} distinct widths over ${Math.round(closeMid.span)}px`)
   }

@@ -78,6 +78,30 @@
   line-height: calc(16px * var(--enhancer-sidebar-scale));
 }
 
+/* Footer action entries STACK instead of sharing one horizontal row.
+ *
+ * DSH 0.2.1 moved `sidebar.footer.action` out of the settings row into its own
+ * full-width row above the account row (measured 2026-10-17 on 0.2.1-rc.2: the
+ * host row is 256x50 at 12,902, with the account row directly below it). Every
+ * plugin in that slot today draws its entry as a FULL-WIDTH row:
+ * dsh-usage-center's `.duc-sidebar-entry` (`flex: 1 1 auto`, 34px) and
+ * dsh-bridge-next's `._0mJWUG_trigger` (`width: calc(100% + 4px)`, 42px). Left
+ * as one flex row they split the 256px — measured: 用量中心 squeezed to 71px
+ * with its label clipped (clientWidth 35 vs scrollWidth 56, so it read
+ * "用量中") beside 远程控制 stretched to 193x42. Stacked, each entry gets the
+ * full row it was drawn for — measured after the change: usage 260x34 with the
+ * label intact, remote 260x42, each keeping its own 4px side bleed.
+ *
+ * `:has()` reaches the row through the slot's public attribute because the row's
+ * own class is a per-build hash. A NESTED `:has()` (to additionally require two
+ * entries) is rejected by the engine as an invalid selector — measured, the rule
+ * silently did nothing — so this is unconditional, which is safe: an entry alone
+ * in the row already stretched to this same full width. */
+[data-slot='sidebar'] :has(> [data-slot='sidebar.footer.action']) {
+  flex-direction: column;
+  align-items: stretch;
+}
+
 /* Workspace browsing region (sidebar.workspaces) — rows, section header, icons. */
 [data-slot='sidebar.workspaces'] {
   font-size: calc(14px * var(--enhancer-sidebar-scale));

@@ -1,13 +1,39 @@
 /**
  * Font application on the product's official channels.
  *
- * The chosen stack is written as INLINE custom properties on `<body>` / `<html>`
+ * The chosen stack is written as INLINE custom properties on `<body>`
  * publishing `--dsw-font-*` and the `--dsh-content-font-*` references. This is
  * deliberate: the tokens are declared by the theme inside a `<style>` tag that
  * the product appends AFTER our bundle's tag (measured: ours at head order 4,
  * the theme's at 25), so an equal-specificity stylesheet rule of ours loses no
  * matter when we rewrite it. Inline properties are order-independent and the
  * disposer removes them.
+ *
+ * WHERE the whole-UI family is written is load-bearing, and the target element
+ * moved in DSH 0.2.1: the theme used to fix `--dsw-font-family` at `:root`, so
+ * an inline property on `<html>` won. 0.2.1 declares it in a `body{…}` rule
+ * instead —
+ *
+ *   :root { --dsw-font-family: var(--dsh-font-family-text-default); … }
+ *   body  { --dsw-font-family: var(--dsh-font-family-text, var(--dsh-font-family-text-default)), … }
+ *
+ * — and a declaration on `body` beats anything inherited from `<html>`, whatever
+ * the inline origin. Measured on 0.2.1-rc.2 (live GUI, 2026-10-17): writing
+ * `--dsw-font-family` inline on `<html>` left `getComputedStyle(body).fontFamily`
+ * at the product default, while the same write on `<body>` — or the official
+ * `--dsh-font-family-text` on either element — took effect. The whole-UI scope
+ * therefore writes `<body>`, and also publishes the product's own role channel
+ * so every rule that reads it directly agrees with the resolved token.
+ *
+ * A mono preset owns the product's code role the same way (`--dsh-font-family-code`
+ * plus the `--ds-font-family-code` token the theme resolves from it).
+ *
+ * The resolved token is the load-bearing write: the product's own settings
+ * applier CLEARS the role variable when its font field is empty (measured on
+ * 0.2.1-rc.2 — our inline `--dsh-font-family-text` read back empty after a
+ * reload that applied the stack correctly, while `--dsw-font-family` survived).
+ * Publishing the role variable too keeps the two channels agreeing wherever the
+ * product does not clear it.
  */
 
 import { FONT_PRESETS } from '../self/font-presets.ts'
@@ -74,6 +100,23 @@ function codeTokens(family: string): Record<string, string> {
 /** Inline properties this plugin owns right now, for exact removal. */
 let appliedFontProps: Array<{ el: HTMLElement, name: string }> = []
 
+/**
+ * Family channels the whole-UI scope owns, in write order.
+ *
+ * Both names are written: the product's role variable is what the theme's own
+ * `--dsw-font-family` declaration resolves, and the resolved token is what every
+ * component actually consumes. Publishing only the role variable would leave the
+ * outcome dependent on which of the two bodies held the winning declaration;
+ * publishing only the token would leave `var(--dsh-font-family-text)` readers on
+ * the product's stack.
+ * @param mono - whether the preset is a monospace stack.
+ * @returns the custom property names.
+ */
+function uiFamilyTokens(mono: boolean): string[] {
+  const text = ['--dsh-font-family-text', '--dsw-font-family']
+  return mono ? [...text, '--dsh-font-family-code', '--ds-font-family-code'] : text
+}
+
 /** Remove every inline font property the plugin wrote. */
 export function clearFontProps(): void {
   for (const { el, name } of appliedFontProps) el.style.removeProperty(name)
@@ -88,14 +131,15 @@ export function applyFont(state: EnhancerState): void {
   clearFontProps()
   const preset = presetStack(state.fontId)
   if (preset === null) return
-  const root = document.documentElement
   const body = document.body
   if (body === null) return
-  // Whole-UI scope owns the product-wide family token (fixed at :root by the
-  // product, with no user setting of its own).
+  // Whole-UI scope: `<body>`, not `<html>` — see the module header for the
+  // measurement that forced this.
   if (state.fontScope === 'ui') {
-    root.style.setProperty('--dsw-font-family', preset.stack)
-    appliedFontProps.push({ el: root, name: '--dsw-font-family' })
+    for (const name of uiFamilyTokens(preset.mono)) {
+      body.style.setProperty(name, preset.stack)
+      appliedFontProps.push({ el: body, name })
+    }
   }
   const tokens = { ...proseTokens(preset.stack), ...(preset.mono ? codeTokens(preset.stack) : {}) }
   for (const [name, value] of Object.entries(tokens)) {

@@ -392,3 +392,207 @@ carries two classes so `$=` cannot match it), `[class$='_newSessionLabel']` and
 entirely — `[class*='_meta']` matches nothing anywhere). Substring (`*=`)
 selectors match all of them except the last.
 
+## 2026-10-20 the right-panel squeeze: the reservation's clock
+
+Live GUI, desktop window 1721×1033 (CSS viewport 1707×1067), the report's session
+(`插件代码排查与重构`), pinned summary open so the conversation carries a 300px
+`padding-right` (`--dps-right-space`). Every sample below is one `requestAnimationFrame`
+of a real toggle, taken from inside the page.
+
+### Before — two reservations, two clocks
+
+| t | track (middle) | `padding-right` | content box | transcript | composer |
+| --- | --- | --- | --- | --- | --- |
+| click | 1427 | 300 | 1120 | 466 / 748 | 450 / 780 |
+| +159ms (track snapped) | 659 | 300 | **352** | 466 / **288** | 450 / **320** |
+| +294ms (reservation landed) | 659 | 0 | 652 | 385 / 588 | 369 / 620 |
+| settled | 659 | 0 | 652 | 312 / 588 | 296 / 620 |
+
+The middle row is the report: the transcript collapses to 288px and hugs the
+middle area's left edge (layout left 312 = sidebar 280 + the product's 16px
+inset), then expands back. The covers hold only the left edge, so the width
+collapse is painted.
+
+Close is the mirror: the content box overshoots to 1420 before the reservation
+returns, and the transcript goes `312 → 584 → 466`.
+
+A/B attribution: pinning `--dps-right-space` (and the rail claim) to 0 before the
+toggle removes the 288px frame entirely. Ordering attribution: the instant gate's
+`transition-duration: 0.001s` on `_scrollBody` turns the late write into a step
+(measured padding 300 → 0 between two adjacent frames).
+
+### After — one clock (`verify-panel-squeeze.cjs`)
+
+| direction | scroll box | transcript (left / width) |
+| --- | --- | --- |
+| open | 1425 → 1345 → 864 → 667 → 657 | 466/748 → 442/748 → 312/714 → 312/594 → 312/588 |
+| close | 657 → 682 → 737 → 1070 → 1372 → 1425 | 312/588 → 312/603 → 312/637 → 412/640 → 466/748 |
+
+Both monotone: the spare space is consumed first, then the width shrinks. The
+reservation's first changed frame is the track's ±1 (measured track frame 4,
+padding frame 5). The snap+cover path is untouched when nothing reserves
+(`verify-frame-track.cjs`: 2 distinct track widths, covers on both directions,
+rail drift 0.0px).
+
+### Cost under load (`verify-panel-squeeze-perf.cjs`)
+
+Headless Chromium on SwiftShader (software GPU), same session, one open per arm,
+1800ms window, `longtask` observer:
+
+| arm | frames | p50 gap | p95 gap | worst gap | worst long task | transcript nodes |
+| --- | --- | --- | --- | --- | --- | --- |
+| squeeze | 263 | 6ms | 6ms | 122ms | 122ms | 11,539 |
+| snap (reservation pinned 0) | 248 | 6ms | 6ms | 84ms | 85ms | 11,539 |
+| squeeze + flow cloned ×2 | 250 | 6ms | 6ms | 126ms | 126ms | 23,078 |
+| squeeze + flow cloned ×4 | 178 | 6ms | 23ms | 228ms | 227ms | 46,156 |
+| squeeze, CPU ×4 | 3 | 647ms | 1115ms | 1115ms | 1093ms | 11,539 |
+
+Reading: up to ~23k transcript nodes the squeeze holds the snap path's profile
+(p95 6ms); the price shows up at ~46k nodes as `p95 6 → 23ms` and a ~100ms
+longer worst frame. At 4× CPU throttling the entire page (not the animation)
+collapses to ~1.5 fps — that is the device floor.
+
+Caveat: the headless page was also serving the author's streaming session, and
+headless rAF is not vsync-capped, so `frames` is a relative indicator; the gaps
+and long tasks are the meaningful columns.
+
+## 2026-10-21 the reservation joins the snap (the eased-track squeeze is gone)
+
+Live GUI (`http://127.0.0.1:49326`, the desktop app's own page), window
+1707×1067, the report's session (`修复侧边栏动画卡顿问题`), pinned summary open
+so the conversation carries a 300px `padding-right` (`--dps-right-space`). Every
+row below is one `requestAnimationFrame` of a real toggle, sampled inside the
+page; `t` is milliseconds from the click.
+
+### The report
+
+"Opening/closing the right sidebar, the middle column — transcript, composer, the
+header's right-hand buttons — stutters, and starts later than the sidebar
+itself." The 2026-10-20 build answered the *collapse* by easing the frame's track
+whenever a reservation existed ("one clock"). That ease is `grid-template-columns`
+on the AppFrame, i.e. a LAYOUT property: every frame of the 300ms re-lays out the
+whole frame. The panel slides on its own compositor transform, so it keeps its
+frame rate while the conversation does not.
+
+### Before — the track eased (`squeezeOnOneClock`, removed)
+
+One trace, six sampled frames (the probe samples per rAF; on that page a frame
+was 40–170ms apart, which is why the `t` column has no more rows). It is a shape,
+not a distribution.
+
+| t (ms) | track | `padding-right` | transcript (left / width) | frames |
+| --- | --- | --- | --- | --- |
+| click | 1427 | 300px | 466 / 748 | 1 |
+| +108 | 659 (commit landed) | 300px | 466 / 748 | 2 |
+| +144 | easing | 287.4px | 456 / 748 | 3 |
+| +178 | easing | 231.5px | 413 / 748 | 4 |
+| +249 | easing | 73.4px | 312 / 703 | 5 |
+| +418 | 659 | 0px | 312 / 588 | 6 |
+
+Five frames in a 400ms window, every one of them a full-frame relayout, and the
+width only starts moving after the reservation has been eaten (`+249ms`).
+
+### After — the track snaps, the reservation settles in the same task
+
+| t (ms) | track | `padding-right` | transcript (left / width) | composer (left / width) |
+| --- | --- | --- | --- | --- |
+| click | 1427 | 300px | 466 / 748 | 450 / 780 |
+| commit frame | 659 (snapped) | **0px** | **466 / 588** | 450 / 620 |
+| +1 frame | 659 | 0px | 427 / 588 | 411 / 620 |
+| +2 frames | 659 | 0px | 400 / 588 | 384 / 620 |
+| … | 659 | 0px | 341 → 334 → 323 → 318 → 315 → 313 → 312 | … → 296 |
+| settled | 659 | 0px | 312 / 588 | 296 / 620 |
+
+`verify-panel-squeeze.cjs` (rewritten, 21 checks): the reservation reaches 0 on
+the track's own frame (frame 4 == frame 4) and the fallback hold reports *not
+needed* — the owners published in the toggle's task; the transcript's width lands
+in two values (`[748, 588]`); the panel's slide and the transcript, composer AND
+header covers share one `startTime` (spread **0ms**; the number of samples
+depends on how many frames the page delivers — 3 to 56 in the runs recorded);
+every cover runs 300ms on `cubic-bezier(0.4, 0, 0.2, 1)`; close is the mirror
+(`[588, 748]`, no overshoot, and the reservation comes back on the track's own
+frame at 300px); a 9-click storm leaves no root attribute, no inline padding and
+no page error.
+
+Run-to-run here (same build, same session): open `p50 8–9ms / p95 50–96ms /
+max 194–319ms`, close `p50 4–8ms / p95 40–82ms / max 188–298ms`. The old path on
+the same page measured `p95 71ms / max 643ms` (open) and `p95 87ms / max 136ms`
+(close). The max is the product's commit block, which both paths pay.
+
+### Cost under load (`verify-panel-squeeze-perf.cjs`)
+
+Headless Chromium on SwiftShader (software GPU), same session, 1800ms window per
+toggle, `longtask` observer. The comparable arms run **3 reps** and the table
+shows medians; `eased track (option off)` is the same page with the root class
+removed, i.e. the previous shape, one variable.
+
+| arm | reps | frames | p50 | p95 | max | >50ms | worst long task | layouts | layout ms | style ms | task ms | nodes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| reserve (snap) | 3 | 217 | 4ms | **13ms** | 295ms | 4 | 309ms | 237 | 98ms | 448ms | 1363ms | 5,985 |
+| eased track (option off) | 3 | 188 | 4ms | 21ms | 210ms | 5 | 210ms | 206 | 90ms | 547ms | 1376ms | 6,039 |
+| no reservation (pinned 0) | 3 | 232 | 4ms | 16ms | 210ms | 4 | 220ms | 252 | 103ms | 388ms | 1349ms | 6,039 |
+| reserve + cloned flow ×2 | 1 | 192 | 4ms | 16ms | 393ms | 3 | 390ms | 215 | 135ms | 491ms | 1526ms | 12,078 |
+| reserve + CPU ×4 | 1 | 2 | 1805ms | 1805ms | 1805ms | 2 | 1801ms | 17 | 242ms | 1751ms | 2385ms | 6,039 |
+| reserve + cloned flow ×2 + CPU ×4 | 1 | 2 | 2634ms | 2634ms | 2634ms | 2 | 721ms | 22 | 541ms | 2493ms | 4222ms | 12,078 |
+
+Reading: the *stable* result across runs is the shape, not the timing columns.
+In every run of both builds the reservation lands on the track's own frame, no
+frame paints a collapsed transcript, and the covers start with the panel. What the
+change removes is structural and visible in the code path, not in a p95: the
+300ms `grid-template-columns` ease is gone, so the 11k-node transcript is no longer
+re-laid out per frame — its cover is a composited `transform`, and the only
+per-frame layout left is inside the composer capsule and the header (a few dozen
+nodes each).
+
+The frame-gap columns of this table are noise-dominated on this machine, and a
+later same-day rerun of the same script shows why they must not be read as a
+delta: `reserve p95 17 / max 290 / layout 115ms / style 560ms` against
+`eased p95 13 / max 176 / layout 102ms / style 531ms` — the opposite sign to the
+`p95` and `style ms` rows above. The only column that moved the same way in all
+recorded runs is the number of frames over 50ms (reserve 2–4, eased 5–6). Treat
+each row as one run of that arm.
+
+What is left of the cost is ONE commit block (`max ~295ms` here, the product's own
+relayout of the frame), which the eased arm spreads over the animation instead of
+paying up front. At 4× CPU throttling the whole page — not the animation — is
+frame-starved, which is the device floor. `LayoutCount` is not comparable between
+arms: the snap path spends many *small* layouts (header width + composer `left`
+covers), the eased path a few *huge* ones.
+
+Caveat: the headless page is also serving the live session (the node count grew
+between runs), so a single toggle's p95 can swing by 3× — that is why the
+comparable arms are 3-rep medians, and why even those are quoted with the reverse
+run rather than as a delta.
+
+## 2026-10-21 (later) the two visual reports
+
+### Close: glides right, then jumps back
+
+Mechanism, reproduced by construction rather than by luck: on close the track
+snaps wide while the reservation is still `0`, so the content box is the full
+track and the centred transcript's layout sits at the **no-reservation centre**
+(measured on this page: `616px` instead of `466px`). The cover seeds from that
+layout and glides there; when the owner finally publishes its value the layout
+moves again, but the cover has already ended — so the painted box jumps back.
+The fix is the mirror of the open-direction hold: the close now holds the last
+non-zero reservation it saw (0 for a reservation-less close), written inline
+`!important` and probed per frame (`remove -> read -> restore`, all inside one
+rAF, so no frame can paint the stale value). `verify-panel-squeeze.cjs` prints
+whether it fired: on this page it is **"not needed"** in both directions — the
+owners publish inside the toggle's own task — which is also why the jump was not
+reproducible here without an owner that goes silent.
+
+### Open: a grey strip appears before the panel does
+
+The open animation is a compositor `transform` on the dock, and the column is
+allocated at its final width in the first frame. Measured at 150ms (animations
+paused): the column starts at `939px`, the dock's left edge is at `1111px`, and
+the 172px between them paints the frame's background — on a theme where that is
+not the panel's surface, that strip is the reported grey block. The column is now
+painted with the panel's own surface for the duration of the open (`read from the
+dock's first painted descendant`, removed with the toggle), so the strip reads as
+part of the panel instead of a hole.
+
+
+
+

@@ -73,11 +73,18 @@ const URL_ = arg('--url', process.env.DSH_URL || 'http://127.0.0.1:19387')
 const SESSION = arg('--session', '修复侧边栏动画卡顿')
 const OUT = path.resolve(__dirname, '..', '.probe-rapid-toggle')
 
-/** The three storms: a hammering user, a very fast one, and a slow one. */
+/** The three storms: a hammering user, a very fast one, and a slow one.
+ *
+ * All counts are EVEN on purpose. The rail's own x differs between the panel's
+ * two states (dsh-widgets anchors it to the conversation's right edge while the
+ * panel is closed and inside the panel while it is open), so the before/after
+ * drift comparison below is only meaningful when the storm ends in the state it
+ * started in. The residue checks do not care about the parity.
+ */
 const STORMS = [
-  { gap: 130, clicks: 9, label: '9 clicks @130ms' },
-  { gap: 60, clicks: 15, label: '15 clicks @60ms' },
-  { gap: 400, clicks: 5, label: '5 clicks @400ms' },
+  { gap: 130, clicks: 10, label: '10 clicks @130ms' },
+  { gap: 60, clicks: 16, label: '16 clicks @60ms' },
+  { gap: 400, clicks: 6, label: '6 clicks @400ms' },
 ]
 
 function authCookie() {
@@ -190,6 +197,26 @@ const check = (name, ok, detail) => { if (!ok) failures += 1; console.log(`${ok 
   await row.click({ timeout: 8000 })
   await page.waitForTimeout(4500)
 
+  // This suite is about the covers: they must never move the rail. The rail
+  // yields on its own clock when the panel takes its strip, so a live reservation
+  // would make "the rail did not move" unmeasurable — pin it off for the storms.
+  // (The reservation's own contract, including a live 9-click storm, is
+  // `verify-panel-squeeze.cjs`.)
+  const reservation = await page.evaluate(() => {
+    const el = document.querySelector('[data-conversation-scroll]')
+    return el === null ? 0 : Number.parseFloat(getComputedStyle(el).paddingRight) || 0
+  })
+  if (reservation > 0.5) {
+    console.log(`# reservation ${reservation}px -> pinned to 0 so the cover/rail invariant is isolated`)
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--dps-right-space', '0px')
+      document.documentElement.style.setProperty('--dsx-rail-w', '0px')
+      const el = document.querySelector('[data-conversation-scroll]')
+      if (el !== null) el.style.setProperty('padding-right', '0px', 'important')
+    })
+    await page.waitForTimeout(400)
+  }
+
   const cap = page.locator('button.dsx-stats-capsule').first()
   if (await cap.count()) {
     const vis = await page.evaluate(() => {
@@ -200,10 +227,14 @@ const check = (name, ok, detail) => { if (!ok) failures += 1; console.log(`${ok 
   }
   await page.evaluate(INSTALL)
 
-  const before = await page.evaluate(async () => await window.__rt.settleWait(2200))
-  const report = { url: URL_, session: SESSION, before, storms: [], errors }
+  const report = { url: URL_, session: SESSION, before: null, storms: [], errors }
 
   for (const storm of STORMS) {
+    // Per-storm baseline: the rail's x differs between the panel's two states, so
+    // the drift below is only meaningful when it is compared with the state the
+    // storm starts in (the storms are even-count, so they end in it too).
+    const before = await page.evaluate(async () => await window.__rt.settleWait(600))
+    report.before ??= before
     const marks = await page.evaluate(async (a) => await window.__rt.storm(a.n, a.gap, a.settle), { n: storm.clicks, gap: storm.gap, settle: 2600 })
     const after = await page.evaluate(async () => await window.__rt.settleWait(900))
     // Two legal track edges: the one it settled on, and the one another click
@@ -238,7 +269,7 @@ const check = (name, ok, detail) => { if (!ok) failures += 1; console.log(`${ok 
     check(`${storm.label}: no cover still running`, after.residue.covers.length === 0, JSON.stringify(after.residue.covers))
     check(`${storm.label}: the instant gate released`, after.residue.instant === false, `class="${after.residue.htmlClass}"`)
     check(`${storm.label}: the opening gate released`, after.residue.opening === false, `class="${after.residue.htmlClass}"`)
-    check(`${storm.label}: the rail did not move`, !railMoved || upstreamRailRace, `${railDrift}px${upstreamRailRace ? ' (upstream swallowed-rail race: claim stayed at the anchor, reproduced with this plugin inert — not our residue)' : ''}`)
+    check(`${storm.label}: the rail did not move`, !railMoved || upstreamRailRace, `${railDrift}px claim=${after.geo.railRight}${upstreamRailRace ? ' (upstream swallowed-rail race: claim stayed at the anchor, reproduced with this plugin inert — not our residue)' : ''}`)
     check(`${storm.label}: the track settled on a legal edge`, legalTrack, `${after.geo.track} (legal: ${edge1} | ${edge2})`)
     check(`${storm.label}: the transcript edge is consistent`, legalProse, `prose ${after.geo.prose?.l} composer ${after.geo.composer?.l}`)
     report.storms.push({ ...storm, marks, after, railDrift, railClaimStuck, upstreamRailRace, cleaned, legalTrack, legalProse, edges: [edge1, edge2] })

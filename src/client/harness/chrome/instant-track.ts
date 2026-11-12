@@ -1,24 +1,67 @@
 /**
- * Right-panel toggle: snap the frame's grid track, then glide the content with
- * compositor-friendly covers.
+ * Right-panel toggle: the track lands in one frame, the conversation glides, and
+ * the panel slides over the space it took.
  *
- * Layer: harness/chrome (DOM behaviour aimed at the DSH shell's own chrome).
- * Seams: `<html>` root classes the harness stylesheet keys on
- * (`harness/frame-column-transition.module.css`), the product's own
- * `data-sidebar-right-*` toggle attributes, and the two class-suffix hosts the
- * conversation is built from. No private module class names (all three
- * selectors are suffix/attribute matches, the same seam the rest of this plugin
- * uses).
+ * WHAT THE MOTION IS
  *
- * WHY THIS EXISTS
+ * The frame's grid track is snapped to its final value in the click's own task
+ * (`data-enhc-instant` + finishing the 1ms transition that publishes the beat
+ * dsh-widgets' rail yield reads), and the right-hand occupant gets the slide it
+ * is missing on the OPEN direction (`data-enhc-opening`). Everything else is a
+ * CARRY, and a carry is only legal because the clip is held:
+ *
+ *   1. at the click, before the product writes the track, the conversation
+ *      viewport's width is read (the CLIP every child of it is painted inside);
+ *   2. in the commit's own task the clip is pinned back to the wider of the two
+ *      widths, so the boxes that are about to glide are never painted outside it;
+ *   3. the payload's own measure — the transcript column's width, the composer
+ *      capsule's width — is pinned to what the commit produced, so widening the
+ *      clip re-centres those boxes instead of re-wrapping their text;
+ *   4. each payload box is painted at its PRE-toggle left edge and eased to the
+ *      left edge the layout actually landed on;
+ *   5. when the ease ends, the offsets, the width pins and the clip pin are all
+ *      dropped in ONE task, and the painted box does not move — the left edge
+ *      the ease ended on IS the resting one.
+ *
+ * WHY THAT IS THE ONLY WAY TO GLIDE THE CONVERSATION
+ *
+ * The conversation is not one box: the transcript column and the composer capsule
+ * both live inside `_scrollBody`, the scroll container, and its padding box is
+ * the clip (measured: 1425px wide closed, 657px open, a 5px scrollbar, and the
+ * panel's column — 768px of it — is taken out of it in the SAME commit that
+ * writes the track). A cover that only moved a box was therefore painted outside
+ * the new clip from its very first frame: measured on a 1707x1067 window, 588px
+ * of transcript at its old 466px left edge ran 117px past the 937px clip and the
+ * panel's surface covered that strip — the report "the area appears pressed
+ * against the sidebar and only then translates". Holding the clip during the
+ * carry is what removes that, and it is also why the payload's width has to be
+ * pinned: without it, widening the clip returns the column to its 748px closed
+ * measure and re-wraps the transcript on the frame the carry starts.
+ *
+ * The one thing this does not do is grow the payload smoothly. The column's
+ * measure IS a function of the clip (748px closed, 588px open on that window), so
+ * the re-wrap has to happen somewhere: it happens in the commit frame, once, and
+ * both ends of the carry are then exact — the box starts where it was and ends
+ * where the layout rests. Animating the width instead measures p50 7.3ms /
+ * p90 53.8ms per frame on a 2.9k-node conversation (4.2 / 8.2 idle-adjacent) and
+ * ~4x that on the long threads this product is used for, which is the 13fps
+ * squeeze this module exists to remove.
+ *
+ * The header is the one host carried by WIDTH instead, because its LEFT edge is
+ * pinned to the left column and only its right edge travels; its content (the
+ * tabs, the badge pool, the right-hand buttons) is small enough that the reflow
+ * per frame is cheap, and the alternative — a positional offset — cannot widen a
+ * title column.
+ *
+ * WHY THE SNAP EXISTS (unchanged)
  *
  * `harness/frame-column-transition.module.css` keeps the AppFrame's
  * `grid-template-columns` transition permanently, because DSH 0.2.0 gates it
  * behind `[data-animating]` and sets that attribute on the same commit that
- * writes the new track — so the transition never starts and the conversation
- * snaps. That permanent tween is right for the LEFT panel, whose track change
- * costs one relayout. It is wrong for the RIGHT panel, because opening/closing
- * it rewrites a LAYOUT property across the whole frame:
+ * writes the new track — so the transition never starts. That permanent tween is
+ * right for the LEFT panel, whose track change costs one relayout. It is wrong
+ * for the RIGHT panel, because opening/closing it rewrites a LAYOUT property
+ * across the whole frame:
  *
  *   measured (1707x1067, one right-panel toggle, long conversation loaded)
  *     - the center track eases 1427px -> 659px, and every frame of the 300ms
@@ -29,28 +72,9 @@
  *     - main-thread exclusive time in that window goes to UpdateLayoutTree
  *       (506.8ms of a 987.0ms busy window; Layerize 210.3ms, Paint 71.3ms),
  *       i.e. the thread is re-styling and re-laying out, not painting — while
- *       the compositor thread spends 0.6ms and the GPU thread 0ms, so nothing
- *       is lost to compositing or upload;
+ *       the compositor thread spends 0.6ms and the GPU thread 0ms;
  *     - sampled at frame granularity the whole 226ms ease produced 3 frames
  *       (~13fps inside the window, 70-80fps outside it).
- *
- * So on a right-panel toggle the ease buys a 300ms glide at the cost of the
- * frame budget of the entire window. This module collapses the tween to a
- * single frame and re-adds the motion as covers:
- *
- *   - the transcript column `[class$='_column']` gets a `transform` cover
- *     (compositor property; probe V: `overflow: visible`, `position: static`,
- *     0 `position: fixed` descendants out of 10878, so it is the only host that
- *     can carry a transform without moving dsh-widgets' rail);
- *   - the composer capsule `[data-slot=conversation.composer.bar] [class*='_card']`
- *     gets a `left` cover. It CANNOT take a transform: its subtree contains
- *     `[data-slot=conversation.input.overlay]` -> `.dsx-stats-drawer` ->
- *     `.dsx-stats-drawer-zoom` -> `.dsx-stats-rail`, three `position: fixed`
- *     nodes, so a transform on this host rewrites their containing block and
- *     drags the rail into the viewport (measured: rail 1247 -> 553, and an
- *     inverse transform on the rail itself does not repair it — 1247 -> 412).
- *     `left` is a layout property, so it does not create a containing block and
- *     the fixed subtree stays put (measured: rail drift 0.0 at 60/150/240ms).
  *
  * The track is snapped by setting `data-enhc-instant` on `<html>` in a
  * CAPTURE-phase listener, i.e. before the product's own handler writes the new
@@ -60,110 +84,67 @@
  * `class` would rebuild the material layer on each write (measured 6.74ms); see
  * `INSTANT_ATTR`.
  *
- * Everything here is behaviour, not policy: whether any of it runs is decided
- * by the `enhc-panel-glide` root class, which `core/apply.ts` flips from the
- * Settings switch (a class is right for that one: it is written once per
- * settings change, not twice per toggle). The CSS gate is written against both
- * (`html.enhc-panel-glide[data-enhc-instant]`), so with the setting off this
- * module is inert twice over.
- *
- * NOT claimed: this does not make the right-panel toggle free. The snap still
- * costs one full-frame relayout (measured 227ms of blocking in the window,
- * against 272ms with the ease) — the residual is the product's, not this
- * module's. What it removes is the 300ms of per-frame relayout.
- *
- * WHY THE COVER RUNS ON THE PRODUCT'S OWN CLOCK
- *
- * The first cut of this module held the transcript's visual edge at its
- * pre-toggle position while it waited for the layout to settle (a rAF hold plus
- * a ResizeObserver re-pin) and only then eased to the resting value. Sync-anchor
- * probing (four arms, ON/OFF x open/close) showed that is wrong twice over:
- *
- *   - it starts LATE. The hold released only after two stable readings; on a
- *     long conversation the click blocks the thread (~180ms measured), so the
- *     cover was created with `elapsed ~= 180ms` and its ease was compacted into
- *     the old `MIN_COVER_MS = 120` floor. Measured glide window: 616 -> 600 ->
- *     538 -> 431 -> 324 -> 312 px over ~150ms, against the panel's own 300ms;
- *   - it moves the transcript the WRONG WAY FIRST. The pin writes
- *     `before - layout` after the frame has already snapped the track, so the
- *     column is dragged back out over the panel (measured +304px here) for the
- *     whole hold. That is the "flash, then slide" report: the panel is already
- *     at its resting place while the transcript is still painted on top of it.
- *
- * The product states the invariant this module has to meet (the `data-animating`
- * doc block in AppFrame): "Track and panel travel on one shared curve only while
- * animating ... an occupant that used its own would detach the panel's edge from
- * the conversation's while squeezing." Both the track and the occupant read
- * `--ds-transition-duration-slow` (0.3s) and `--ds-ease-in-out`
- * (`cubic-bezier(0.4, 0, 0.2, 1)`). Snap-and-cover is only compliant if the
- * cover runs that same 300ms on that same curve, starting when the layout
- * actually moves.
- *
- * So: the cover is armed on the first frame the layout is seen to move, it
- * always runs the FULL `COVER_MS`, and it has no hold and no re-pin. The offset
- * eases from `before - layout` to `0`, which makes the first covered frame
- * identical to the pre-toggle position and the last covered frame identical to
- * whatever the layout rests at — nothing is predicted and no frame is painted
- * outside the corridor between the two.
- *
- * WHY THE SEED IS CORRECTED AND THE PROGRESS IS NOT
- *
- * The transcript's snapped layout is not immediately final: the column's own
- * `max-width` catches up in a LATER TASK OF THE SAME FRAME (measured on close:
- * the centre track is already back to 1427px while the column still reports a
- * centred edge of 670px, then 616px once `max-width` has been committed). A
- * `getBoundingClientRect()` in the driver's rAF callback forces a flush, so it
- * reads the first value, but the frame is PAINTED against the second one — the
- * offset seeded from the transient then paints the transcript 54px outside its
- * corridor (`visual = 616 + (-358) = 258px` against a 312..616px corridor).
- *
- * Holding the visual edge until the layout looked settled (the previous
- * design's `hold`/`pin`) removed that pop but reintroduced the flash, because
- * waiting for two stable readings cost ~180ms. So the seed is corrected
- * instead, and it is corrected in the one place that is guaranteed to run after
- * layout and before paint and to fire exactly when the value changes: a
- * ResizeObserver on the host (`max-width` changes the column's border box; the
- * composer capsule changes width for the same reason).
- *
- * The correction re-derives `from = before - layout` from the LIVE box and
- * re-seats the running animation's keyframes, keeping its clock (`setKeyframes`
- * does not restart it). Because the keyframes are `from -> 0`, the painted
- * offset is `(1 - progress) * from`, so the layout can be recovered from the
- * painted box by taking that offset back out — no re-pin, no second driver.
- * What the correction must NOT do is touch the progress: re-seating `from` so
- * that `layout + (1 - p) * from == before` would freeze the transcript for the
- * whole ease, which is the hold this design exists to avoid. Re-seating it to
- * `before - layout` makes the painted box `before + p * (layout - before)` for
- * whatever the layout currently is, so a transient shows up as a slightly wrong
- * ENDPOINT ESTIMATE that the next correction fixes, never as a jump.
- *
  * WHY THE GATE IS FINISHED, NOT SKIPPED
  *
- * With the cover armed on the ResizeObserver the motion itself was right, but
- * it was one frame LATE: measured on an open (long conversation, loaded thread)
- * the dock's slide took `startTime` 94.6ms after the click and the transcript
- * cover 219.8ms, against a 151.7ms worst frame gap — one frame, and on this
- * thread a frame is ~100ms.
- *
- * The frame is the gate's own duration. `0.001s` is deliberate (a transition is
- * what publishes the `transitionrun` beat dsh-widgets' rail yield reads,
- * measure.ts:161-167, and `0s` — i.e. no transition at all — costs that beat),
- * but a NON-ZERO duration also means the computed value is still the OLD one
- * for the whole rendering step that starts the transition: measured in
- * isolation, `transition: width 0.001s` reads 700px in the step that writes
- * 200px and 200px only in the next one. So the step whose paint should hold the
- * transcript still does not lay the new track out, no box changes, no
- * ResizeObserver delivery happens in it — while the product's panel slide needs
- * no layout and starts in that very step.
+ * `0.001s` is deliberate (a transition is what publishes the `transitionrun`
+ * beat dsh-widgets' rail yield reads, and `0s` — i.e. no transition at all —
+ * costs that beat), but a NON-ZERO duration also means the computed value is
+ * still the OLD one for the whole rendering step that starts the transition:
+ * measured in isolation, `transition: width 0.001s` reads 700px in the step that
+ * writes 200px and 200px only in the next one. So the step whose paint should
+ * hold the new layout does not lay the new track out at all — while the
+ * product's panel slide needs no layout and starts in that very step.
  *
  * Finishing the gate's transitions in the microtask that follows the product's
  * own track write settles the value inside that same task, so the layout, the
- * product's own ResizeObserver, both covers and the slide all land in ONE
+ * product's own ResizeObserver, the carry and the slide all land in ONE
  * rendering step. The transition still runs and still dispatches
  * `transitionrun`/`transitionstart`/`transitionend`, which is the whole point of
  * keeping it (`finish()` in a `MutationObserver` callback on the writing task
  * reads the new value in that task and still emits run/start/end — verified in
  * isolation before this was written).
+ *
+ * WHY THE OPEN DIRECTION NEEDS A SLIDE OF ITS OWN
+ *
+ * The product's occupant owns two rules (module `OUqwTW`):
+ *
+ *   [data-dockkit-host=dock]                            { transform: translateX(var(--dsh-sidebar-width));
+ *                                                         visibility: hidden;
+ *                                                         transition: transform .3s, visibility 0s linear .3s }
+ *   [data-sidebar-right-open] [data-dockkit-host=dock]  { transform: none; visibility: visible;
+ *                                                         transition: transform .3s }
+ *
+ * so the slide is written for BOTH directions — but it only ever RUNS on the
+ * close. `SidebarPanel` renders `DockLayout` while expanded, i.e. React mounts
+ * the dock IN THE SAME COMMIT that sets `data-sidebar-right-open`; a newly
+ * created element has no before-change style, so no transition starts and the
+ * dock is inserted directly at its resting rect. `frame-column-transition.module.css`
+ * restores the missing half as a keyframe slide (`anim_enhc-panel-glide-in`),
+ * which needs no before-change style.
+ *
+ * WHY THE PANEL'S SURFACE IS NO LONGER PAINTED
+ *
+ * An earlier build filled the strip the dock had not covered yet with the panel's
+ * own surface (read from the dock's first painted child), because the
+ * conversation had already shrunk away and the strip showed the frame's
+ * background — a grey block that appeared first and was then covered. With the
+ * clip held the strip is painted with the CONVERSATION, which is what belongs
+ * there while the panel is still arriving, so that fill would now hide the very
+ * motion this module is for. Nothing else needed it: the dock covers the strip
+ * by the end of the slide.
+ *
+ * Layer: harness/chrome (DOM behaviour aimed at the DSH shell's own chrome).
+ * Seams: `<html>` root classes the harness stylesheet keys on, the product's own
+ * `data-sidebar-right-*` toggle attributes, `data-conversation-scroll`, and the
+ * hashed module classes the conversation is built from (`_frame`, `_scrollBody`,
+ * `_column`, plus the composer bar and header slots the product publishes). No
+ * private class names are invented; every hashed one is a suffix match.
+ *
+ * Everything here is behaviour, not policy: whether any of it runs is decided by
+ * the `enhc-panel-glide` root class, which `core/apply.ts` flips from the
+ * Settings switch. The CSS gate is written against both
+ * (`html.enhc-panel-glide[data-enhc-instant]`), so with the setting off this
+ * module is inert twice over.
  */
 
 /** Root class `core/apply.ts` keeps while the user has the option enabled. */
@@ -192,22 +173,11 @@ const INSTANT_ATTR = 'data-enhc-instant'
 /**
  * Root ATTRIBUTE that marks an OPENING toggle, for the duration of the snap.
  *
- * The product slides its right-hand occupant on CLOSE (the closed-state rule
- * carries `transform: translateX(--dsh-sidebar-width)` and the open-state rule
- * puts `transition: transform` on the same elements) but not on OPEN: the dock
- * is mounted *by* the commit that also sets `data-sidebar-right-open`, so its
- * first computed style is already the open one and there is no before-change
- * style for the transition to start from. Measured: four open arms, no
- * `transform` animation on `[data-dockkit-host="dock"]`, the element inserted
- * directly at its resting rect. The panel therefore *pops* while the transcript
- * eases — the two halves of the product's own "one shared curve" contract
- * disagree. `frame-column-transition.module.css` uses this attribute to run the
- * missing half as a keyframe slide, which needs no before-change style.
- *
- * It is tracked separately from the instant gate so the slide can never be
- * applied to a CLOSE, where the occupant is already animating on the product's
- * own transition. Like that gate it is an attribute, not a class, for the
- * measured `refreshMaterial` cost documented on `INSTANT_ATTR`.
+ * The product mounts its occupant in the commit that opens the panel, so the
+ * dock's own slide never starts (see the header). This attribute is what the
+ * stylesheet's keyframe slide is gated on, and it is tracked separately from the
+ * instant gate so the slide can never be applied to a CLOSE, where the occupant
+ * is already animating on the product's own transition.
  */
 const OPENING_ATTR = 'data-enhc-opening'
 
@@ -218,23 +188,38 @@ const OPENING_ATTR = 'data-enhc-opening'
  * track write is measured 30-50ms after the click, but on a starved thread the
  * whole commit has run as late as ~178ms) and early enough that the snap's
  * `transition-duration: 0.001s` is off the frame and the viewport well before
- * their next legitimate transition. If the covers or the OPEN slide are still
- * moving at this point the release defers (see `release`), so this value does
- * not truncate them.
+ * their next legitimate transition. If the panel's slide is still moving at this
+ * point the release defers (see `release`), so this value does not truncate it.
  */
 const HOLD_MS = 420
 
 /**
- * The cover's clock, in ms — the product's own `--ds-transition-duration-slow`.
+ * Is the conversation's own glide enabled?
  *
- * Deliberately NOT compacted for the time the snap spends blocking the thread:
- * the panel and the track run their own 300ms from the moment they are written,
- * so a shorter cover is what detaches the transcript from them.
+ * OFF (rolled back 2026-10-30, owner report: the motion was worse than no motion —
+ * position drift and a visible re-wrap mid-squeeze). OFF means the toggle is the
+ * snap plus the panel's own slide and nothing else: the conversation lands with
+ * the track, in the click's frame, at exactly the geometry the product computes.
+ *
+ * ON is the FLIP below: per-host left + width interpolation inside a clip held at
+ * its wider state. It is geometrically exact and verified, but it re-wraps the
+ * transcript on every frame, which measures 6-8 painted positions per 300ms toggle
+ * on a long conversation — visible as a stutter. The smooth recipe is a content-box
+ * pinch (padding-right through a CSS transition, which outranks the owners'
+ * `!important`), measured at 39 steps; see
+ * `docs/handoff/RIGHT-PANEL-LANDING-2026-10-30.md`, section "第四轮追加".
  */
-const COVER_MS = 300
+const MOTION_ENABLED = false
 
-/** The product's own `--ds-ease-in-out`. */
-const COVER_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)'
+/**
+ * The flip's clock and curve, in ms — the product's own
+ * `--ds-transition-duration-slow` and `--ds-ease-in-out`.
+ *
+ * Same values for both hosts and for the panel's own slide, so the three never
+ * disagree about when the motion is over.
+ */
+const FLIP_MS = 300
+const FLIP_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)'
 
 /** The product's right-panel toggle and its collapsed-state affordance. */
 const TOGGLE_SELECTOR = '[data-sidebar-right-toggle],[data-sidebar-right-expand]'
@@ -243,24 +228,24 @@ const TOGGLE_SELECTOR = '[data-sidebar-right-toggle],[data-sidebar-right-expand]
 const FRAME_SELECTOR = '[class$="_frame"]'
 
 /**
- * The conversation viewport, whose box follows the frame's centre track.
+ * The conversation viewport — the scroll container whose padding box IS the clip.
  *
- * Included in the gate because on the CLOSE direction it is the second half of
- * the same squeeze: the track is instantly 1427px wide while the viewport's own
- * easing is still on the old padding, so the content box is momentarily the
- * full width and the column centres away from its track (measured per frame
- * 312 -> 647 -> 325 -> 368 -> 386; the OFF arm is monotone 312 -> 336 -> 364 ->
- * 383 -> 386, where track and padding ease together). Collapsing both keeps the
- * layout in agreement at every frame, which is what makes the cover's `from`
- * the true displacement (-74px) instead of a transient (-344px).
- *
- * In the sessions measured for this change the viewport's `padding-right` never
- * left 0px and the settle microtask never found a transition on it, i.e. the
- * rule is inert there and only bites when a rail does squeeze the viewport —
- * which is why it is kept: inert is free, and the disagreement it prevents is
- * exactly one frame of a wrong centre.
+ * Measured on 1707x1067: 1427px wide closed, 659px open, 5px of that a scrollbar,
+ * and both the transcript column and the composer capsule are descendants of it.
+ * Every carry in this module is legal only because this box is pinned back to its
+ * wider state for the length of the ease — see `startFlip`.
  */
 const SCROLL_SELECTOR = '[class$="_scrollBody"]'
+
+/**
+ * The conversation's scroll body, selected by the attribute the PRODUCT
+ * publishes (`data-conversation-scroll`).
+ *
+ * The same element as `_scrollBody` in practice, but read through the stable,
+ * self-published seam for the reservation hold below: that is the channel every
+ * right-side occupant writes on, and naming the attribute avoids hash-coupling.
+ */
+const RESERVATION_SELECTOR = '[data-conversation-scroll]'
 
 /**
  * The product's right-hand occupant — the element that carries the slide.
@@ -287,26 +272,16 @@ const OPENING_ANIMATION = 'enhc-panel-glide-in'
  * Measured before this wait existed: `animationcancel` at `currentTime
  * 254.7/300` (84.9%) and the dock snapping from `translateX(10.35px)` straight
  * to `none`. The longest honest wait is the latest start seen (265ms) plus the
- * 300ms the slide and the covers then run, so 400ms of margin keeps the whole
- * deferral inside 820ms of the click.
+ * 300ms the slide then runs, so 400ms of margin keeps the whole deferral inside
+ * 820ms of the click.
  */
 const RELEASE_MAX_WAIT_MS = 400
 
 /**
- * How often the deferred release re-asks whether anything is still moving.
+ * How often the deferred release re-asks whether the slide is still running.
  *
- * A poll and not an event: the things being waited for are three different
- * objects (two covers and the product's slide), and each of them already stops
- * on its own. There is no single event to hang the release on, and the covers
- * report through their own clock.
- *
- * One frame, because this is the only cost of the wait: every poll that finds
- * motion still schedules again, and the gate stays up until one finds none. The
- * gate is not free while it is up — `data-enhc-opening` keeps the stylesheet's
- * `animation: enhc-panel-glide-in ... both` on the dock, i.e. a finished
- * animation holding a composited transform for as long as the release is late.
- * At 60ms that measured a 72.6ms tail past `animationend` on a calm run and
- * 237ms on the starved one; at one frame it is a tail of one frame.
+ * A poll and not an event: the slide is started by a selector this module cannot
+ * verify up front. One frame, because this is the only cost of the wait.
  */
 const RELEASE_POLL_MS = 16
 
@@ -318,256 +293,234 @@ const RELEASE_POLL_MS = 16
  */
 const SETTLE_MAX_MS = 2
 
-/** Transcript column — `xz4KEq_column`; the only transform-safe cover host. */
+/**
+ * How long after a conversation switch a track transition still counts as part of it.
+ *
+ * The switch's own state writes land in the commit that mounts the new view; 400ms
+ * covers a slow commit (measured ~150ms) with room for the remount's follow-up
+ * renders, and is short enough that a left-sidebar toggle a moment later keeps its
+ * own ease.
+ */
+const SWITCH_WINDOW_MS = 400
+
+/** Transcript column — `xz4KEq_column`; a transform-safe carry host. */
 const PROSE_SELECTOR = '[class$="_column"]'
+
+/**
+ * The element that paints the input capsule inside the composer bar.
+ *
+ * Carried by `left`, never by `transform`: its subtree contains
+ * `[data-slot=conversation.input.overlay]` -> `.dsx-stats-drawer` ->
+ * `.dsx-stats-drawer-zoom` -> `.dsx-stats-rail`, three `position: fixed` nodes,
+ * so a transform on this host rewrites their containing block and drags the rail
+ * into the viewport (measured: rail 1247 -> 553, and an inverse transform on the
+ * rail does not repair it — 1247 -> 412). `left` is a layout property, so it does
+ * not create a containing block and the fixed subtree stays put (measured: rail
+ * drift 0.0 at 60/150/240ms).
+ */
+const COMPOSER_SELECTOR = '[data-slot="conversation.composer.bar"] [class*="_card"]'
 
 /**
  * The conversation header, whose right edge rides the same track change.
  *
  * Its left edge is pinned to the left column and its right edge is the panel's,
- * so it is the one host covered by WIDTH rather than by position; the pair of
- * selectors is the same pair the header stylesheet anchors on, so the two
- * halves cannot drift apart. Anchored on the slot the product guarantees, never
- * on a hashed module class.
+ * so it is the one host carried by WIDTH rather than by position; the pair of
+ * selectors is the same pair the header stylesheet anchors on, so the two halves
+ * cannot drift apart. Anchored on the slot the product guarantees, never on a
+ * hashed module class.
  */
 const HEADER_SELECTOR =
   "[data-slot='conversation.header'] > header:has([class$='_titleCluster'] > [class$='_tabs']), [data-slot='conversation.session.header'] > header"
 
-/** The element that paints the input capsule inside the composer bar. */
-const COMPOSER_SELECTOR = '[data-slot="conversation.composer.bar"] [class*="_card"]'
-
 /**
- * How long the layout change may take before the cover is given up.
+ * The hosts carried by POSITION through one toggle, and how each is offset.
  *
- * This is a time budget, not a frame count, because the snap itself blocks the
- * main thread: measured on a long conversation the click froze the thread for
- * ~178ms, so no frame ran at all in that window and a `4`-frame budget was
- * consumed before the new geometry was even readable.
+ * `property` is a promise about the host, not a preference: the composer capsule
+ * cannot take a transform (see `COMPOSER_SELECTOR`), and the column has no
+ * `position: fixed` descendant to protect (measured 0 of 10878 in the corpus) so
+ * the compositor path is free there.
  */
-const DEADLINE_MS = 600
+const CARRY_HOSTS: ReadonlyArray<{ selector: string; property: 'transform' | 'left' }> = [
+  { selector: PROSE_SELECTOR, property: 'transform' },
+  { selector: COMPOSER_SELECTOR, property: 'left' },
+]
 
-/** Upper bound on the polling ticks, in case frames come far faster than rAF. */
-const MAX_TRIES = 60
-
-/** One running cover, kept so a new toggle (or dispose) can cancel it. */
+/** One running carry, kept so a new toggle (or dispose) can cancel it. */
 interface Glide {
-  /** Stop the driver and drop every style this cover wrote. */
+  /** Stop the animation and drop every style this carry wrote. */
   stop: () => void
   /** Is the ease still moving pixels? (`stop` is idempotent, this is not an exit.) */
   busy: () => boolean
 }
 
 /**
- * Read an element's left edge, or null when it is gone.
- *
- * Both callers read a host that has no cover of its own yet: `releaseCovers()`
- * runs at the top of the click and a new cover is only created after both hosts
- * have been read, so the value here is always the layout's, never an in-flight
- * cover's.
+ * Read an element's painted left edge and width, or null when it is gone.
  *
  * @param el - candidate element.
- * @returns the viewport-space left edge in px, or null.
+ * @returns the border box in viewport space, or null.
  */
-function leftOf(el: HTMLElement | null): number | null {
+function boxOf(el: HTMLElement | null): { left: number; width: number } | null {
   if (el === null || !el.isConnected) return null
-  return el.getBoundingClientRect().left
+  const r = el.getBoundingClientRect()
+  return { left: r.left, width: r.width }
 }
 
 /**
- * Which property a cover drives.
+ * Animate a box from where it was to where it belongs — position AND width.
  *
- * `left` and `transform` are the positional mode: both hold a box painted where
- * it was and ease it to where the layout now is, and both end at the identity,
- * so releasing the cover cannot snap. They differ only in whether the offset is
- * a layout offset (`left`, which needs a positioned box but does NOT create a
- * containing block, so `position: fixed` descendants are untouched) or a paint
- * offset (`transform`, which does create one).
+ * `before` is the box on the frame the user clicked, `target` is the box the layout
+ * settles on, and the animation interpolates LEFT and WIDTH between them on the
+ * product's own 300ms curve. The transcript re-wraps on every frame of it, which
+ * is the price of an honest squeeze (measured: 5 painted positions in a 300ms
+ * toggle on a 3.3k-node conversation).
  *
- * `width` is the sizing mode, for a host whose LEFT edge is pinned and whose
- * right edge is what travels — the conversation header, whose left edge is the
- * left column's edge and whose right edge is the panel's. Its endpoint is the
- * layout width, not the identity, so it is only valid where that width is known
- * to be final by the time the cover arms; see `startCover`.
+ * The clip is held wide for the length of it. Without that, the conversation
+ * viewport has already shrunk in the commit frame and the animated box is painted
+ * cut by the sidebar (measured 117px of transcript, 131px of composer — the first
+ * report). The panel's slide covers the strip instead.
+ *
+ * The box is centred in the pinned clip, so one reading is enough to place both
+ * endpoints: at any width its left edge is `centre - width / 2`.
+ *
+ * @param clip - the conversation viewport whose padding box clips the hosts.
+ * @param clipBefore - its width before the toggle.
+ * @param hosts - `{el, property, before, resting}` per host; `before` from the click.
+ * @returns the running animation, or null when there is nothing to animate.
  */
-type CoverProperty = 'left' | 'transform' | 'width'
+function startFlip(
+  clip: HTMLElement | null,
+  clipBefore: number,
+  hosts: Array<{
+    el: HTMLElement
+    property: 'transform' | 'left'
+    before: { left: number; width: number }
+    resting: { left: number; width: number } | null
+  }>,
+): Glide | null {
+  if (clip === null || !clip.isConnected || hosts.length === 0) return null
+  const clipInline = clip.style.width
+  const clipAfter = clip.getBoundingClientRect().width
+  if (!(Math.abs(clipAfter - clipBefore) > 0.5)) return null
+  const states = hosts.map((host) => {
+    const after = boxOf(host.el)
+    return {
+      ...host,
+      after,
+      target: host.resting === null ? after : host.resting,
+      inlineWidth: host.el.style.width,
+      inlineMaxWidth: host.el.style.maxWidth,
+      inlineOffset: host.property === 'transform' ? host.el.style.transform : host.el.style.left,
+      position: host.property === 'left' && getComputedStyle(host.el).position === 'static' ? host.el.style.position : null,
+    }
+  }).filter((s): s is typeof s & { after: { left: number; width: number } } => s.after !== null && s.target !== null)
+  if (states.length === 0) return null
+
+  clip.style.width = `${Math.max(clipBefore, clipAfter)}px`
+  let stopped = false
+  const animations: Animation[] = []
+  const restore = (): void => {
+    for (const animation of animations) animation.cancel()
+    animations.length = 0
+    clip.style.width = clipInline
+    for (const state of states) {
+      state.el.style.width = state.inlineWidth
+      state.el.style.maxWidth = state.inlineMaxWidth
+      if (state.property === 'transform') state.el.style.transform = state.inlineOffset
+      else state.el.style.left = state.inlineOffset
+      if (state.position !== null) state.el.style.position = state.position
+    }
+  }
+  const stop = (): void => {
+    if (stopped) return
+    stopped = true
+    restore()
+  }
+
+  for (const state of states) {
+    const target = state.target
+    if (target === null) continue
+    state.el.style.width = `${state.before.width}px`
+    state.el.style.maxWidth = 'none'
+    const from = boxOf(state.el)
+    if (from === null) continue
+    const centre = from.left + state.before.width / 2
+    const offset = state.before.left - from.left
+    const landingOffset = target.left - (centre - target.width / 2)
+    if (!(Math.abs(target.width - state.before.width) > 0.5 || Math.abs(offset - landingOffset) > 0.5)) continue
+    if (state.property === 'transform') {
+      state.el.style.transform = `translateX(${offset}px)`
+      animations.push(state.el.animate(
+        [
+          { width: `${state.before.width}px`, transform: `translateX(${offset}px)` },
+          { width: `${target.width}px`, transform: `translateX(${landingOffset}px)` },
+        ],
+        { duration: FLIP_MS, easing: FLIP_EASING },
+      ))
+    } else {
+      if (state.position !== null) state.el.style.position = 'relative'
+      state.el.style.left = `${offset}px`
+      animations.push(state.el.animate(
+        [
+          { width: `${state.before.width}px`, left: `${offset}px` },
+          { width: `${target.width}px`, left: `${landingOffset}px` },
+        ],
+        { duration: FLIP_MS, easing: FLIP_EASING },
+      ))
+    }
+  }
+
+  if (animations.length === 0) {
+    stop()
+    return null
+  }
+  Promise.all(animations.map((animation) => animation.finished.catch(() => undefined))).then(stop, stop)
+  return { stop, busy: () => !stopped }
+}
+
 
 /**
- * Cover one host whose layout has just moved: keep it painted where it was,
- * then ease it to where the layout now is.
+ * Carry a host whose LEFT edge is pinned and whose right edge travels, by width.
  *
- * Called on the first frame the driver sees movement, and every write it makes
- * happens inside that frame's callback, i.e. before the frame is painted — so
- * the snapped layout is never painted uncovered and no hold is needed to hide
- * it.
+ * The header cannot be carried positionally: the right-anchored buttons travel
+ * the panel's whole width while the badges and tabs travel only the distance the
+ * title gives up, and the title itself does not move at all — it changes width.
+ * Covering the header's own width does all of it at once: measured, setting
+ * `header.style.width` back to its closed value while the panel is open
+ * reproduces the closed header exactly (header `280,1427,50`, title column 212px,
+ * tab strip `867.5,139,26` against the open state's `280,659,78` / 41.5px /
+ * `697,87,58`).
  *
- * ON THE `width` MODE. The header cannot be covered positionally, because the
- * thing that moves inside it does not move by one offset: the right-anchored
- * buttons travel the panel's whole width while the badges and tabs travel only
- * the distance the title gives up, and the title itself does not move at all —
- * it changes width. Covering the pool of hosts that have no `position: fixed`
- * descendant (`_headerUtilities`, `_headerActions`, the tab strip) was the
- * first design and it still left the title to truncate instantly, because a
- * relative offset cannot stretch a box. Covering the header's own width does
- * all of it at once: measured, setting `header.style.width` back to its closed
- * value while the panel is open reproduces the closed header exactly — header
- * `280,1427,50`, title column 212px, tab strip `867.5,139,26` against the open
- * state's `280,659,78` / 41.5px / `697,87,58`.
+ * Unlike the positional carry this one does NOT pin the clip: the header sits
+ * outside the scroll container and its container is the frame's own column, so a
+ * wide header is simply clipped by that column — which is exactly what the panel
+ * is taking.
  *
- * `width` also skips the reseat observer below, deliberately. Reseat exists to
- * re-derive a seed from a still-moving layout, and it can do that for a
- * positional cover because the identity endpoint lets the painted value be
- * un-blended (`painted - (1 - progress) * keyFrom`). A width cover has no such
- * endpoint — the layout width IS the far keyframe — so the same arithmetic
- * would only recover the value it wrote. Nothing is lost: `settleTransitions`
- * commits the frame's track inside the click's own task, and the width being
- * covered is that track's. If the arm ever did land on a stale width, `from`
- * reads under 0.5px and no cover is created — the failure is "no glide this
- * once", never a wrong glide.
- *
- * @param element - the box to offset, or to resize when `property` is `width`.
- * @param property - which mechanism this host allows.
- * @param before - px left edge (positional) or width (`width`) captured before
- *   the toggle.
- * @returns the cover record, or null when nothing should run.
+ * @param element - the header.
+ * @param before - its width before the toggle.
+ * @returns the running cover, or null when the width did not change.
  */
-function startCover(
-  element: HTMLElement,
-  property: CoverProperty,
-  before: number,
-): Glide | null {
-  const sizing = property === 'width'
-  // `left` only offsets a positioned box. Forcing `relative` here is safe
-  // because the very measurement that chose `left` over `transform` is the one
-  // that found the fixed widgets subtree inside this host.
-  const position =
-    property === 'left' && getComputedStyle(element).position === 'static'
-      ? element.style.position
-      : null
-  if (property === 'left' && position !== null) element.style.position = 'relative'
-  const inline = property === 'transform' ? element.style.transform : property === 'width' ? element.style.width : element.style.left
-
-  let animation: Animation | null = null
-  let ro: ResizeObserver | null = null
-  let released = false
-
+function startWidthCarry(element: HTMLElement | null, before: number | null): Glide | null {
+  if (element === null || before === null || !element.isConnected) return null
+  const box = boxOf(element)
+  if (box === null) return null
+  const from = before - box.width
+  if (!(Math.abs(from) > 0.5)) return null
+  const inline = element.style.width
+  let stopped = false
+  let animation: Animation
   const stop = (): void => {
-    if (released) return
-    released = true
-    if (ro !== null) {
-      ro.disconnect()
-      ro = null
-    }
-    if (animation !== null) {
-      // The last keyframe is the layout's own value, so cancelling here is
-      // invisible — and it is what keeps the finished animation out of
-      // `document.getAnimations()` and drops the `fill: 'both'` hold.
-      animation.cancel()
-      animation = null
-    }
-    if (property === 'transform') element.style.transform = inline
-    else if (sizing) element.style.width = inline
-    else element.style.left = inline
-    if (position !== null) element.style.position = position
+    if (stopped) return
+    stopped = true
+    animation.cancel()
+    element.style.width = inline
   }
-
-  const rect = element.isConnected ? element.getBoundingClientRect() : null
-  if (rect === null) {
-    stop()
-    return null
-  }
-  const seeds = sizing ? rect.width : rect.left
-  const from = before - seeds
-  if (!(Math.abs(from) > 0.5)) {
-    stop()
-    return null
-  }
-
-  /**
-   * The value to write for a given distance from the current layout.
-   *
-   * The positional modes animate their own offset and end at the identity;
-   * `width` animates an absolute width and ends at the layout's, which is why
-   * the seed is added back in here and nowhere else.
-   *
-   * @param offset - `from` for the pre-toggle geometry, 0 for the post-toggle.
-   * @returns the property value for that keyframe.
-   */
-  const valueOf = (offset: number): string =>
-    property === 'transform'
-      ? `translateX(${offset}px)`
-      : sizing
-        ? `${seeds + offset}px`
-        : `${offset}px`
-
-  // Write the offset first so the animation takes over from the identical
-  // value: the two happen in one task, so no frame can see the seam.
-  if (property === 'transform') element.style.transform = valueOf(from)
-  else if (sizing) element.style.width = valueOf(from)
-  else element.style.left = valueOf(from)
-
+  element.style.width = `${before}px`
   animation = element.animate(
-    [{ [property]: valueOf(from) }, { [property]: valueOf(0) }],
-    { duration: COVER_MS, easing: COVER_EASING, fill: 'both' },
+    [{ width: `${before}px` }, { width: `${box.width}px` }],
+    { duration: FLIP_MS, easing: FLIP_EASING, fill: 'both' },
   )
-
-  /**
-   * Re-derive the seed from the LIVE box, for as long as the snapped layout is
-   * still moving under us.
-   *
-   * The seed is captured the moment the layout is first seen to move, and on
-   * close that moment is not the layout's final value: the centre track is
-   * already back to its full width while the column is still at its
-   * still-constrained `max-width`, so the edge read there is a transient
-   * (measured 670px) and the settled one is 616px. Seeding from the transient
-   * writes a 54px-too-large offset, and the frame that paints the settled
-   * layout paints it 54px outside the corridor (measured `616 - 358 = 258px`
-   * against a `312..616px` corridor) — the "flash" half of the report.
-   *
-   * A ResizeObserver is the correction point because it fires exactly when
-   * `max-width` changes the host's box and it is guaranteed to run after layout
-   * and before paint, i.e. in the frame that would otherwise paint the bad
-   * value.
-   *
-   * The keyframes run `keyFrom -> 0`, so the painted offset at any instant is
-   * `(1 - progress) * keyFrom`; taking that back out of the painted box leaves
-   * the layout, with no second driver and no read-back of our own writes. Only
-   * the seed is re-seated — `setKeyframes` keeps the clock — so the ease
-   * continues without a restart and without a hold.
-   */
-  let keyFrom = from
-  const reseat = (): void => {
-    if (released || animation === null) return
-    const effect = animation.effect
-    if (!(effect instanceof KeyframeEffect)) return
-    const progress = effect.getComputedTiming().progress
-    if (typeof progress !== 'number') return
-    const painted = element.getBoundingClientRect().left
-    const layout = painted - (1 - progress) * keyFrom
-    const next = before - layout
-    if (!(Math.abs(next - keyFrom) > 0.5)) return
-    keyFrom = next
-    effect.setKeyframes([{ [property]: valueOf(next) }, { [property]: valueOf(0) }])
-  }
-  // Positional covers only — see the note on the `width` mode above: a width
-  // cover has no identity endpoint to un-blend, so there is nothing for this
-  // observer to re-derive.
-  if (!sizing) {
-    ro = new ResizeObserver(reseat)
-    ro.observe(element)
-  }
-
-  // Ending at the identity means the release below can never snap: the layout
-  // is the endpoint, whatever it settled to while the ease was running.
   animation.finished.then(stop, () => { /* cancelled or replaced */ })
-  /**
-   * Still moving pixels?
-   *
-   * The driver's own clock, not a timer of ours: `released` flips when the ease
-   * finishes (or is cancelled), so this is exactly "the gate still has an
-   * unfinished cover to protect" — the condition the release waits for.
-   */
-  const busy = (): boolean => !released
-  return { stop, busy }
+  return { stop, busy: () => !stopped }
 }
 
 /**
@@ -604,7 +557,7 @@ let settleFailureReported = false
  * Same reasoning as `settleFailureReported`, for the other silent path: a
  * `getAnimations()` that throws leaves the 1ms transition to settle on its own
  * — a one-frame desync — and without a line in the console the only symptom is
- * the animation being slightly late again, with nothing to explain it.
+ * the layout arriving a frame late again, with nothing to explain it.
  */
 let settleReadFailureReported = false
 
@@ -617,15 +570,14 @@ let settleReadFailureReported = false
  * because a transition that is not created at all cannot be finished either.
  * What a non-zero duration costs is that the computed value stays the OLD one
  * for the whole rendering step that starts it, so the first frame after the
- * click does not lay the new track out — measured in isolation, a
- * `transition: width 0.001s` writes 200px and reads 700px in the same step.
+ * click does not lay the new track out.
  *
  * `finish()` moves the transition to its end without cancelling it, so
  * `transitionrun`/`transitionstart`/`transitionend` are all still dispatched
  * (measured: identical event list with and without the call) while the computed
  * value becomes the new one inside THIS task. The layout, the product's own
- * ResizeObserver, the covers and the panel's slide then land on one frame
- * instead of two.
+ * ResizeObserver, the carry and the panel's slide then land on one frame instead
+ * of two.
  *
  * @param hosts - the two elements the gate collapses.
  * @returns how many transitions were settled (0 when the product has not
@@ -662,9 +614,8 @@ function settleTransitions(hosts: Array<HTMLElement | null>): number {
         // Unresolved timeline (no frame yet): leave it running — it is 1ms and
         // the next rendering step settles it exactly as it did before, which is
         // the pre-change behaviour. Reported ONCE per session because the
-        // failure mode is otherwise invisible: the covers would silently arm a
-        // frame late (the desync this function exists to remove) and nothing in
-        // the page would say why.
+        // failure mode is otherwise invisible: the layout would silently arrive
+        // a frame late and nothing in the page would say why.
         if (!settleFailureReported) {
           settleFailureReported = true
           console.info('[dsh-ui-harmonizer] the panel-glide gate could not be settled:', error)
@@ -676,17 +627,32 @@ function settleTransitions(hosts: Array<HTMLElement | null>): number {
 }
 
 /**
- * Mount the right-panel snap-and-cover. Returns the disposer `ctx.effect`
- * wants; the listener, the pending frame, the snap class and every live cover
- * all go away with it.
+ * Read the reservation the right-side occupants currently hold on the
+ * conversation.
+ *
+ * `padding-right` is the ONE channel every right-side occupant writes on:
+ * dsh-widgets pads the scroll body with the rail's claim, and dsh-pinned-summary
+ * pads it `!important` with the sum (rail claim or card width). Reading the
+ * computed value therefore answers "is anything reserving space right now?"
+ * without naming either plugin's variable.
+ *
+ * @param el - the conversation scroll body, or null before it is mounted.
+ * @returns the reserved width in px, 0 when nothing is reserved.
+ */
+function readReservation(el: HTMLElement | null): number {
+  if (el === null) return 0
+  const value = Number.parseFloat(getComputedStyle(el).paddingRight)
+  return Number.isFinite(value) && value > 0.5 ? value : 0
+}
+
+/**
+ * Mount the right-panel motion. Returns the disposer `ctx.effect` wants; the
+ * listener, the pending timer, the snap class, the carry and the reservation
+ * hold all go away with it.
  */
 export function mountInstantTrack(): () => void {
   const root = document.documentElement
   let holdTimer = 0
-  let frameHandle = 0
-  let covers: Glide[] = []
-  /** Observes the two cover hosts for the current click; replaced each toggle. */
-  let motionRo: ResizeObserver | null = null
   /**
    * Settles the gate's ~0ms transitions in the very task that starts them.
    *
@@ -697,39 +663,269 @@ export function mountInstantTrack(): () => void {
   /**
    * Token identifying the newest toggle.
    *
-   * `frameHandle` is a single slot, so a click overwrites the previous click's
-   * pending frame and can no longer cancel it. That orphaned `step` then runs
-   * against the layout of a LATER click: it sees movement, creates a cover, and
-   * captures the inline style of the moment — which is whatever the newer
-   * click's cover had already written. When that orphan cover is finally
-   * stopped it "restores" the borrowed value as if it were the original,
-   * leaving the transcript permanently offset (measured: 9 clicks at 130ms left
-   * `transform: translateX(-230px)` and `left: -230px` behind). Every `step`
-   * therefore carries the token it was born with and bails once a newer click
-   * has made it stale.
+   * `holdTimer` is a single slot, so a click overwrites the previous click's
+   * pending release and can no longer cancel it. Every callback therefore
+   * carries the token it was born with and bails once a newer click has made it
+   * stale.
    */
   let generation = 0
   /**
-   * When the release stops waiting for motion that has not finished.
+   * The carry the newest toggle started, so the next one can cancel it.
    *
-   * A release that waits is only safe with a hard cap: the OPEN slide is
-   * started by a selector this module cannot verify up front (a fullscreen
-   * presentation, a narrow window with no room for the dock, an option flipped
-   * off mid-flight), and a gate left up forever would squash the product's own
-   * 300ms transitions for good.
+   * A carry writes inline widths, a clip width and a transform/left; one left
+   * behind by a toggle that was interrupted would keep the conversation offset
+   * for the life of the page, so every path that ends a toggle stops it.
+   */
+  let carries: Glide[] = []
+  /** When the last workspace conversation switch was clicked, see . */
+  let switchAt = 0
+  /** Observes track writes so a switch's grid tween can be finished before paint. */
+  let switchMo: MutationObserver | null = null
+  /**
+   * Where each carried host came to rest, keyed by the state that produced it.
+   *
+   * A carry has to end exactly on the resting left edge, and on a CLOSE that
+   * geometry is NOT readable from the commit frame: the product caps the
+   * transcript column with a responsive `max-width` (measured 640px open, 748px
+   * closed) that resolves one frame after the track widens, so the commit frame
+   * still reports the open-state measure — 54px and 160px away from the truth.
+   * Aiming at that number and correcting afterwards produced a visible
+   * right-then-back overshoot (measured on the close: 312 -> 520 -> 466).
+   *
+   * The state that geometry belongs to is stamped on the frame itself (its inline
+   * grid track) plus the reservation, and that pair IS readable in the commit
+   * frame. So the last time each state was on screen is where its rest geometry
+   * comes from: recorded on the way into a toggle (the state being left) and again
+   * once a toggle has settled.
+   */
+  const restingByState = new Map<string, Array<{ center: number; width: number } | null>>()
+  /**
+   * When the release stops waiting for a slide that has not finished.
+   *
+   * A release that waits is only safe with a hard cap: the OPEN slide is started
+   * by a selector this module cannot verify up front (a fullscreen presentation,
+   * a narrow window with no room for the dock, an option flipped off mid-flight),
+   * and a gate left up forever would squash the product's own 300ms transitions
+   * for good.
    */
   let releaseDeadline = 0
+  /**
+   * The last non-zero reservation this page has seen, remembered for the close.
+   *
+   * With the panel OPEN the reservation is legitimately 0 (the grid took the
+   * strip), so a close cannot read what it must return to. The value seen before
+   * the panel took the track is that answer, and it is also what the owners
+   * themselves restore — see `holdReservation`.
+   */
+  let lastReservation = 0
+  /**
+   * A temporary `padding-right` written by this module, when an owner missed the
+   * toggle's own task.
+   *
+   * The OWNERS publish in the toggle's task by construction (dsh-pinned-summary
+   * from its own `MutationObserver`, dsh-widgets from the frame's
+   * `transitionrun`, which this module dispatches by finishing the gate). This
+   * hold exists for the case where a third-party owner does not, and it matters
+   * in BOTH directions:
+   *
+   *   - open:  a late owner paints the transcript collapsed while the track is
+   *            already final;
+   *   - close: a late owner leaves the content box at the full track width, so
+   *            the transcript lands at the no-reservation centre and then JUMPS
+   *            back when the reservation finally arrives (measured: ~+723ms
+   *            after the click, 610 -> 570px).
+   *
+   * It is probed per frame (`probeHold`) so it is dropped the moment the owners
+   * publish it themselves, and bounded by `HOLD_MS`.
+   *
+   * `previous`/`previousPriority` are the inline declaration this property had
+   * BEFORE the hold. They are what `dropHold` puts back: a third-party inline
+   * write made after the hold would otherwise be deleted with it (the CSSOM
+   * keeps one declaration per property, so an owner writing inline replaces
+   * ours, and one writing before us is replaced by ours).
+   */
+  let hold: { el: HTMLElement; value: number; previous: string; previousPriority: string } | null = null
+  /** Bounds the hold; the carry is done well before this. */
+  let holdDeadline = 0
+  /** Has the hold's give-up path already been reported this session? */
+  let holdFailureReported = false
 
-  const releaseCovers = (): void => {
-    for (const cover of covers) cover.stop()
-    covers = []
-    if (motionRo !== null) {
-      motionRo.disconnect()
-      motionRo = null
+  /**
+   * Take the held `padding-right` back, if it is still ours.
+   *
+   * Called on every path that ends a toggle (a new click, the release, dispose)
+   * so a hold can never survive into the next toggle. Removing it only reveals
+   * the owner's own declaration, i.e. the value that was there before this
+   * module held it.
+   */
+  /**
+   * The state stamp a carry's resting geometry is filed under.
+   *
+   * Both halves are readable in the commit frame, which is what makes a lookup
+   * possible at all: the frame's inline track is written by the same commit as
+   * the layout, and the reservation is the owners' own publish.
+   */
+  const stateKey = (): string => {
+    const frame = document.querySelector<HTMLElement>(FRAME_SELECTOR)
+    const clip = document.querySelector<HTMLElement>(SCROLL_SELECTOR)
+    return `${frame === null ? '' : frame.style.gridTemplateColumns}|${Math.round(readReservation(clip))}`
+  }
+
+  /**
+   * Record where the carried hosts rest in the state that is on screen NOW.
+   *
+   * Called on the way into a toggle and once a toggle has settled, so a state
+   * that has been seen once can be aimed at exactly on every later visit.
+   */
+  const rememberResting = (): void => {
+    const seen = CARRY_HOSTS.map((spec) => boxOf(document.querySelector<HTMLElement>(spec.selector)))
+    if (seen.every((box) => box === null)) return
+    restingByState.set(stateKey(), seen.map((box) => (box === null ? null : { center: box.left + box.width / 2, width: box.width })))
+  }
+
+  const dropHold = (): void => {    if (hold === null) return
+    const { el, value, previous, previousPriority } = hold
+    hold = null
+    // Only our own write: an owner that wrote an inline value after this module
+    // must keep it. The check is by value, because the property is theirs too.
+    const current = el.style.getPropertyValue('padding-right')
+    if (!(Math.abs(Number.parseFloat(current) - value) < 0.5)) return
+    if (previous === '') {
+      el.style.removeProperty('padding-right')
+      return
     }
+    el.style.setProperty('padding-right', previous, previousPriority as 'important' | '')
+  }
+
+  /**
+   * Stop every carry and drop the writes it owns.
+   *
+   * @param withOpening - also drop the OPEN slide (a new click owns the attr).
+   */
+  const endToggle = (withOpening: boolean): void => {
+    for (const carry of carries) carry.stop()
+    carries = []
     if (settleMo !== null) {
       settleMo.disconnect()
       settleMo = null
+    }
+    dropHold()
+    if (withOpening) root.removeAttribute(OPENING_ATTR)
+  }
+
+  /**
+   * Is the inline `padding-right` still the declaration this module wrote?
+   *
+   * A third-party inline write replaces ours (the CSSOM keeps one declaration
+   * per property), and that write must never be deleted by this module's
+   * cleanup — see the note on `hold`.
+   *
+   * @param el - the conversation scroll body.
+   * @param value - the value the hold wrote.
+   * @returns true when the element still carries the hold's own declaration.
+   */
+  const isHeld = (el: HTMLElement, value: number): boolean =>
+    el.style.getPropertyPriority('padding-right') === 'important'
+    && Math.abs(Number.parseFloat(el.style.getPropertyValue('padding-right')) - value) < 0.5
+
+  /**
+   * Hold the reservation at the value the toggle is about to settle on.
+   *
+   * Open: 0 — the panel's track IS the reservation's owner there (the grid
+   * already took the strip away), so a late owner paints the transcript
+   * collapsed.
+   * Close: the last non-zero value seen before the panel took the track — the
+   * owners restore exactly that, and while it is missing the content box is too
+   * wide, so the transcript lands away from its resting place and jumps back when
+   * the reservation arrives.
+   *
+   * The write is inline `!important` because that is what dsh-pinned-summary
+   * itself uses; a plain declaration would lose to it.
+   *
+   * @param opening - is this click opening the panel?
+   */
+  const holdReservation = (opening: boolean): void => {
+    const el = document.querySelector<HTMLElement>(RESERVATION_SELECTOR)
+    const frame = document.querySelector<HTMLElement>(FRAME_SELECTOR)
+    // The two states the product itself treats as "no animation": a fullscreen
+    // presentation takes the whole stage (a reservation there is legitimate) and
+    // `data-rightbar-instant` is the product asking for a plain cut. Holding in
+    // either would be this module overriding a deliberate state.
+    if (
+      el === null
+      || (frame !== null && (frame.hasAttribute('data-rightbar-instant') || frame.hasAttribute('data-rightbar-fullscreen')))
+    ) {
+      dropHold()
+      return
+    }
+    const expected = opening ? 0 : lastReservation
+    if (!(expected > 0.5) && !opening) {
+      // Nothing to restore (a reservation-less close): leave the owners alone.
+      dropHold()
+      return
+    }
+    if (Math.abs(readReservation(el) - expected) < 0.5) {
+      // The owner made it in time (the normal case): nothing to hold, and a
+      // stale hold from an earlier edge of this same toggle goes away.
+      dropHold()
+      return
+    }
+    hold = {
+      el,
+      value: expected,
+      previous: el.style.getPropertyValue('padding-right'),
+      previousPriority: el.style.getPropertyPriority('padding-right'),
+    }
+    el.style.setProperty('padding-right', `${expected}px`, 'important')
+    holdDeadline = performance.now() + HOLD_MS
+    window.requestAnimationFrame(probeHold)
+  }
+
+  /**
+   * Ask, once per frame, whether the owners have caught up (and drop the hold).
+   *
+   * The probe REMOVES the hold inside a rAF callback, reads the computed value,
+   * and puts it back when the owners are still behind. That order is what makes
+   * the probe invisible: nothing is painted between the read and the rewrite, so
+   * no frame can ever show the stale reservation the hold is hiding.
+   *
+   * Cost, stated: while it runs this is one forced style/layout flush per frame
+   * (the `getComputedStyle` read), for at most `HOLD_MS` — which is only paid on
+   * the anomalous path. On this machine it has never been observed firing (the
+   * owners publish in the toggle's task); `verify-panel-squeeze.cjs` reports
+   * whether it did.
+   */
+  const probeHold = (): void => {
+    if (hold === null) return
+    const { el, value, previous, previousPriority } = hold
+    if (!isHeld(el, value)) {
+      // An owner replaced the inline declaration after the hold went up: its
+      // write is the newer intent and is left exactly as it is.
+      hold = null
+      return
+    }
+    el.style.removeProperty('padding-right')
+    const owned = readReservation(el)
+    if (Math.abs(owned - value) < 0.5) {
+      hold = null
+      // Put back whatever inline declaration was there before this module
+      // intervened (normally nothing), so the page is left as it was found.
+      if (previous !== '') el.style.setProperty('padding-right', previous, previousPriority as 'important' | '')
+      return
+    }
+    el.style.setProperty('padding-right', `${value}px`, 'important')
+    if (performance.now() < holdDeadline) {
+      window.requestAnimationFrame(probeHold)
+      return
+    }
+    // Give up: the owners never agreed. The carry is over by now, so the
+    // correction is a single step rather than a painted animation — reported
+    // once, because without the line the only symptom would be a stutter that
+    // nothing in the page explains.
+    dropHold()
+    if (!holdFailureReported) {
+      holdFailureReported = true
+      console.info(`[dsh-ui-harmonizer] the right-side reservation did not settle at ${value}px within ${HOLD_MS}ms; released the hold.`)
     }
   }
 
@@ -760,16 +956,14 @@ export function mountInstantTrack(): () => void {
   }
 
   /**
-   * Drop the gate and every cover it owns.
+   * Drop the gate and the transient writes it owns.
    *
-   * Deferred while anything is still moving, and that is the fix for a visible
-   * truncation: `HOLD_MS` is counted from the CLICK, while the OPEN slide
-   * cannot start before the product's commit mounts the dock and the covers
-   * cannot start before the settled layout is readable — both measured 180-265ms
+   * Deferred while the panel is still sliding, and that is the fix for a visible
+   * truncation: `HOLD_MS` is counted from the CLICK, while the OPEN slide cannot
+   * start before the product's commit mounts the dock — measured 180-265ms
    * later. Releasing on the click's clock therefore cancelled the slide at
    * `currentTime 254.7/300` (84.9%, with no `animationend` at all) and the dock
-   * snapped from `translateX(10.35px)` straight to `none`; the covers, which
-   * run the same 300ms from the same late start, were cut by the same margin.
+   * snapped from `translateX(10.35px)` straight to `none`.
    *
    * The INSTANT gate is NOT deferred. Its whole job is the one-frame snap of the
    * track, which is already done by the time this first runs, and leaving
@@ -779,29 +973,25 @@ export function mountInstantTrack(): () => void {
    */
   const release = (): void => {
     holdTimer = 0
-    // The snap is over, so the observer that settles its transition has nothing
-    // left to watch.
-    if (settleMo !== null) {
-      settleMo.disconnect()
-      settleMo = null
-    }
     root.removeAttribute(INSTANT_ATTR)
-    const moving = covers.some((cover) => cover.busy()) || slideRunning()
+    // The gate is down; the carry is not. `HOLD_MS` is counted from the CLICK
+    // while the carry cannot start before the commit (~150ms measured) and then
+    // runs its own 300ms, so releasing on the click's clock would kill it 30ms
+    // before it lands — a snap-back on the last frames, which is the defect this
+    // wait exists for. `endToggle` stops it, so it must not run before then.
+    const moving = carries.some((carry) => carry.busy()) || slideRunning()
     if (moving && performance.now() < releaseDeadline) {
       holdTimer = window.setTimeout(release, RELEASE_POLL_MS)
       return
     }
-    // Stopping the covers here (rather than leaving them to their own
-    // `finished` handler) is what drops the motion ResizeObserver with the
-    // gate. It is only reached once they have stopped moving themselves, or
-    // once the deadline says waiting has become the bigger risk.
-    releaseCovers()
-    root.removeAttribute(OPENING_ATTR)
+    endToggle(true)
+    // The page is now in the state the toggle produced: record where the hosts
+    // rest in it, so the next toggle back into it can aim exactly.
+    window.requestAnimationFrame(rememberResting)
   }
 
   /**
-   * One toggle: snap the track now, cover the boxes that moved the moment they
-   * move.
+   * One toggle: snap the track, carry the payload, let the panel slide.
    * @param event - the capture-phase click.
    */
   const onClick = (event: Event): void => {
@@ -811,20 +1001,32 @@ export function mountInstantTrack(): () => void {
     const frame = document.querySelector<HTMLElement>(FRAME_SELECTOR)
     const opening = openingFrom(frame)
 
-    releaseCovers()
+    endToggle(false)
     generation += 1
     const mine = generation
-    const prose = document.querySelector<HTMLElement>(PROSE_SELECTOR)
-    const composer = document.querySelector<HTMLElement>(COMPOSER_SELECTOR)
+
+    // Read BEFORE the product's own handler writes the track: this is the
+    // reservation the panel is about to take away (open) or give back (close).
+    // The close cannot read it later — with the panel open it is legitimately 0 —
+    // so the remembered value is what its hold is built on.
+    const reservation = readReservation(document.querySelector<HTMLElement>(RESERVATION_SELECTOR))
+    if (reservation > 0.5) lastReservation = reservation
+
+    // Everything the carry needs, read before the track moves: the clip's width
+    // and each host's painted box. Measured here because the commit's own frame
+    // is already the post-toggle geometry.
+    const scrollBody = document.querySelector<HTMLElement>(SCROLL_SELECTOR)
+    const clipBefore = scrollBody === null ? 0 : scrollBody.getBoundingClientRect().width
+    const carryHosts = CARRY_HOSTS.map((spec, index) => {
+      const el = document.querySelector<HTMLElement>(spec.selector)
+      const box = boxOf(el)
+      return el !== null && box !== null ? { el, property: spec.property, before: box, index } : null
+    }).filter((h): h is NonNullable<typeof h> => h !== null)
     const header = document.querySelector<HTMLElement>(HEADER_SELECTOR)
-    // Read BEFORE the product's own handler writes the new track: the captures
-    // run first, so these are still the pre-toggle edges — and for the header
-    // that is the only moment its closed width exists, because the track change
-    // itself is one synchronous layout away.
-    const proseBefore = leftOf(prose)
-    const composerBefore = leftOf(composer)
-    const headerBefore =
-      header !== null && header.isConnected ? header.getBoundingClientRect().width : null
+    const headerBefore = header === null || !header.isConnected ? null : header.getBoundingClientRect().width
+    // The state being LEFT is the one a later toggle returns to, so it is
+    // recorded here, before the product overwrites the track.
+    rememberResting()
 
     // Two attribute writes, and both are free: the theme observer's filter is
     // `['class','data-ds-dark-theme','data-ds-theme-source']`, so neither wakes
@@ -838,132 +1040,215 @@ export function mountInstantTrack(): () => void {
     else root.removeAttribute(OPENING_ATTR)
     if (holdTimer !== 0) window.clearTimeout(holdTimer)
     // `HOLD_MS` is when the release STARTS asking, not when the gate goes: the
-    // deadline is what bounds the asking. The margin over it covers a cover
-    // that starts as late as the slide does (measured 180-265ms after the
-    // click) and then runs its own 300ms.
+    // deadline is what bounds the asking. The margin over it covers a slide that
+    // starts as late as 265ms after the click and then runs its own 300ms.
     releaseDeadline = performance.now() + HOLD_MS + RELEASE_MAX_WAIT_MS
     holdTimer = window.setTimeout(release, HOLD_MS)
 
-    const startedAt = performance.now()
-    let tries = 0
     /**
-     * Hosts that already carry a cover for THIS click.
+     * Arm the carry against the layout the product just wrote.
      *
-     * Two independent arming channels feed `arm`, and both legitimately fire for
-     * the same toggle: the ResizeObserver (which catches the box change in the
-     * frame that made it, before that frame paints) and the rAF poll (which
-     * covers a shift that changed no box size). The second one to arrive must
-     * not stack a second, competing ease on the same host.
+     * Called from the settle observer's microtask, i.e. in the commit's own task
+     * and before it paints, so the first painted frame is already the carried
+     * one. Nothing here predicts the layout: the clip's pre-toggle width, the
+     * hosts' pre-toggle boxes and their post-commit boxes are all measured, and
+     * the ease's last keyframe is the resting left edge itself.
      */
-    const armed = new Set<HTMLElement>()
-
-    const arm = (host: HTMLElement | null, property: CoverProperty, before: number | null): void => {
-      if (host === null || before === null || armed.has(host)) return
-      const cover = startCover(host, property, before)
-      if (cover === null) return
-      armed.add(host)
-      covers.push(cover)
-    }
-    const armAll = (): void => {
-      // The other hosts may be gone (empty conversation, replaced composer); a
-      // cover for one of them is simply skipped. Each successful cover measures
-      // its own host.
-      arm(prose, 'transform', proseBefore)
-      arm(composer, 'left', composerBefore)
-      // The header is sized, not moved: everything inside it — the title's
-      // width, the badges, the tab strip, the right-hand buttons — is a
-      // consequence of this one box, so covering it covers all of them.
-      arm(header, 'width', headerBefore)
-    }
-
-    /**
-     * Arm on the box change itself.
-     *
-     * ResizeObserver delivery happens after layout and BEFORE paint of the very
-     * frame that changed the box, so a cover armed here is always written in
-     * time: the frame that first holds the new geometry is the frame that first
-     * paints the held edge, and no frame can paint the jump uncovered. The rAF
-     * poll below cannot promise that — it only runs if a frame happens to come
-     * up between the layout change and the paint that follows it, and on a
-     * loaded main thread (measured 107ms between frames) that window is exactly
-     * what is lost.
-     */
-    if (motionRo !== null) motionRo.disconnect()
-    motionRo = new ResizeObserver(() => {
+    const armCarry = (): void => {
+      if (!MOTION_ENABLED) return
       if (mine !== generation || !root.classList.contains(PANEL_GLIDE_CLASS)) return
-      armAll()
-    })
-    if (prose !== null) motionRo.observe(prose)
-    if (composer !== null) motionRo.observe(composer)
-    // The header is its own reason to arm: a conversation with no transcript
-    // column and no composer (an empty session) still has a header, and its
-    // toggle still moves it. Re-arming is impossible — `armed` holds the header
-    // from the first delivery — so the frames this observer delivers while the
-    // cover runs cost one set lookup each.
-    if (header !== null) motionRo.observe(header)
+      if (scrollBody === null || carryHosts.length === 0) return
+      // The state the track now describes: what a host rests at in it, if that
+      // state has been on screen before. A miss falls back to the commit frame's
+      // own numbers, which is exact on an OPEN (its measure is the resting one)
+      // and one frame stale on a CLOSE.
+      const resting = restingByState.get(stateKey()) ?? null
+      const withResting = carryHosts.map((host) => {
+        const cached = resting === null ? null : resting[host.index]
+        return { ...host, resting: cached === null || cached === undefined ? null : { left: cached.center - cached.width / 2, width: cached.width } }
+      })
+      const carry = startFlip(scrollBody, clipBefore, withResting)
+      if (carry !== null) carries.push(carry)
+      const widthCarry = startWidthCarry(header, headerBefore)
+      if (widthCarry !== null) carries.push(widthCarry)
+    }
 
-    // The layout the product is about to write is only one rendering step away
-    // — but "one step" is one frame too many, because the panel's slide is
-    // started by that same commit while the gate's transition withholds the new
-    // track until the step after. Settling it here, in the microtask that
-    // follows the write, is what puts the two halves of the motion on one
-    // frame; see `settleTransitions`.
+    /**
+     * The hosts whose gated transitions this module finishes.
+     *
+     * NOT the composer seat. It is the one host whose inline style dsh-widgets
+     * writes FROM its own transition handlers (`applyRailRight`): finishing its
+     * 1 ms `right` transition re-enters that plugin, which writes the seat again,
+     * which the observer below reports as a new delivery — an endless settle
+     * pulse. The measured freeze: closing the panel over an open widget rail left
+     * the renderer pegged at one core with `settleTransitions` on the stack for
+     * 7.2 s; with `enhc-panel-glide` off (this path inert) the same close
+     * completes in <6 s. The seat's gate still collapses its transition to 1 ms
+     * in the stylesheet, so it settles on its own next rendering step.
+     */
+    const settleHosts: Array<HTMLElement | null> = [frame, scrollBody]
+    /**
+     * How many settle pulses one toggle may run.
+     *
+     * A safety net, not the mechanism: each pulse is bounded, but an owner that
+     * answers EVERY settle with another gated transition would otherwise keep
+     * the observer alive for the life of the page. Six is above the longest
+     * legitimate chain seen (track -> claim -> padding) and far below anything a
+     * user could notice; after it the remaining 1 ms transitions settle
+     * themselves.
+     */
+    const SETTLE_ROUNDS_MAX = 6
+    let settleRounds = 0
+    /** Re-entrancy guard: `finish()` must never nest another settle pass. */
+    let settling = false
+    /**
+     * Finish every gate transition that is running now, and every one those
+     * finishes start.
+     *
+     * One pass is not enough, and the reason is measured: `finish()` on the
+     * frame's track dispatches `transitionrun`, dsh-widgets' rail yield listens
+     * for exactly that beat and answers it by writing `--dsx-rail-w` — which
+     * starts the conversation's `padding-right` transition. A single pass would
+     * leave that second transition running into the next rendering step, i.e.
+     * the reservation would be one frame late. Four passes is well past the
+     * longest chain seen (track -> claim -> padding) and each empty pass exits at
+     * once.
+     *
+     * @returns how many transitions this call finished.
+     */
+    const settleAll = (): number => {
+      if (settling) return 0
+      settling = true
+      try {
+        let total = 0
+        for (let pass = 0; pass < 4; pass += 1) {
+          const settled = settleTransitions(settleHosts)
+          if (settled === 0) break
+          total += settled
+        }
+        return total
+      } finally {
+        settling = false
+      }
+    }
+
     if (settleMo !== null) settleMo.disconnect()
     settleMo = new MutationObserver(() => {
       if (mine !== generation || !root.classList.contains(PANEL_GLIDE_CLASS)) return
-      // Both hosts are settled on every delivery: the product writes the frame's
-      // track and the viewport's padding in two batches, and whichever one
-      // arrives second would otherwise leave the first host's tween running for
-      // a frame. Settling an already-settled transition is a no-op, and
-      // `armAll` is idempotent (each host is armed once).
-      const settled = settleTransitions([frame, document.querySelector<HTMLElement>(SCROLL_SELECTOR)])
-      // Only a settled gate proves the layout is final NOW; a delivery with
-      // nothing to settle (an unrelated inline-style write, or the gate off)
-      // must not shortcut the two channels that know better.
-      if (settled > 0) armAll()
-    })
-    if (frame !== null) settleMo.observe(frame, { attributes: true, attributeFilter: ['style'] })
-    const scrollBody = document.querySelector<HTMLElement>(SCROLL_SELECTOR)
-    if (scrollBody !== null) settleMo.observe(scrollBody, { attributes: true, attributeFilter: ['style'] })
-
-    const step = (): void => {
-      frameHandle = 0
-      // A newer click owns the driver now; this frame must not write styles.
-      if (mine !== generation || !root.classList.contains(PANEL_GLIDE_CLASS)) return
-      tries += 1
-      const proseNow = leftOf(prose)
-      const composerNow = leftOf(composer)
-      const proseMoved = proseNow !== null && proseBefore !== null && Math.abs(proseNow - proseBefore) > 0.5
-      const composerMoved = composerNow !== null && composerBefore !== null && Math.abs(composerNow - composerBefore) > 0.5
-      // The header's PAINTED width, which is the only one this poll can see:
-      // once its cover is armed this reads the ease rather than the layout, and
-      // one frame of the ease is already more than the half-pixel that counts as
-      // movement. That is what this channel is for.
-      const headerNow = header === null || !header.isConnected ? null : header.getBoundingClientRect().width
-      const headerMoved = headerNow !== null && headerBefore !== null && Math.abs(headerNow - headerBefore) > 0.5
-      const moved = proseMoved || composerMoved || headerMoved
-      // The product commits the track synchronously in this same task, but the
-      // commit itself can block this thread for a long time — measured ~178ms on
-      // a long conversation — so "not moved yet" is only re-polled until the
-      // snap has had its chance, then given up on. No cover exists yet, so
-      // these reads are always the layout's.
-      if (!moved && tries < MAX_TRIES && performance.now() - startedAt < DEADLINE_MS) {
-        frameHandle = window.requestAnimationFrame(step)
+      if (settleRounds >= SETTLE_ROUNDS_MAX) {
+        // This toggle has already been settled more often than any real chain
+        // needs. Stop observing rather than feed an owner that answers every
+        // settle with a new gated transition (see `settleHosts`).
+        settleMo?.disconnect()
+        settleMo = null
         return
       }
-      if (!moved) return
-      armAll()
-    }
-    frameHandle = window.requestAnimationFrame(step)
+      settleRounds += 1
+      if (settleAll() === 0) return
+      // dsh-pinned-summary publishes its reservation from its OWN
+      // MutationObserver, so it can run after this callback. One microtask hop
+      // — still inside the task the product wrote the track in, still before
+      // paint — settles whatever that write starts, so the carry below is
+      // measured against a layout that is final NOW (a reservation that lands a
+      // frame later would move the boxes the carry just seeded).
+      queueMicrotask(() => {
+        if (mine !== generation || !root.classList.contains(PANEL_GLIDE_CLASS)) return
+        settleAll()
+        holdReservation(opening)
+        armCarry()
+      })
+    })
+    if (frame !== null) settleMo.observe(frame, { attributes: true, attributeFilter: ['style'] })
+    if (scrollBody !== null) settleMo.observe(scrollBody, { attributes: true, attributeFilter: ['style'] })
   }
 
+  /**
+   * A workspace conversation is being switched.
+   *
+   * The session view is re-mounted, and the right-side reservation (`padding-right`
+   * on `[data-conversation-scroll]`, published by dsh-pinned-summary and
+   * dsh-widgets) comes back a frame LATER than the new view's first paint. The
+   * content box is therefore the full track for one frame and the transcript is
+   * painted at the no-reservation centre before snapping back — measured on a
+   * 1706px window: the column is painted at 616px and lands at 466px, i.e. the
+   * "small pan and back" that fires on every conversation switch.
+   *
+   * Holding the last published value for the length of the remount is the same
+   * mechanism the toggle already uses (`holdReservation`): it is dropped by
+   * `probeHold` the moment the owners publish, so it costs one read per frame at
+   * worst and nothing at all when they are on time.
+   */
+  const onClickSession = (event: Event): void => {
+    if (!root.classList.contains(PANEL_GLIDE_CLASS)) return
+    const target = event.target
+    if (!(target instanceof Element) || target.closest('[class*="sessionRow"]') === null) return
+    // A conversation switch re-mounts the view and can close the panel in the same
+    // commit. The frame's permanent `grid-template-columns` ease is there for the
+    // LEFT toggle; letting it run over a switch turns the new view's first layout
+    // into a 300ms grid tween, and measured through it the transcript is painted
+    // 287px wide at 462px before settling on 748px at 466px — the "small pan and
+    // back" on every switch. Switching conversations is not a motion the user asked
+    // for, so any track transition that starts inside this window is finished at
+    // once (see `finishSwitchTween`).
+    switchAt = performance.now()
+    const el = document.querySelector<HTMLElement>(RESERVATION_SELECTOR)
+    if (el === null || hold !== null) return
+    const current = readReservation(el)
+    if (!(current > 0.5)) return
+    hold = {
+      el,
+      value: current,
+      previous: el.style.getPropertyValue('padding-right'),
+      previousPriority: el.style.getPropertyPriority('padding-right'),
+    }
+    el.style.setProperty('padding-right', `${current}px`, 'important')
+    holdDeadline = performance.now() + HOLD_MS
+    window.requestAnimationFrame(probeHold)
+  }
+
+  /**
+   * Finish any track tween a conversation switch started, before it paints.
+   *
+   * Only transitions that began within `SWITCH_WINDOW_MS` of a session-row click
+   * are touched, so the left sidebar's own toggle keeps its ease and this module's
+   * right-panel snap is untouched.
+   */
+  const finishSwitchTween = (): void => {
+    if (!root.classList.contains(PANEL_GLIDE_CLASS)) return
+    if (performance.now() - switchAt > SWITCH_WINDOW_MS) return
+    const frame = document.querySelector<HTMLElement>(FRAME_SELECTOR)
+    if (frame === null) return
+    for (const animation of frame.getAnimations()) {
+      if (!(animation instanceof CSSTransition)) continue
+      // 200-300ms is the product's per-toggle ease; the gate's 1ms snap is not ours
+      // to finish here.
+      const duration = animation.effect === null ? 0 : Number(animation.effect.getTiming().duration)
+      if (!(duration > 32)) continue
+      animation.finish()
+    }
+  }
+  switchMo = new MutationObserver(finishSwitchTween)
+  const startSwitchWatch = (): void => {
+    const frameEl = document.querySelector<HTMLElement>(FRAME_SELECTOR)
+    if (frameEl === null || switchMo === null) return
+    switchMo.observe(frameEl, { attributes: true, attributeFilter: ['style'] })
+  }
+  // The frame is normally mounted long before this module does; the retry covers a
+  // first paint that has not happened yet.
+  if (document.querySelector(FRAME_SELECTOR) === null) window.requestAnimationFrame(startSwitchWatch)
+  else startSwitchWatch()
+
   document.addEventListener('click', onClick, true)
+  document.addEventListener('click', onClickSession, true)
   return () => {
     document.removeEventListener('click', onClick, true)
-    if (frameHandle !== 0) window.cancelAnimationFrame(frameHandle)
+    document.removeEventListener('click', onClickSession, true)
     if (holdTimer !== 0) window.clearTimeout(holdTimer)
-    releaseCovers()
+    if (switchMo !== null) {
+      switchMo.disconnect()
+      switchMo = null
+    }
+    endToggle(true)
     root.removeAttribute(INSTANT_ATTR)
-    root.removeAttribute(OPENING_ATTR)
   }
 }

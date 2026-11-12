@@ -1,5 +1,10 @@
 # 交接：右侧栏开合「动画不同步」+ 掉帧（第二期）
 
+> **已被取代（2026-10-30）**：本文件里「用 cover 把正文列／输入框带到新位置」那条路线已被证明
+> 几何上不成立（cover 绘制所在的裁切盒在同一个 commit 里就缩小了，开合前的盒子必然越界被切），
+> 该机制已删除。现行契约与实测见
+> [RIGHT-PANEL-LANDING-2026-10-30.md](RIGHT-PANEL-LANDING-2026-10-30.md)。本文件保留为历史记录。
+
 > 本文件是**新会话启动提示词**。上一段对话已把「右侧栏开合平顺」（`enhc-panel-glide`）落地并验收，
 > 车主实测后给出新反馈：**效果是「先闪烁后平移」**。下一期只做两件事，且它们**是两个独立方向**。
 >
@@ -740,3 +745,72 @@ gate class→属性 ⚠️ 机制对但归因不精确（真正成本是「根�
   四个宽度两种面板态尺寸 / 无残留属性 / 无 page error。
 - `node scripts/tools/css-baseline.mjs --write` 已更新 `docs/architecture/baseline/css.json`
   （`session-header.module.css` 828 → 906 B），复检 byte-identical。
+
+---
+
+## 10. 第三期（2026-10-21）：取消单时钟挤压，预留并入 snap
+
+### 10.1 车主反馈（本期原话）
+> 「开关右侧边栏时，中间栏动画效果存在掉帧卡顿，动画效果延迟……右侧边栏本身动画流畅，但是中间的
+> 对话区域、输入框、顶部菜单栏右侧的按钮区域存在卡顿和延迟，平移时间晚于右侧边栏本身。」
+
+### 10.2 判定（活 GUI 实测，非推断）
+- 活 GUI `127.0.0.1:49326`，1707×1067，会话「修复侧边栏动画卡顿问题」，预留 300px（dps）。
+- 当时走的是**单时钟挤压**（`data-enhc-squeeze`，`instant-track.ts` 早退、不建 cover）：
+  `pad 300 →287@+144ms →231@+178 →73@+249 →0@+418`；`col left 466→456→413→312`；
+  `col width 748（到 +249）→703→588`；400ms 内只画出 **5 帧**。
+- 同一页面强制 snap 臂：commit 帧内 `pad 0`、`col 466/588`、`card 450/620`，随后 cover 平滑
+  `466→427→400→341→…→312`，`_tabCell`/`_column`/`_card` 三条动画 `startTime` 相同。
+- ⇒ 卡顿与延迟来自「让轨道（布局属性）缓动」，面板本身在合成层上所以显得先到。
+
+### 10.3 取舍（车主已确认）
+官方布局下「中栏宽度渐变」只能靠每帧重排整帧实现 ⇒ 二者不可兼得。车主选 **A**：
+宽度在点击当帧到位、位置仍平滑（合成层）。**不要再把挤压路径加回来。**
+
+### 10.4 落地
+- `instant-track.ts`：删除 `SQUEEZE_ATTR` / `squeezeMode` / `squeezeOnOneClock` / `clearSqueeze`；
+  新增 `settleAll()`（有界多轮 settle：finish 轨道 → 派发 `transitionrun` → dsh-widgets 写 claim →
+  finish 由此产生的 padding 过渡）、`queueMicrotask` 补跑（接住 dps 自己的 MutationObserver 发布）、
+  以及**只在开方向生效**的兜底 `holdReservation()` / `probeHold()`（业主迟到时把 `padding-right`
+  按 0 内联 `!important` 顶住，每帧在 rAF 内「摘—读—补」探测，业主跟上即无声放开，`HOLD_MS` 上限）。
+- `frame-column-transition.module.css`：删除 `html[data-enhc-squeeze] [data-conversation-scroll]` 规则；
+  instant 门补上 `[data-composer-seat]`（dsh-widgets 的 `right` 300ms）。
+- `apply.ts`：去掉 `data-enhc-squeeze` 的清理。
+- 门禁：`verify-panel-squeeze.cjs` 改写为「预留并入 snap」契约（A1 无塌缩 / A2 宽度只落两个值 /
+  A3 预留与轨道同帧且已为 0 / A5 面板与全部 cover 同帧起跑 / A4 关方向镜像 / B 无预留路径 /
+  C 联按零残留）；`verify-panel-squeeze-perf.cjs` 新增 `eased track (option off)` 同页 A/B 臂与
+  「塌缩帧」判定。
+- **本会话会话内容导致的既有门禁不适用**：`verify-header-fit.cjs` 的 1b/8 需要「三个徽标」的参考会话，
+  本会话只有 `preset` 一个徽标，且 `_crumbs` 自然宽度 170px < 恢复阈值 184px
+  （`TITLE_FLOOR + TITLE_SLACK`），于是任一徽标隐掉后不会再恢复——与本轮改动无关（宽度判据，与动画时钟无关）；
+  `verify/settings-page.cjs` 在本 profile 找不到「设置」入口，同属环境。
+
+### 10.5 对抗审查后的修正（已落地）
+- A5 原来只采 `column|_card|_tabCell`，**顶栏 `_header` 的 width cover 从未被采样**，标题却写 "every cover"：
+  已把 filter 扩到 `_header`，并补 `A5b`（每条 cover 的 duration 必须是 300ms±20）与 easing 打印。
+  探针同时把 `startTime === null`（pending）单独计数，不再当作「晚一帧」。
+- A4 原称「mirror of A1/A2/A3」但只查「过宽」：已补 `A4a`（关方向不得变窄）、`A4d`（预留按 300px
+  在轨道同一帧恢复）。
+- A1/A4 的 resting 宽度改为 trace 结束后单独读一次（`COL_WIDTH`），不再拿最后一帧当基线
+  （饥饿页的 46 帧窗口可能停在滑行中途，基线会变成移动靶）。
+- A3 现在同时打印「兜底 hold 是否介入」：当前环境每次都是 `not needed`（业主自己在 toggle 的 task 里发布）。
+- `hold` 记录写前 inline 值与优先级：`dropHold`/`probeHold` 只回收**自己**的声明，第三方 inline 写
+  不会被「摘—读—补」误删；`data-rightbar-instant` / `data-rightbar-fullscreen` 时不做 hold。
+- 文档口径：`p95 13 vs 21`、`max 295 vs 210`、`style 448 vs 547` 在随后同脚本重跑中**反号**
+  （17 vs 13、290 vs 176、560 vs 531），已把 `docs/MEASUREMENTS.md` 的结论改成「形状稳定、时间列噪声占优」，
+  并以反例并列；`287/231/73/0` 标注为**单次 trace、6 个采样点**。
+
+### 10.6 第二轮视觉反馈（2026-10-21 下午）
+- **关方向「向右平移后跳回」**：机制是关方向没有 hold——业主晚一步发布时，内容盒还是整条轨道宽，
+  `startCover` 会把 target 定在「无预留」的中心（本机 616 而非 466），滑到那儿后再被真实布局拽回。
+  现在关方向也顶住 `lastReservation`（面板占轨前最后一次非零预留），`probeHold` 逐帧「摘—读—补」，
+  本机实测自报 **not needed**（业主本来就在同一个 task 里发布），所以本地无法复现，但兜底已就位。
+- **开方向「先出现灰色区域」**：开栏是 dock 的合成层 `translateX(100%)`，而轨道第一帧就占满 768px，
+  两者之间那段带宽（150ms 暂停实测：列 939、dock 1111、中间 172px）画的是 frame 背景；主题里
+  frame 与面板表面不同就会读成灰块。现在开方向临时把**面板自己的表面色**写到列宿主上
+  （`paintPanelSurface`：从 dock 的第一个绘制后代读色，随本次开合摘除），条带读作面板而不是空洞。
+- 验证：`verify-panel-squeeze.cjs` 22 项全绿（新增关方向 hold 自报、B3 改为轮询 gate 释放）；
+  `paintPanelSurface` 在 t=120ms 实测写入 `background-color`，settled 后 inline 为空。
+
+
+

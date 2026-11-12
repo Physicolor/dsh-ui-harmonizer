@@ -56,10 +56,13 @@
  * attribute write); see `INSTANT_ATTR` in instant-track.ts. The track still
  * fires transitionrun/start/end — dsh-widgets' rail yield reads that beat — and
  * the product's own panel slide (`transform` on its dock, 300ms) still runs on
- * the compositor. The motion the ease was providing is restored by
- * instant-track.ts as a compositor `transform` cover on the transcript column
- * plus a `left` cover on the composer capsule, which glide without re-laying
- * out the frame.
+ * the compositor. The conversation itself is NOT carried: it lands with the
+ * track, in the commit frame. It used to be carried by covers on the transcript
+ * column, the composer capsule and the header, and that is geometrically wrong
+ * here — the viewport clip the covers paint inside shrinks in the same commit, so
+ * a box held at its pre-toggle edge is painted cut by the sidebar until it
+ * catches up. See instant-track.ts and
+ * `docs/handoff/RIGHT-PANEL-LANDING-2026-10-30.md` for the measurements.
  *
  * A window resize still wins: the resize rule above is evaluated first for
  * equality — but the duration here is `!important`, so the two must agree on
@@ -83,8 +86,8 @@
  * mutation microtask of the product's own track write it calls `finish()` on
  * every ~0ms CSS transition the gate created, which settles the computed value
  * in the SAME task and leaves `transitionrun`/`transitionstart`/`transitionend`
- * intact. The cover is then armed in that same task, so it and the panel's
- * slide share one start frame instead of being one or more frames apart.
+ * intact, so the layout and the panel's slide share one start frame instead of
+ * being one or more frames apart.
  *
  * `_scrollBody` is collapsed by the SAME rule as a SAFETY NET, not because it
  * was caught easing. The reasoning that put it here: if the viewport's
@@ -109,10 +112,46 @@
  * The gate also carries `enhc-panel-glide`, the class core/apply.ts flips from
  * the "Panel glide" switch, so turning the option off leaves the eased track
  * exactly as it was before this file grew the rule. */
+/* the gate covers the three hosts the toggle rewrites, not just the track:
+ *
+ *   - `_frame`            `grid-template-columns` (the panel's own track);
+ *   - `_scrollBody`       the right-side RESERVATION (`padding-right`: the
+ *                         widgets rail's claim, dsh-pinned-summary's
+ *                         `--dps-right-space`, the product's own overlay seat)
+ *                         and, on close, the viewport's own padding;
+ *   - `[data-composer-seat]` dsh-widgets' 300ms `right`, i.e. the composer's
+ *                         offset from the rail.
+ *
+ * Flattening the latter two is what puts the reservation and the composer on the
+ * SNAP's clock, and it is load-bearing: with the track snapped while
+ * `padding-right` is still 300px the content box is `659 - 300 = 352px`, the
+ * centred transcript collapses to 288px and the composer to 320px. The previous
+ * build hid that by EASING the track instead (a one-clock squeeze), which
+ * re-laid out the whole AppFrame on every frame and is the jank this file's
+ * gate now avoids. `settleTransitions` finishes each 1ms transition inside the
+ * task that starts it, so the layout is final before the frame paints. */
 :global(html.enhc-panel-glide[data-enhc-instant] [class$='_frame']),
-:global(html.enhc-panel-glide[data-enhc-instant] [class$='_scrollBody']) {
+:global(html.enhc-panel-glide[data-enhc-instant] [class$='_scrollBody']),
+:global(html.enhc-panel-glide[data-enhc-instant] [data-composer-seat]) {
   transition-duration: 0.001s !important;
 }
+/* ---- why there is no "one clock squeeze" rule any more -------------------
+ *
+ * A previous build gave the reservation its own 300ms rule here
+ * (`html[data-enhc-squeeze] [data-conversation-scroll] { transition:
+ * padding-right … }`) and LEFT the track easing so the two halves shared one
+ * clock. Measured 2026-10-21 on the report's session (live GUI, 1707x1067, a
+ * 300px `--dps-right-space`): that path re-lays out the whole AppFrame on every
+ * frame for the length of the ease, the reservation still lagged the commit
+ * (`padding-right` 300 -> 287 at +144ms, 231 at +178ms, 73 at +249ms, 0 at
+ * +418ms), and only 5 frames were painted in the 400ms window. The panel, which
+ * slides on its own compositor transform, therefore looked smooth while the
+ * conversation stuttered and arrived late — the report this change answers.
+ *
+ * The reservation now rides the SNAP (the gate above), and the conversation is
+ * not moved at all: it lands with the track (see `instant-track.ts`). Nothing
+ * here declares a value for the reservation, so the owning plugin's value keeps
+ * winning; the gate only shortens the transition that value rides. */
 /* ---- …and the OPEN direction is missing its slide entirely ----------------
  *
  * The product's occupant owns two rules (module `OUqwTW`):

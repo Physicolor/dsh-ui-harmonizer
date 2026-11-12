@@ -11,28 +11,32 @@
  * One shared EnhancerState lives in the apply closure; the two settings rows
  * receive it plus an onApply callback that mutates it and pushes CSS.
  *
- * THIRTEEN effects are installed, in this order — the order is a LAYOUT CONTRACT,
+ * FOURTEEN effects are installed, in this order — the order is a LAYOUT CONTRACT,
  * not a detail: the mounters below assume the earlier ones already published
  * their CSS variables and declared their surfaces, and the two DOM moves run
  * before the header reconciler so it sees the final header row.
  *
- *   1. harmony contract      — create the runtime, publish the negotiation variables
- *   2. surface declarations  — declare our own surfaces to that runtime
- *   3. css lifecycle         — applyState + disposeDynamicStyle (the state push)
- *   4. session tabs          — move the 对话/轨迹 tabs into the title cluster
- *   5. bottom toggle         — move the workbench toggle to the cluster's end
- *   6. settings page headers — mark/inject the page heading + description
- *   7. row popup width       — pin a portalled menu to its launcher row
- *   8. stylesheet keeper     — restore a hand-injected sheet the loader stole
- *   9. frame track animation — keep the column-track transition, minus resize
- *  10. instant track         — snap the track on a right-panel toggle, glide the
- *                             content with covers (after 9: it wraps our tween)
- *  11. header badge fit      — retire header badges as the row narrows (after 10,
+ *   1. turn navigator room   — publish the free width beside the transcript
+ *   2. harmony contract      — create the runtime, publish the negotiation variables
+ *   3. surface declarations  — declare our own surfaces to that runtime
+ *   4. css lifecycle         — applyState + disposeDynamicStyle (the state push)
+ *   5. session tabs          — move the 对话/轨迹 tabs into the title cluster
+ *   6. bottom toggle         — move the workbench toggle to the cluster's end
+ *   7. settings page headers — mark/inject the page heading + description
+ *   8. row popup width       — pin a portalled menu to its launcher row
+ *   9. stylesheet keeper     — restore a hand-injected sheet the loader stole
+ *  10. frame track animation — keep the column-track transition, minus resize
+ *  11. instant track         — the right-panel toggle's motion: snap the track and
+ *                             cover the content when nothing reserves the
+ *                             conversation's right strip, or run every reservation
+ *                             on the product's own 300ms when something does
+ *                             (after 10: it wraps our tween)
+ *  12. header badge fit      — retire header badges as the row narrows (after 11,
  *                             and after the two DOM moves: it measures that row)
- *  12. native-title tooltips — replace the OS tooltip with the product's bubble
- *  13. third-party text      — normalize foreign provider strings (text only)
+ *  13. native-title tooltips — replace the OS tooltip with the product's bubble
+ *  14. third-party text      — normalize foreign provider strings (text only)
  *
- * The four slots are registered AFTER those effects, so the surfaces they render
+ * The three slots are registered AFTER those effects, so the surfaces they render
  * always find the styles and root classes already in place. The fiber's effect
  * disposers remove every dynamic style tag, root property, class, listener and
  * DOM move this plugin made.
@@ -63,6 +67,7 @@ import { mountStyleKeeper } from './harness/chrome/style-keeper.ts'
 import { mountFrameTrackTransition } from './harness/chrome/frame-track.ts'
 import { mountInstantTrack } from './harness/chrome/instant-track.ts'
 import { mountHeaderFit } from './harness/header-fit.ts'
+import { mountTurnNavigatorRoom } from './harness/turn-navigator-room.ts'
 
 /**
  * Plugin id stamped on every style tag we own, and the label on every
@@ -84,6 +89,15 @@ export const inject = ['slots']
 export function apply(ctx: ClientContext): void {
   const state: EnhancerState = loadState()
   applyState(state)
+
+  // Turn navigator room (turn-navigator-room.ts). The product hides 轮次导航 with
+  // a container query on the navigator's own slot, whose inline size is the
+  // conversation scroll box's content width — so any plugin's `padding-right`
+  // reservation on that box switches the navigator off while the transcript
+  // still has room to spare. This publishes the free width beside the transcript
+  // and the stylesheet re-allows the navigator when it genuinely fits; with no
+  // measurement the navigator keeps the product's own behaviour.
+  ctx.effect(() => mountTurnNavigatorRoom(), `${PLUGIN_ID}: turn navigator room`)
 
   // Harmony Contract runtime: publishes the negotiation variables on <html> and
   // exposes `ctx.get('uiHarmony')` so other plugins DECLARE what they occupy

@@ -53,6 +53,14 @@
  *
  * URL from DSH_URL, default http://127.0.0.1:19387. Requires the built
  * `lib/client.js` to be the one the app is serving.
+ *
+ * STALE CONSTANTS (2026-11-06): `TABS_H`/`HEADER_H` below and the three-badge
+ * reference session belong to the build this suite was written against (strip
+ * 26px, header 50px, 标准模式/智能体团队/子智能体 all present). The installed build
+ * renders a 36px strip (header 56px) and only the preset badge by default, so run
+ * the checks against fresh measurements before trusting a failure here. The
+ * strip's WIDTH contract — the failure that emptied the whole top bar on
+ * 2026-11-06 — lives in verify-header-strip-fit.cjs.
  */
 const path = require('node:path')
 const fs = require('node:fs')
