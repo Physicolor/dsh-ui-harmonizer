@@ -1,93 +1,93 @@
 {
-    "name": "dsh-ui-harmonizer",
-    "version": "0.9.2",
-    "description": "DeepSeek 设计规范：统一 Harness 界面语言，并为社区插件做针对性适配，附只读兼容性审计。",
-    "type": "module",
-    "main": "lib/index.js",
-    "types": "lib/types/index.d.ts",
-    "icon": "./icon.svg",
-    "exports": {
-        ".": {
-            "types": "./lib/types/index.d.ts",
-            "default": "./lib/index.js"
-        },
-        "./client": {
-            "types": "./lib/types/client/index.d.ts",
-            "default": "./lib/client.js"
-        },
-        "./cordis.patch.yml": "./cordis.patch.yml",
-        "./package.json": "./package.json",
-        "./locale/*.json": "./locale/*.json"
+  "name": "dsh-ui-harmonizer",
+  "version": "0.9.6",
+  "description": "DeepSeek 设计规范：统一 Harness 界面语言，并为社区插件做针对性适配，附只读兼容性审计。",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "icon": "./icon.svg",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
     },
-    "files": [
-        "lib/index.js",
-        "lib/client.js",
-        "lib/client.js.map",
-        "cordis.patch.yml",
-        "icon.svg",
-        "locale/*.json",
-        "README.md",
-        "README.zh-CN.md",
-        "docs/icon/*.svg",
-        "docs/settings-section-style.md",
-        "docs/screenshot-overview.png",
-        "docs/screenshot-better-sidebar.png",
-        "docs/screenshot-widgets.png",
-        "lib/types/**/*.d.ts"
-    ],
-    "scripts": {
-        "build": "tsdown && tsc",
-        "prepare": "tsdown && tsc"
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
     },
-    "keywords": [
-        "deepseek-harness",
-        "dsh",
-        "cordis",
-        "plugin",
-        "web-ui",
-        "ui-enhancement",
-        "harmonizer",
-        "ui-polish",
-        "browser-plugin",
-        "css"
-    ],
-    "license": "MIT",
-    "author": "Physicolor",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/Physicolor/dsh-ui-harmonizer.git"
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/client.js.map",
+    "cordis.patch.yml",
+    "icon.svg",
+    "locale/*.json",
+    "README.md",
+    "README.zh-CN.md",
+    "docs/icon/*.svg",
+    "docs/settings-section-style.md",
+    "docs/screenshot-overview.png",
+    "docs/screenshot-better-sidebar.png",
+    "docs/screenshot-widgets.png",
+    "lib/types/**/*.d.ts"
+  ],
+  "scripts": {
+    "build": "tsdown && tsc",
+    "prepare": "tsdown && tsc"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "plugin",
+    "web-ui",
+    "ui-enhancement",
+    "harmonizer",
+    "ui-polish",
+    "browser-plugin",
+    "css"
+  ],
+  "license": "MIT",
+  "author": "Physicolor",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Physicolor/dsh-ui-harmonizer.git"
+  },
+  "homepage": "https://github.com/Physicolor/dsh-ui-harmonizer#readme",
+  "bugs": {
+    "url": "https://github.com/Physicolor/dsh-ui-harmonizer/issues"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
     },
-    "homepage": "https://github.com/Physicolor/dsh-ui-harmonizer#readme",
-    "bugs": {
-        "url": "https://github.com/Physicolor/dsh-ui-harmonizer/issues"
-    },
-    "publishConfig": {
-        "registry": "https://registry.npmjs.org/"
-    },
-    "dsh": {
-        "bundle": {
-            "patch": "./cordis.patch.yml"
-        },
-        "client": {
-            "platform": "web"
-        }
-    },
-    "engines": {
-        "dsh": ">=0.1.0-rc.6 <0.3.0-0"
-    },
-    "dependencies": {},
-    "peerDependencies": {
-        "@deepseek-ai/cordis": "^4.0.1",
-        "@deepseek-ai/dsh-client-ui-primitives": "^0.1.0-rc.6 || ^0.2.0-rc.1",
-        "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6 || ^0.2.0-rc.1"
-    },
-    "devDependencies": {
-        "@deepseek-ai/cordis": "^4.0.1",
-        "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6",
-        "tsdown": "^0.22.2",
-        "lightningcss": "^1.25.0",
-        "typescript": "^5.6.0",
-        "react": "^18.2.0",
-        "@types/react": "~18.3.1"
+    "client": {
+      "platform": "web"
     }
+  },
+  "engines": {
+    "dsh": ">=0.1.0-rc.6 <0.3.0-0"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-ui-primitives": "^0.1.0-rc.6 || ^0.2.0-rc.1",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6 || ^0.2.0-rc.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6",
+    "tsdown": "^0.22.2",
+    "lightningcss": "^1.25.0",
+    "typescript": "^5.6.0",
+    "react": "^18.2.0",
+    "@types/react": "~18.3.1"
+  }
 }

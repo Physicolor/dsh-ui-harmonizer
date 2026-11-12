@@ -46,6 +46,7 @@ DSH UI Harmonizer is a **client-only DSH bundle plugin**. It adds no model tools
 | Right-rail flush rounded rect | better-sidebar panel overlay layout; the header stays put |
 | Unified settings header | Title 18/600 + description 13px + hairline divider |
 | Native-title tooltips | Raw `title` attributes render as the official dark tooltip bubble instead of the OS-native popup |
+| Turn navigator (轮次导航) reveals when it fits | The product hides it from a container query on its own slot, whose width is the conversation scroll box's content width — so any plugin's `padding-right` reservation on that box, or the right sidebar, switches the navigator off while the transcript still has room beside it. The free strip on each side is measured and published as `data-nav-room` + `--enhc-nav-free`; the navigator is re-allowed whenever it is at least 56px wide there, and keeps the product's own behaviour when it is not |
 
 ### ♻️ Plugin Visual Reconciliation
 
@@ -84,11 +85,11 @@ one of four layers:
 | Layer | Answers | Examples |
 | --- | --- | --- |
 | `core/` | infrastructure true regardless of DSH or any plugin | state model + persistence, the Harmony Contract, i18n, DOM/React helpers |
-| `harness/` | normalizations and repairs aimed at the **DSH shell** | official control-recipe mirrors, the settings-header reconciler, the chat-width channel, the frame's column-track transition, menu width, the stylesheet keeper, native-title tooltips, the rounded center card |
+| `harness/` | normalizations and repairs aimed at the **DSH shell** | official control-recipe mirrors, the settings-header reconciler, the chat-width channel, the frame's column-track transition, menu width, the stylesheet keeper, native-title tooltips, the rounded center card, the turn navigator's room probe |
 | `plugins/<package>/` | adaptations written for **one** community plugin | `commandcode-provider` text normalisation, `dsh-widgets` rail squeeze + handle re-anchor, `dsh-better-sidebar` panels, `dsh-genui` width hygiene |
 | `self/` | the plugin's **own** UI | Settings → General rows, the font selector, the Harmony Doctor page |
 
-Stylesheets follow the same split: 29 `.module.css` fragments with a single entry
+Stylesheets follow the same split: 30 `.module.css` fragments with a single entry
 (`src/client/styles/index.ts`) whose **import order is the cascade order**.
 
 The rest of the contract is unchanged:
@@ -140,6 +141,7 @@ pnpm run check      # typecheck + build
 - DeepSeek Harness `0.1.0-rc.6` and compatible later `0.1.x`;
 - Integrates via official slots, coexisting with better-sidebar, dsh-widgets, dshmarket, etc. by slot order;
 - Known reconciliation targets: `dsh-better-sidebar`, `dsh-widgets`, `dsh-context`, `dsh-notification`, `dshmarket`;
+- Right-side reservations (the pinned summary's `--dps-right-space`, the widgets rail's claim) are settled in the toggle's own task, so the panel's track and the reservation never squeeze the conversation twice — see the changelog entry on the reservation riding the snap. `dsh-pinned-summary` publishes its reservation in the toggle's own microtask from its side;
 - The page fully restores to defaults after uninstall/disable — no residue.
 
 ---
@@ -155,6 +157,42 @@ pnpm run check      # typecheck + build
 ---
 
 ## Changelog
+
+### v0.9.6 — the session tab's underline spans its label again (folds in the never-published 0.9.4 / 0.9.5)
+
+Owner's screenshot, 2026-11-12: the 对话 tab's blue bar was a stub and the label sat above the mode badge.
+
+- 🔧 The bar is the PRODUCT's `::after` (`left: 10px; right: 10px; bottom: -1px; height: 2px`): it spans the label only because the button carries 10px of horizontal padding on each side. Our old rule wrote `padding: 5px 0` on `[class*='_tab']`, which cost both halves at once — the bar collapsed to `26 − 20 = 6px`, and because `_tabLabel` also contains `_tab`, the label got its own 5px on top of the button's and the glyphs sat 6px high (measured 11–28 against the badge's 17–33).
+- ✅ Now: label `padding: 0`; button `padding: 0 10px 3px; margin: 0 -10px; height: auto; align-self: center; top: 2px`. Measured at 1707x1067: bar **6px → 26px** (the label's width), glyphs **16.5–33.5** against the badge's 17–33 (both centred on 25), header still 50px. The `-10px` top margin went with the strip's own `margin-top: 10px` that this plugin removes; the horizontal half stays, so the label keeps its x.
+- 🧭 Also in this release (0.9.4 / 0.9.5, never published on their own): the **turn navigator** decides from its own measured room instead of the product's `@container (width <= 900px)` query, which any `padding-right` on `[data-conversation-scroll]` switches off 1:1 (`harness/turn-navigator-room.ts`); the **frame track** rework (`harness/chrome/instant-track.ts`, `frame-column-transition.module.css`); **fonts** — DSH 0.2.1 moved `--dsw-font-family` into a `body{}` rule, so the whole-UI scope now writes `<body>` and publishes `--dsh-font-family-text` as well (`harness/fonts.ts`); **sidebar footer action entries stack** instead of splitting one row in half — 用量中心's label was being clipped to "用量中" (`harness/sidebar-chrome.module.css`).
+- 📄 `scripts/tools/css-baseline.mjs` re-pinned; measurements in `docs/MEASUREMENTS.md`; the tab fix written up in `docs/handoff/TAB-INLINE-FIX-2026-11-12.md`.
+
+### v0.9.3 — the right-panel toggle truly glides, and is never cut by the sidebar
+
+Two rounds of owner feedback: first "on open the conversation is painted flush against the sidebar,
+clipped, and only then translated", then "the motion is gone entirely, it just jumps".
+
+- 🔍 The real constraint: a toggle changes the transcript's WIDTH (748 ↔ 588), while the clip it is
+  painted inside (the conversation scroll body, then `xz4KEq_root`) shrinks in the SAME commit
+  (measured 1707x1067: track 1427→659, clip 1425→657). A box that is only translated therefore runs
+  outside the clip; re-wrapping every frame is unaffordable (p90 **53.8ms per frame** on a 2.9k-node
+  conversation, ~4x that on long threads).
+- ✅ What ships: inside that one commit the clip's width is pinned to `max(before, after)`, both
+  payload boxes (transcript column, composer capsule) are pinned to their PRE-toggle measure and
+  put back on their pre-toggle left edge, and eased to the landing left edge on the product's own
+  300ms `cubic-bezier(.4,0,.2,1)`. All pins drop on the frame the ease ends — the left edge IS the
+  landing edge, so the landing does not jump and only the right edge takes the new measure.
+- 🎯 The landing edge is not read from the commit frame: on a CLOSE the product's responsive
+  `max-width` (640 open / 748 closed) resolves one frame after the track widens, so aiming there
+  produced a visible right-then-back overshoot (312 → 520 → 466). Rest geometry is cached per state
+  (`inline track + reservation`), with the commit-frame reading and a 100ms residual pass as the
+  fallback.
+- 🧪 New `scripts/verify-panel-motion.cjs` asserts, frame by frame: it glides, the first carried
+  frame starts on its own left edge, no sampled frame paints outside the clip, it lands exactly, no
+  inline style survives, the rail does not move. This run: 17 intermediate lefts over 154px on open,
+  5 on close, 0px outside the clip, landings 312/588 and 466/748. `verify-frame-track` and
+  `verify-panel-squeeze` all PASS; `verify-rapid-toggle` keeps only its pre-existing 40px rail drift.
+- 📄 Mechanism, measurements and a file map: `docs/handoff/RIGHT-PANEL-LANDING-2026-10-30.md`
 
 ### v0.9.0 — one interface language for the Harness, and a layout per target
 
@@ -180,6 +218,24 @@ pnpm run check      # typecheck + build
 **Fixed — lifecycle**
 
 - The two DOM relocations (session tabs, bottom-workbench toggle) put their nodes back on dispose; the center card's unconditional 1Hz `setInterval` is gone (ResizeObserver + resize + transition events already cover it); the settings-header fingerprint hashes TEXT instead of its length (equal-length rewrites used to freeze the title).
+
+### Unreleased — the right-side reservation rides the snap (the eased-track squeeze is gone)
+
+**Fixed — the middle column stuttered and started late while the sidebar itself was smooth**
+
+- 🔍 Root cause (measured 2026-10-21, live GUI, 1707×1067, the report's session, a 300px `--dps-right-space`): the previous build answered the 2026-10-20 collapse by **easing the frame's track** whenever a reservation existed ("one clock"), and a `grid-template-columns` ease is a LAYOUT property on the AppFrame — every frame of the 300ms re-laid out the whole frame. The reservation still lagged the commit (`padding-right` 300 → 287 at +144ms, 231 at +178ms, 73 at +249ms, 0 at +418ms), the transcript's width held at 748px until +249ms and then stepped to 588px, and only **5 frames** were painted in that 400ms window. The panel slides on its own compositor transform, so it looked smooth while the conversation stuttered and arrived late — exactly the report.
+- ✅ One path, on the compositor. The track snaps again on every toggle; the reservation is settled **in the same task** (the instant gate also flattens `[data-composer-seat]`'s `right`, but **the settle observes/settles only `_frame` and `_scrollBody`, not the seat**: dsh-widgets rewrites the seat's inline `right` from its own transition callback, so `finish()`ing it feeds an endless settle pulse — see the next entry; the seat's 1 ms gate settles itself. `settleTransitions` still runs in bounded passes so the track's `transitionrun` → dsh-widgets' claim → padding chain all lands before paint, and one microtask hop catches `dsh-pinned-summary`'s own publisher), and the visible motion is carried by the covers (compositor `transform` on the transcript, `left` on the composer, `width` on the header). If a third-party owner ever misses the task, the open direction holds `padding-right` at 0 and probes it per frame inside a rAF, so no frame can paint the collapse.
+- 📈 Measured after (same page, same session): the reservation reaches `0` on the **track's own frame** (frame 4 == frame 4, and the new fallback hold reports "not needed" — the owners publish in the toggle's task), the transcript's width lands in two values (`748 → 588`) at the snap, and its position glides `466 → 427 → 400 → 341 → … → 312`. The panel's own slide, the transcript cover, the composer cover and the header cover share one `startTime` (spread **0ms**; the sample count varies with frame delivery) and all run 300ms on `cubic-bezier(0.4, 0, 0.2, 1)`. `verify-panel-squeeze.cjs` also asserts the close mirror and a 9-click storm with no residue.
+- ⚖️ Trade, stated: a gradual width is only possible by re-laying out the frame on every frame, so the width now lands in the commit frame and only the position glides (the owner chose this). In a session whose text is wider than the open column, that means one text re-wrap at the snap instead of a per-frame reflow. Frame-gap numbers under load are in `docs/MEASUREMENTS.md`; the probe now runs the eased-track arm on the same page as the A/B baseline and fails on any painted collapse frame.
+- 🔁 The close direction now holds the reservation it remembers (the last non-zero value seen before the panel took the track) for the length of its glide. Without it a late owner left the content box at the full track width, so the cover glided to the no-reservation centre (~616px) and the conversation jumped back to ~466px when the owner finally published — "it slides right into the middle, then snaps back".
+- 🎨 The open direction no longer shows a bare strip where the panel is about to be. The column is allocated at its final width in the first frame while the dock slides in; the strip between them now carries the panel's own surface (read from the dock, removed with the toggle), so it reads as the panel rather than as a grey hole.
+
+**Fixed — toggling the right panel could lock the whole renderer (2026-10-21)**
+
+- 🔍 The owner's desktop reproduced it deterministically: with the widget rail open (28 cards) and the panel's 文件 tab populated, a toggle left the page unresponsive on one frame, with only a compositor animation still moving and the cursor still a hand. The renderer pegged one core and grew to ~1.5 GB. The same sequence reproduced 3/3 in a separate Chromium; CDP paused inside `settleTransitions` (the `settleAll` MutationObserver callback), which logged **7.2 s self time** in the stall window.
+- 🧠 Cause: the previous entry added the **composer seat** to `settleHosts` and observed its `style`. The seat's inline `right` is written by dsh-widgets from its own transition callback, so `finish()`ing its 1 ms gate woke dsh-widgets again, whose next write came back as a new observer delivery — an endless settle pulse. Each delivery's four `getAnimations()/finish()` passes also forced style and layout, locking the main thread.
+- ✅ Fix: the settle now covers only `_frame` and `_scrollBody`; `settleAll()` is re-entrancy guarded; each toggle's settle rounds are capped at 6, after which the observer disconnects and the remaining 1 ms transitions settle themselves. The seat's gate stays in the stylesheet, it is simply no longer `finish()`ed from JS — the verified pre-change behaviour.
+- 🧪 Verification: **3/3 stalls before** (close step), **6/6 clean after** in the same full state (`panel 768 / tabs ["文件"] / cards 28`); `verify-panel-squeeze.cjs` all PASS; new `scripts/verify-panel-freeze.cjs` is the hard-timeout guard. Details in `docs/handoff/PANEL-FREEZE-2026-10-21.md`.
 
 ### v0.9.1 — smooth panel toggle, header badge fit, one settings-header skeleton; the rounded card removed
 

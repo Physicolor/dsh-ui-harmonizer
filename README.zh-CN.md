@@ -43,6 +43,7 @@ DSH UI Harmonizer 是一*纯浏览器端（client-only*DSH bundle 插件。它�
 | 右侧栏贴边圆角矩| better-sidebar 面板覆盖式布局，header 不动 |
 | 设置页头统一 | 标题 18/600 + 描述 13px + hairline 收尾 |
 | 原生 title 悬浮提示统一 | `title` 属性改用官方深色气泡渲染，替代系统默认提示样式 |
+| 轮次导航按真实余量显示 | 官方用它自己插槽上的容器查询把轮次导航藏起来，而该插槽宽度就是对话滚动盒的内容宽度 —— 因此任何插件写在那个盒子上的 `padding-right` 预留、或右侧边栏，都会在正文两侧明明还有余量时把导航关掉。插件会实测正文两侧的空余条带并发布 `data-nav-room` 与 `--enhc-nav-free`：只要两侧各有 ≥ 56px 就把导航放回来，不足时保持官方原行为 |
 
 ### ♻️ 插件视觉协调
 
@@ -81,7 +82,7 @@ DSH UI Harmonizer 是一*纯浏览器端（client-only*DSH bundle 插件。它�
 | `plugins/<包名>/` | 只服务于**某一个**社区插件 | `commandcode-provider` 文本归一、`dsh-widgets` 组件栏让位与手柄重锚、`dsh-better-sidebar` 面板、`dsh-genui` 宽度卫生 |
 | `self/` | 插件**自己**画的界面 | 设置 → 通用 的五行、字体选择器、Harmony Doctor 页 |
 
-样式表按同一划分拆成 29 个 `.module.css` 分片，入口只有一个（`src/client/styles/index.ts`），**它的 import 顺序就是层叠顺序**。
+样式表按同一划分拆成 30 个 `.module.css` 分片，入口只有一个（`src/client/styles/index.ts`），**它的 import 顺序就是层叠顺序**。
 
 其余约束不变：
 
@@ -135,6 +136,47 @@ pnpm run check      # 类型检+ 构建
 
 ## 变更日志
 
+### v0.9.6 — 会话页签的蓝条重新盖满标签（并入从未单独发布的 0.9.4 / 0.9.5）
+
+车主截图 2026-11-12：「对话」下面那条蓝条只剩一小截，文字还比模式徽章高一截。
+
+- 🔧 蓝条是**产品自己**画的 `::after`（`left: 10px; right: 10px; bottom: -1px; height: 2px`）——它靠
+  按钮两侧各 10px 的内边距撑出与标签等宽。旧规则给 `[class*='_tab']` 写 `padding: 5px 0`，一次
+  丢掉两半：蓝条塌成 `26 − 20 = 6px`；而 `_tabLabel` 也含 `_tab`，标签于是在按钮的 5px 之上又加
+  5px，字形框实测 11–28（徽章 17–33），整行偏高 6px。
+- ✅ 现在：标签 `padding: 0`；按钮 `padding: 0 10px 3px; margin: 0 -10px; height: auto;
+  align-self: center; top: 2px`。1707x1067 实测：蓝条 **6px → 26px**（= 标签宽），字形框
+  **16.5–33.5**（徽章 17–33，中心都是 25），会话头仍 50px。上边距 `-10px` 一并去掉——它取消的是
+  本插件已经删掉的 strip `margin-top: 10px`；水平那半保留，标签的 x 不变。
+- 🧭 同版还并入（0.9.4 / 0.9.5，从未单独发布）：**轨迹导航器**改为按自身实测余量决定显隐，而不是
+  产品的 `@container (width <= 900px)`——后者会被任何写在 `[data-conversation-scroll]` 上的
+  `padding-right` 1:1 关掉（`harness/turn-navigator-room.ts`）；**帧轨道**重构
+  （`harness/chrome/instant-track.ts`、`frame-column-transition.module.css`）；**字体**——DSH 0.2.1
+  把 `--dsw-font-family` 挪进了 `body{}` 规则，所以整套 UI 的字体改写 `<body>` 并同时发布
+  `--dsh-font-family-text`（`harness/fonts.ts`）；**侧栏底部动作条目改为竖排**，不再把一行劈成
+  两半——用量中心的标签原本被压成「用量中」（`harness/sidebar-chrome.module.css`）。
+- 📄 `scripts/tools/css-baseline.mjs` 已重钉；实测记录在 `docs/MEASUREMENTS.md`；页签修复的来龙去脉
+  在 `docs/handoff/TAB-INLINE-FIX-2026-11-12.md`。
+
+### v0.9.3 — 右栏开合：对话区与输入框真的从原位平移，且全程不被侧栏切掉
+
+按车主报告修两轮：先是「展开时先贴在侧栏边、被切掉一截才平移」，后是「干脆不动、变成瞬间跳动」。
+
+- 🔍 真正的约束：开合会改变正文列的宽度（748 ↔ 588），而它所在的裁切盒（对话滚动区
+  `_scrollBody`，进而是里面的 `xz4KEq_root`）在**同一个 commit** 里就缩了（实测 1707×1067：
+  轨道 1427→659、裁切盒 1425→657）。只做位移的盒子必然越界被切；每帧重排文字又付不起。
+- ✅ 现行做法：在**这一个 commit 内**把裁切盒宽度钉成 `max(开合前, 开合后)`，把正文列与输入框胶囊
+  的宽度钉成开合前的值、平移回原位，再用产品自己的 300ms / `cubic-bezier(.4,0,.2,1)` 缓到**落点左缘**；
+  动画结束那一帧一起撤掉所有钉子——左缘本就落在落点上，所以落地不跳，只有右缘按新宽度收/放一次。
+- 🎯 落点不是 commit 帧读的：CLOSE 方向产品的响应式 `max-width`（开 640 / 关 748）比轨道晚一帧，
+  照读会「先多移 54px 再退回来」；改成按「轨道 + 预留」缓存每个状态的静止几何，取不到才退回读数
+  并用 100ms 补掉残差。
+- 🧪 新增 `scripts/verify-panel-motion.cjs`：逐帧断言「有平移 / 首帧从自身左缘出发 / 任何一帧都不出裁切盒 /
+  落点精确 / 无残留 / 导轨不动」。本轮：展开 17 个中间左缘跨 154px、收起 5 个跨 154px，0px 越界，
+  落点 312/588 与 466/748；`verify-frame-track` 与 `verify-panel-squeeze` 全 PASS，
+  `verify-rapid-toggle` 仅剩既有 40px 导轨漂移。
+- 📄 机制、测量与代码地图：`docs/handoff/RIGHT-PANEL-LANDING-2026-10-30.md`
+
 ### v0.9.1 — 侧栏开合平顺、顶栏徽章让位、设置页表头收成一套骨架；删除圆角卡片
 
 按车主决定以 **patch** 发布：这一版带新行为，严格按语义化应为 minor。它同时删掉了 0.9.0 里的一个可选视觉层，所以那一条写成"删除"，而不是让它悄悄消失。
@@ -173,7 +215,7 @@ pnpm run check      # 类型检+ 构建
 **重构 —— 每个源文件只属于一层**
 
 - 插件按**作用对象**分层：`core/`（与 DSH、与任何插件都无关的基础设施）、`harness/`（针对 DSH 本体的规范化）、`plugins/<包名>/`（只服务于某一个社区插件）、`self/`（本插件自己画的界面）。`src/client/` 顶层现在只剩 `index.ts` 与 `services.d.ts`。
-- 1253 行的样式表拆成若干 `.module.css` 分片（今天是 29 个 —— 拆分之后又追加了 dsh-widgets / dsh-context 的协调分片，含它的设置窗口外壳），入口只有一个（`src/client/styles/index.ts`），**它的 import 顺序就是层叠顺序**；拆分本身已证明与原文件逐字节相同，`scripts/tools/css-baseline.mjs` 现在守住编译后的结果。
+- 1253 行的样式表拆成若干 `.module.css` 分片（今天是 30 个 —— 拆分之后又追加了 dsh-widgets / dsh-context 的协调分片，含它的设置窗口外壳与轮次导航余量规则），入口只有一个（`src/client/styles/index.ts`），**它的 import 顺序就是层叠顺序**；拆分本身已证明与原文件逐字节相同，`scripts/tools/css-baseline.mjs` 现在守住编译后的结果。
 - `npx tsc --noEmit` 从 **52 个错误降到 0**；`build` 现在会跑 `tsc`，`lib/types/` 这才真的存在（此前 `files` 里声明了它却从未生成）。
 
 **修复 —— 对真实 DOM 做对抗性复核后找出的失效与错配选择器**
@@ -195,7 +237,59 @@ pnpm run check      # 类型检+ 构建
 
 ### 未发布（待验收）：侧栏开合平顺 · 设置页表头统一骨架 · 行内弹层宽度 · 第三方样式表守卫
 
+**修复 —— 右侧预留并入 snap：中栏不再逐帧重排，也不再晚于侧边栏（2026-10-21）**
+
+- 🔍 车主的反馈：「右侧边栏本身动画流畅，但中间的对话区域、输入框、顶部菜单栏右侧的按钮区域卡顿，
+  平移时间晚于右侧边栏本身。」活 GUI 实测（127.0.0.1:49326、1707×1067、会话「修复侧边栏动画卡顿问题」、
+  预留 300px）复现：上一版对「有预留」的开合走**单时钟挤压**，也就是让 `grid-template-columns`（AppFrame 的
+  **布局**属性）缓动 300ms，每一帧都重排整个框架；而预留本身仍然迟到——
+  `padding-right 300 →287@+144ms →231@+178 →73@+249 →0@+418`，正文列宽度在前 249ms 一直是 748、
+  随后才 703 →588，400ms 窗口里只画出 **5 帧**。面板在自己的合成层上滑动，所以看起来「面板先到、中栏后到还卡」。
+- ✅ 只有一条路：轨道恢复 snap；预留**在同一个 task 内**落定（instant 门也覆盖
+  `[data-composer-seat]` 的 `right`，但 **settle 只观察/落定 `_frame` 与 `_scrollBody`，不包含 seat**：
+  seat 的内联 `right` 由 dsh-widgets 在自己的过渡回调里回写，`finish()` 它会自激成无限 settle 脉冲
+  ——见下一节；seat 的 1ms gate 由浏览器自行落定。`settleTransitions` 仍是有界多轮，把
+  「finish 轨道 → 派发 `transitionrun` → dsh-widgets 写 claim → padding 过渡」这条链在同一次渲染前走完，
+  再用一次微任务兜住 `dsh-pinned-summary` 自己的发布顺序）。
+  可见位移仍由 cover 承担（正文列 `transform`、输入框 `left`、顶栏 `width`）。若某个第三方业主真的迟到，
+  开方向会把 `padding-right` 顶在 0 并在 rAF 里「摘—读—补」探测，保证不画出塌缩帧。
+- 📈 实测（同一页面同一会话）：预留与轨道**同帧**（第 4 帧 == 第 4 帧，值已是 0px，且兜底 hold 自报
+  「未启用」——业主本来就在同一个 task 里发布），正文列宽度只落两个值（snap 帧 `748 → 588`），
+  位置平滑 `466 → 427 → 400 → 341 → … → 312`；面板自身动画 + 正文列/输入框/顶栏三条 cover 的
+  `startTime` **完全一致（跨度 0ms，采样点数随页面出帧而变）**，且都跑 300ms / `cubic-bezier(0.4,0,0.2,1)`。
+  关方向镜像（预留按 300px 在同帧恢复），9 连击零残留。
+- ⚖️ 取舍（车主已选 A）：官方布局下宽度渐变只能靠每帧重排整帧，所以宽度在点击当帧到位、只有位置在滑。
+  正文比开栏后的列还宽时，会**一次性**重折行，而不是每帧重排。压力测试与数字见 `docs/MEASUREMENTS.md`
+  （帧间隔在该机器上噪声占优，同一脚本重跑甚至会反号，只有「>50ms 帧数」与形状类断言稳定）；
+  探针新增「关掉选项的同页 A/B 臂」、「塌缩帧判定」与「hold 是否介入」。
+- 🔁 关方向现在会**顶住它记住的预留值**（面板占轨前最后一次非零预留）跑完整段滑行。缺了它，业主晚一步
+  发布时内容盒仍是整条轨道宽，cover 会把对话滑到「无预留」的中心（本机 ~616px），等预留落地再跳回
+  ~466px——就是「一直向右平移到中间区域，然后跳变回原先的位置」。
+- 🎨 开方向不再先露出一条空白带：轨道在第一帧就按面板全宽占位，而面板内容是从右侧滑入的，两者之间那段
+  原本画的是 frame 背景。现在这段临时用**面板自己的表面色**填充（从面板内容读到，随本次开合一起摘除），
+  看起来就是面板而不是一块灰色空洞。
+
+**修复 —— 开合右栏可能把整个渲染进程锁死（2026-10-21）**
+
+- 🔍 车主桌面端稳定复现：组件栏打开（28 张卡）+ 右栏「文件」标签已加载时，点击展开/收起右栏后整页
+  不再响应；画面停在一帧，只有合成器动画继续动，鼠标仍是手形。渲染进程占满一个核、内存涨到 ~1.5 GB。
+  独立 Chromium 中同样 3/3 复现，CDP 暂停在 `settleTransitions`（`settleAll` 的 MutationObserver 回调），
+  该函数在卡死窗口里记到 **7.2 s self time**。
+- 🧠 根因：上一节的改动把 **composer seat** 加进了 `settleHosts` 并观察它的 `style`。seat 的内联
+  `right` 是 dsh-widgets 在自己的过渡回调里写的；`finish()` 它的 1 ms gate 会再次唤醒 dsh-widgets，
+  下一次写入又被 observer 当成新 delivery —— 无限 settle 脉冲。每次 delivery 的 4 轮
+  `getAnimations()/finish()` 又各自强制样式与布局，主线程因此被锁死。
+- ✅ 修复：settle 只保留 `_frame` 与 `_scrollBody`；`settleAll()` 加重入保护；每次点击的 settle 轮数
+  硬上限 6，超过就断开 observer，余下的 1 ms 过渡自行落定。seat 的 gate 仍在样式表里，只是不再由 JS
+  `finish()`——与本次改动之前的已验证构建一致。
+- 🧪 验证：修复前 close 步骤 **3/3 卡死**；修复后同一全状态 **6/6** 完成 close + reopen
+  （`panel 768 / tabs ["文件"] / cards 28`），`verify-panel-squeeze.cjs` 全 PASS，
+  新增 `scripts/verify-panel-freeze.cjs` 作为硬超时护栏。详见
+  `docs/handoff/PANEL-FREEZE-2026-10-21.md`。
+
 **新功能 —— 右侧栏开合不再逐帧重排整个界面（「侧栏开合平顺」，默认开）**
+
+> 2026-10-21 更新：下面这条里「有预留时让轨道缓动」的方案已被上一节取代；snap + cover 部分仍然有效。
 
 - 🔍 先量后改：官方在 `_frame` 上缓动 `grid-template-columns`，而这是**布局属性**——中列轨道在 300ms 里从 1427px 走到 659px，每一帧都让整个 frame 重新布局（官方自己的 `ResizeObserver` 因此被唤醒 27 次，而左侧栏开合只有 10 次），同时合成器与 GPU 线程几乎空转。逐帧录得的元凶不止一条：轨道之外，`_scrollBody` 的 `padding-right` 缓 300ms、`_widthHandle` 的 `left`/`right` 也缓 300ms，而正文列按 `scrollBody width − padding-right` 居中，轨已到位、padding 未到时正文列会瞬态飞出去（实测关栏方向过冲 +261px；只压轨道不压 padding 仍残留 +54px）。
 - ✅ `src/client/harness/chrome/instant-track.ts` 在 capture 阶段接管右栏按钮的点击：给 `<html>` 写 `data-enhc-instant`，把 `_frame` 与 `_scrollBody` 的过渡压到 1ms，再在产品写轨道那个 mutation 微任务里对所有由 gate 产生的过渡调 `finish()`——轨道一步到位，同时 `transitionrun`/`transitionstart`/`transitionend` 三个事件照常触发。用属性而非 class，是因为主题观察器盯着 `<html>` 的 `class`，每次写 class 都要重建主题材质（实测约 7ms，见 handoff）；`transition-duration: none` 与真 `0s` 同样是错的——从未启动的过渡根本不产生事件，而 dsh-widgets 的轨道让步靠的正是这个事件。

@@ -1,5 +1,5 @@
 {
- "__combined": "4315badc83a0b36acf7fe55d1b618bf8911ca790e57bc30da99e418b036b9117",
+ "__combined": "e6766b5065dd5fd9593432f1076cc6c22fef3c673ba501f2a8d8b35786403dd6",
  "sheets": {
   "dsh-ui-harmonizer/sheet-tokens.module.css": {
    "sha256": "fc1802bb3f57cdb8f80d9cb1320e700492f81544411cac9a83bcce9e2bbfc276",
@@ -18,8 +18,8 @@
    "bytes": 978
   },
   "dsh-ui-harmonizer/sidebar-chrome.module.css": {
-   "sha256": "b92508cd4b0195af04df46ac89a3cba0e6b157d4ad284fe6420ace18d3761c30",
-   "bytes": 2649
+   "sha256": "fde79a06efcc8e8a518cee1333735c1f17fe98cb834a10d457876660700a25ed",
+   "bytes": 2754
   },
   "dsh-ui-harmonizer/settings-section-headers.module.css": {
    "sha256": "eed840aa7fb5236beeb2f47a20525d7a6fb06d8bae49fdb6c9f7102e90cb27ed",
@@ -54,8 +54,8 @@
    "bytes": 359
   },
   "dsh-ui-harmonizer/session-header.module.css": {
-   "sha256": "2ca258fab9b29fd29a392a075ced8a9aa527c6e922f9208923b5a4d60a16f803",
-   "bytes": 906
+   "sha256": "164b7f04ecd5d053495990f76d43e866c4bbee1a20a1c51b05fa0a03e7abce36",
+   "bytes": 1115
   },
   "dsh-ui-harmonizer/panel-tabs.module.css": {
    "sha256": "ea064378265c6982642eed26e8c64f7bc4b6d47b27b0107dc6fc850dc25b71a3",
@@ -65,17 +65,13 @@
    "sha256": "3310d03ad84ca707e3598d5fc51b946f6151c9ec921a85273f7a8401da2038e6",
    "bytes": 281
   },
-  "dsh-ui-harmonizer/flow-item-rendering.module.css": {
-   "sha256": "831a0425a3f4209d473974c70d58ff400ef15b61b65912225ec124152fb4f1ca",
-   "bytes": 111
-  },
   "dsh-ui-harmonizer/composer-seat-yield.module.css": {
    "sha256": "7ced79e1cc852851cd160ff48cf1596d87a22f49ea9c1e8a839393d67cef7045",
    "bytes": 149
   },
   "dsh-ui-harmonizer/frame-column-transition.module.css": {
-   "sha256": "122b0c1bb0bfff8ddba407cac9dca7d391a5ee5402ea8685ca8899c23d0aa9e4",
-   "bytes": 655
+   "sha256": "63dbe9e028394ecc75128e9a7941657a339cb0bf4fe29ced7f8e80f3f66a3969",
+   "bytes": 717
   },
   "dsh-ui-harmonizer/rail-overlay-squeeze.module.css": {
    "sha256": "31514124ed7783ab2bb6310da58d054d0e37acb08e078e8c71e6de000ed673fc",
@@ -112,6 +108,10 @@
   "dsh-ui-harmonizer/width-hygiene.module.css": {
    "sha256": "e2badd4d32a59c2ed3006f534b46b6e63e76203ca56807aa79c5ec147122be37",
    "bytes": 1351
+  },
+  "dsh-ui-harmonizer/turn-navigator-room.module.css": {
+   "sha256": "0672385fca82548d8fd6c0d4933655988532d45fb3a6d4ca6bdd754f00c319b9",
+   "bytes": 104
   }
  }
 }
