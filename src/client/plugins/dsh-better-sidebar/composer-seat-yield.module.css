@@ -17,7 +17,7 @@
    over-squeezing chat. The result is the input visibly jumping right when
    switching 对话 <-> 轨迹. `margin-right` is the one property that narrows both
    seats symmetrically, so it alone keeps them aligned at every sidebar width. */
-:global(div[class$='_composerSeat']) {
+:global(div[class$='_composerSeat']:not(:where([data-sidebar-chat] *))) {
   margin-right: var(--dsh-sidebar-width, 0px);
   transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
 }
