@@ -29,7 +29,8 @@
 :global(html #root > div[data-slot='root'] > div > div:nth-child(2)) {
   margin-bottom: 0;
 }
-:global([data-slot='conversation.session'] > [class$='_viewArea']) {
+/* Embedded sidebar chats already occupy the space reserved for the panel. */
+:global([data-slot='conversation.session'] > [class$='_viewArea']:not(:where([data-sidebar-chat] *))) {
   margin-right: var(--dsh-sidebar-width, 0px);
   transition: margin-right var(--ds-transition-duration-slow) var(--ds-ease-in-out);
 }
